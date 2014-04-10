@@ -8,7 +8,7 @@ class Level(object):
         self.std = std
         self.integrity()
     def __repr__(self):
-        return 'Level %s: (mean %s, std %s)' % (self.name,repr(self.mean),repr(self.std))
+        return '%s (mean %s, std %s)' % (self.name,repr(self.mean),repr(self.std))
     def integrity(self):
         assert(isinstance(self.name,basestring))
         self.mean = float(self.mean)
@@ -35,10 +35,21 @@ class Channel(object):
         self.disconnect()  #defines self.Q = zero-matrix
         self.integrity()
     def __repr__(self):
-        s = 'Channel with Nodes:'
+        nNodes = len(self.nodes)
+        s = 'Channel'
         for n in self.nodes:
-            s += '\n'
+            s += '\n '
             s += repr(n)
+        for i in range(0, nNodes-1):
+            for j in range(i+1, nNodes):
+                if self.Q[i,j] == 0. and self.Q[j,i] == 0.:
+                    assert(True)
+                elif self.Q[j,i] == 0.:
+                    s += '\n Edge %s --> %s: (q --> %s)' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]))
+                elif self.Q[i,j] == 0:
+                    s += '\n Edge %s <-- %s: (q <-- %s)' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[j,i]))
+                else:
+                    s += '\n Edge %s <--> %s: (q --> %s; q <-- %s)' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]),str(self.Q[j,i]))
         return s
     def addNode(self,new):
         self.nodes.append(new)
