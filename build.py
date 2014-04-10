@@ -48,11 +48,17 @@ class Channel(object):
         numpy.fill_diagonal(self.Q,Qdiag)
     #addBiEdge() modifies parameters of a bidirectional transition and calls fillQdiag()
     def addBiEdge(self,first,second,q12,q21):
+        q12 = float(q12)
+        q21 = float(q21)
+        assert(q12>=0.)
+        assert(q21>=0.)
         self.Q[first, second] = q12
         self.Q[second, first] = q21
         self.fillQdiag()
     #addEdge() modifies parameters of a monodirectional transition and calls fillQdiag()
     def addEdge(self,first,second,q12):
+        q12 = float(q12)
+        assert(q12>=0.)
         self.Q[first, second] = q12
         self.fillQdiag()
         
