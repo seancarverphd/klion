@@ -28,7 +28,7 @@ class Channel(object):
         for node in nodes:
             assert(isinstance(node,Node))
         self.nodes = nodes
-        self.Q = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes))))
+        self.disconnect()  #defines self.Q = matrix[zero]
     def __repr__(self):
         s = 'Channel with Nodes:'
         for n in self.nodes:
@@ -37,16 +37,23 @@ class Channel(object):
         return s
     def addNode(self,new):
         self.nodes.append(new)
-    #The next two functions define the Q matrix
+    #The next four functions define the Q matrix
+    #disconnect() defines a disconnected graph; no transitions
+    def disconnect(self):
+        self.Q = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes))))
     #fillQdiag() enforces (by modifying the diagonal of Q): sum of each row is zero
     def fillQdiag(self):
         numpy.fill_diagonal(self.Q,0.)
         Qdiag = -self.Q.sum(axis=1)
         numpy.fill_diagonal(self.Q,Qdiag)
-    #addEdge() modifies parameters of a transition and calls fillQdiag()
-    def addEdge(self,first,second,q12,q21):
+    #addBiEdge() modifies parameters of a bidirectional transition and calls fillQdiag()
+    def addBiEdge(self,first,second,q12,q21):
         self.Q[first, second] = q12
         self.Q[second, first] = q21
+        self.fillQdiag()
+    #addEdge() modifies parameters of a monodirectional transition and calls fillQdiag()
+    def addEdge(self,first,second,q12):
+        self.Q[first, second] = q12
         self.fillQdiag()
         
 #This code sets up a canonical channel
@@ -56,5 +63,6 @@ C1 = Node("C1",Closed)
 C0 = Node("C0",Closed)
 O = Node("O",Open)
 ch3 = Channel([C1,C0,O])
-ch3.addEdge(0,1,2.,3.)
-ch3.addEdge(1,2,4.,5.)
+ch3.addBiEdge(0,1,2.,3.)
+ch3.addEdge(1,2,4.)
+ch3.addEdge(2,1,5.)
