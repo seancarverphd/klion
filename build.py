@@ -37,7 +37,7 @@ class Channel(object):
         return s
     def addNode(self,new):
         self.nodes.append(new)
-    #The next four functions define the Q matrix
+    #The next four functions define/modify the Q matrix
     #disconnect() defines a disconnected graph; no transitions
     def disconnect(self):
         self.Q = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes))))
