@@ -14,6 +14,7 @@ class Level(object):
         self.mean = float(self.mean)
         self.std = float(self.std)
         assert(self.std >= 0)
+        
 # A Node is a state of the channel
 class Node(object):
     def __init__(self,name,level):
@@ -26,13 +27,13 @@ class Node(object):
         assert(isinstance(self.name,basestring))
         assert(isinstance(self.level,Level))
         self.level.integrity()
+        
 # A Channel is a model of an ion channel
 class Channel(object):
     def __init__(self,nodes):
-        for node in nodes:
-            assert(isinstance(node,Node))
         self.nodes = nodes
-        self.disconnect()  #defines self.Q = matrix[zero]
+        self.disconnect()  #defines self.Q = zero-matrix
+        self.integrity()
     def __repr__(self):
         s = 'Channel with Nodes:'
         for n in self.nodes:
@@ -66,12 +67,16 @@ class Channel(object):
         self.Q[first, second] = q12
         self.fillQdiag()
     def integrity(self): # Checks that channel is well defined
-        assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
+        #Nodes
         for n in self.nodes:
+            assert(isinstance(n,Node))
             n.integrity()
+        #Edges
         numpy.fill_diagonal(self.Q,0.)
         assert(numpy.amin(self.Q)==0)
         self.fillQdiag()
+        assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
+
         
 #This code sets up a canonical channel
 Open = Level("Open",1.0,0.6)
