@@ -3,25 +3,29 @@ import numpy
 # A Level is a defined (mean, std) that will be the same across certain Nodes (ie states)
 class Level(object):
     def __init__(self,name,mean,std):
-        assert(isinstance(name,basestring))
-        mean = float(mean)
-        std = float(std)
         self.name = name
         self.mean = mean
         self.std = std
+        self.integrity()
     def __repr__(self):
         return 'Level %s: (mean %s, std %s)' % (self.name,repr(self.mean),repr(self.std))
-
+    def integrity(self):
+        assert(isinstance(self.name,basestring))
+        self.mean = float(self.mean)
+        self.std = float(self.std)
+        assert(self.std >= 0)
 # A Node is a state of the channel
 class Node(object):
     def __init__(self,name,level):
-        assert(isinstance(name,basestring))
-        assert(isinstance(level,Level))
         self.name = name
         self.level = level
+        self.integrity()
     def __repr__(self):
         return 'Node %s: %s' % (self.name, repr(self.level))
-
+    def integrity(self):
+        assert(isinstance(self.name,basestring))
+        assert(isinstance(self.level,Level))
+        self.level.integrity()
 # A Channel is a model of an ion channel
 class Channel(object):
     def __init__(self,nodes):
@@ -60,6 +64,13 @@ class Channel(object):
         q12 = float(q12)
         assert(q12>=0.)
         self.Q[first, second] = q12
+        self.fillQdiag()
+    def integrity(self): # Checks that channel is well defined
+        assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
+        for n in self.nodes:
+            n.integrity()
+        numpy.fill_diagonal(self.Q,0.)
+        assert(numpy.amin(self.Q)==0)
         self.fillQdiag()
         
 #This code sets up a canonical channel
