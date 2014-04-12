@@ -79,6 +79,29 @@ class Parameter(object):
         return float(self.value)
     def __add__(self, x):
         return float(self) + float(x)
+    def __sub__(self, x):
+        return float(self) - float(x)
+    def __mul__(self, x):
+        return float(self) * float(x)
+    def __div__(self, x):
+        return float(self) / float(x)
+    def __pow__(self,x):
+        return float(self)**float(x)
+    def __radd__(self, x):
+        return float(x) + float(self)
+    def __rsub__(self, x):
+        return float(x) - float(self)
+    def __rmul__(self, x):
+        return float(x) * float(self)
+    def __rdiv__(self, x):
+        return float(x) / float(self)
+    def __rpow__(self, x):
+        return float(x)**float(self)
+    # The next two functions work, but I haven't decided if they are a good idea
+    #~ def __rxor__(self, x):  # So you can type B^A for B**A
+        #~ return float(x)**float(self)
+    #~ def __xor__(self,x):  # So you can type A^B for A**B
+        #~ return float(self)**float(x)
     def checkValue(self):   # a weak version of integrity()
         assert(self.lower <= self.value)
         assert(self.value <= self.upper)
@@ -108,7 +131,7 @@ class Space(object):
         s = 'Parameter Space'
         for value in self.pDict.itervalues():
             s += '\n '+repr(value)
-        return s
+        return sn
     def __str__(self):
         s = 'Parameter Space'
         for value in self.pDict.itervalues():
@@ -119,12 +142,20 @@ class Space(object):
         
 class Expression(object):
     def __init__(self,expr,params):
-        self.expr = expr #need to import? use eg: "__import__('math').exp(A)"
+        self.expr = expr
         self.params = params
+        self.value = self.integrity()
     def __float__(self):
-        replaces = {"exp":__import__('math').exp}
-        dict = replaces.update(self.params.pDict)
-        return eval(self.expr,replaces)
+        methods = {"exp":__import__('math').exp,
+                            "log":__import__('math').log,
+                            "sin":__import__('math').sin,
+                            "cos":__import__('math').cos,
+                            "tan":__import__('math').tan,
+                            "log10":__import__('math').log10,
+                            "pi":__import__('math').pi,
+                            "e":__import__('math').e}
+        dict = methods.update(self.params.pDict)
+        return eval(self.expr,methods)
     def __repr__(self):
         s = 'Expression: '
         s += self.expr+" = "+str(float(self))+'\nEvaluated in '
@@ -132,4 +163,13 @@ class Expression(object):
         return s
     def __str__(self):
         return self.expr+" = "+str(float(self))
+    def reexpress(self,E=None,P=None):
+        if not E is None:
+            self.expr = E
+        if not P is None:
+            self.params = P
+        self.value = self.integrity()
+    def integrity(self):
+        v = float(self)
+        return v
         
