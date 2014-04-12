@@ -1,5 +1,6 @@
 import numpy
 import math
+import copy
 
 class Parameter(object):
     def __init__(self,name):
@@ -76,6 +77,8 @@ class Parameter(object):
         return str(self.value)
     def __float__(self):
         return float(self.value)
+    def __add__(self, x):
+        return float(self) + float(x)
     def checkValue(self):   # a weak version of integrity()
         assert(self.lower <= self.value)
         assert(self.value <= self.upper)
@@ -91,25 +94,42 @@ class Parameter(object):
             assert(self.default >0)
             assert(self.upper > 0)
             
-class ParameterSpace(object):
-    def __init__(self,params):
-        self.p = params
+class Space(object):
+    def __init__(self,pDict):
+        self.pDict = pDict
         self.integrity()
     def integrity(self):
         #make sure parameters have the right names
         #ensures they have different names
-        for key, value in self.p.iteritems():
+        for key, value in self.pDict.iteritems():
             assert(isinstance(value,Parameter))
             assert(key==value.name)
     def __repr__(self):
         s = 'Parameter Space'
-        for value in self.p.itervalues():
+        for value in self.pDict.itervalues():
             s += '\n '+repr(value)
         return s
     def __str__(self):
         s = 'Parameter Space'
-        for value in self.p.itervalues():
+        for value in self.pDict.itervalues():
             whole = repr(value)
             first = whole.split('\n',1)[0]
             s += '\n '+str(first)
         return s
+        
+class Expression(object):
+    def __init__(self,expr,params):
+        self.expr = expr #need to import? use eg: "__import__('math').exp(A)"
+        self.params = params
+    def __float__(self):
+        replaces = {"exp":__import__('math').exp}
+        dict = replaces.update(self.params.pDict)
+        return eval(self.expr,replaces)
+    def __repr__(self):
+        s = 'Expression: '
+        s += self.expr+" = "+str(float(self))+'\nEvaluated in '
+        s += str(self.params)
+        return s
+    def __str__(self):
+        return self.expr+" = "+str(float(self))
+        
