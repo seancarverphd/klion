@@ -159,7 +159,7 @@ class Expression(object):
             s += "\n "+key+" = "+str(value)
         return s
     def __str__(self):
-        return self.expr+" = "+str(float(self))
+        return self.expr
     def reexpress(self,E=None,P=None):
         if not E is None:
             self.expr = E
