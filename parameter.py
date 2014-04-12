@@ -90,4 +90,26 @@ class Parameter(object):
             assert(self.value > 0)
             assert(self.default >0)
             assert(self.upper > 0)
-
+            
+class ParameterSpace(object):
+    def __init__(self,params):
+        self.p = params
+        self.integrity()
+    def integrity(self):
+        #make sure parameters have the right names
+        #ensures they have different names
+        for key, value in self.p.iteritems():
+            assert(isinstance(value,Parameter))
+            assert(key==value.name)
+    def __repr__(self):
+        s = 'Parameter Space'
+        for value in self.p.itervalues():
+            s += '\n '+repr(value)
+        return s
+    def __str__(self):
+        s = 'Parameter Space'
+        for value in self.p.itervalues():
+            whole = repr(value)
+            first = whole.split('\n',1)[0]
+            s += '\n '+str(first)
+        return s
