@@ -25,13 +25,13 @@ class Parameter(object):
         self.integrity()
     def assign(self,value):
         self.value = value
-        self.integrity()
+        self.checkValue()  # a weak version of integrity()
     def assignLog(self,logValue):
         if self.useLog:
             self.value = math.exp(logValue)
         else:
             self.value = logValue
-        self.integrity()
+        self.checkValue() # a weak version of integrity()
     def setDefault(default):
         set.default = default
         self.integrity()
@@ -76,13 +76,15 @@ class Parameter(object):
         return str(self.value)
     def __float__(self):
         return float(self.value)
+    def checkValue(self):   # a weak version of integrity()
+        assert(self.lower <= self.value)
+        assert(self.value <= self.upper)
     def integrity(self):
         assert(isinstance(self.name,basestring))
         assert(self.lower < self.upper)
-        assert(self.lower <= self.value)
-        assert(self.value <= self.upper)
         assert(self.lower <= self.default)
         assert(self.default <= self.upper)
+        self.checkValue()
         if self.useLog:
             assert(self.lower >=0)
             assert(self.value > 0)
