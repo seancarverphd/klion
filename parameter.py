@@ -131,7 +131,7 @@ class Space(object):
         s = 'Parameter Space'
         for value in self.pDict.itervalues():
             s += '\n '+repr(value)
-        return sn
+        return s
     def __str__(self):
         s = 'Parameter Space'
         for value in self.pDict.itervalues():
@@ -144,22 +144,19 @@ class Expression(object):
     def __init__(self,expr,params):
         self.expr = expr
         self.params = params
-        self.value = self.integrity()
+        # the following command checks integrity & defines 
+        #     self.value (frozen numeric value of of expression), and
+        #     self.frozen (frozen params that created the value)
+        self.freeze()  
     def __float__(self):
-        methods = {"exp":__import__('math').exp,
-                            "log":__import__('math').log,
-                            "sin":__import__('math').sin,
-                            "cos":__import__('math').cos,
-                            "tan":__import__('math').tan,
-                            "log10":__import__('math').log10,
-                            "pi":__import__('math').pi,
-                            "e":__import__('math').e}
-        dict = methods.update(self.params.pDict)
-        return eval(self.expr,methods)
+        if not self.frozen:
+            self.evaluate()
+        return self.lastV
     def __repr__(self):
         s = 'Expression: '
-        s += self.expr+" = "+str(float(self))+'\nEvaluated in '
-        s += str(self.params)
+        s += self.expr+" = "+str(float(self))+', where'
+        for key,value in self.lastP.iteritems():
+            s += "\n "+key+" = "+str(value)
         return s
     def __str__(self):
         return self.expr+" = "+str(float(self))
@@ -168,8 +165,24 @@ class Expression(object):
             self.expr = E
         if not P is None:
             self.params = P
-        self.value = self.integrity()
-    def integrity(self):
-        v = float(self)
-        return v
-        
+        self.integrity()
+    def evaluate(self):
+        methods = {"exp":__import__('math').exp,
+                            "log":__import__('math').log,
+                            "sin":__import__('math').sin,
+                            "cos":__import__('math').cos,
+                            "tan":__import__('math').tan,
+                            "log10":__import__('math').log10,
+                            "pi":__import__('math').pi,
+                            "e":__import__('math').e}
+        self.lastP = {}
+        for key, v in self.params.pDict.iteritems():
+            self.lastP[key] = float(v)
+        methods.update(self.lastP)
+        self.lastV = float(eval(self.expr,methods))
+    def freeze(self):
+        self.evaluate()
+        self.frozen = True
+    def thaw(self):
+        self.frozen = False
+
