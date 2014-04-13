@@ -137,25 +137,49 @@ class Space(object):
             s += '\n '+str(first)
         return s
     def append(self,x):
-        try:
+        keys = nameSet(self)
+        newkeys = nameSet(x)
+        doubles = set.intersection(keys,newkeys)
+        for d in doubles:
+            if isinstance(x,Space):
+                # parameter with same name: must have same identity
+                assert(self.pDict[d] is x.pDict[d])
+            else:
+                # parameter with same name: must have same identity
+                assert(self.pDict[d] is x)
+        if isinstance(x,Space):
             self.pDict.update(x.pDict)
-        except:
+        else:
             self.pDict[x.name] = x
         self.integrity()
     def integrity(self):
-        #make sure parameters have the right names
-        #ensures they have different names
+        #make sure parameters have the right names 
+        #   (in dictionary and name attribute of parameter)
+        #also ensures they have different names
         for key, value in self.pDict.iteritems():
             assert(isinstance(value,Parameter))
             assert(key==value.name)
+
+def nameSet(x):
+    if isinstance(x,Space):
+        return set(x.pDict.iterkeys())
+    try:
+        if isinstance(x.PS,Space):
+            return namesOfParmas(x.PS)
+    except:
+        pass
+    if isinstance(x,Parameter):
+        return set(x.name)
+    else:
+        return set()
         
 def emptySpace():
     return Space({})
-    
+        
 class Expression(object):
-    def __init__(self,expr,params):
+    def __init__(self,expr,PS):
         self.expr = expr
-        self.params = params
+        self.PS = PS
         # the following command checks integrity & defines 
         #     self.value (frozen numeric value of of expression), and
         #     self.frozen (frozen params that created the value)
@@ -176,7 +200,7 @@ class Expression(object):
         if not E is None:
             self.expr = E
         if not P is None:
-            self.params = P
+            self.PS = P
         self.integrity()
     def evaluate(self):
         methods = {"exp":__import__('math').exp,
@@ -188,7 +212,7 @@ class Expression(object):
                             "pi":__import__('math').pi,
                             "e":__import__('math').e}
         self.lastP = {}
-        for key, v in self.params.pDict.iteritems():
+        for key, v in self.PS.pDict.iteritems():
             self.lastP[key] = float(v)
         methods.update(self.lastP)
         self.lastV = float(eval(self.expr,methods))
@@ -198,3 +222,15 @@ class Expression(object):
     def thaw(self):
         self.frozen = False
 
+def getSpace(x):
+    try:  # if object has a attribute names PS, return PS
+        return x.PS
+    except:
+        pass
+    if isinstance(x,Parameter):  # if it's a Parameter return singleton: Space(Param)
+        return Space({x.name:x})
+    if isinstance(x,Space):  # if it's a Space return the same object
+        return x
+    else:  # if all else fails return the empty space.
+        return emptySpace()
+        
