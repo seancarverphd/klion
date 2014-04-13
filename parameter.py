@@ -121,14 +121,11 @@ class Space(object):
     def __init__(self,pDict):
         self.pDict = pDict
         self.integrity()
-    def integrity(self):
-        #make sure parameters have the right names
-        #ensures they have different names
-        for key, value in self.pDict.iteritems():
-            assert(isinstance(value,Parameter))
-            assert(key==value.name)
     def __repr__(self):
-        s = 'Parameter Space'
+        if not any(self.pDict):
+            s = 'Empty Parameter Space'
+        else:
+            s = 'Parameter Space'
         for value in self.pDict.itervalues():
             s += '\n '+repr(value)
         return s
@@ -139,7 +136,22 @@ class Space(object):
             first = whole.split('\n',1)[0]
             s += '\n '+str(first)
         return s
+    def append(self,x):
+        try:
+            self.pDict.update(x.pDict)
+        except:
+            self.pDict[x.name] = x
+        self.integrity()
+    def integrity(self):
+        #make sure parameters have the right names
+        #ensures they have different names
+        for key, value in self.pDict.iteritems():
+            assert(isinstance(value,Parameter))
+            assert(key==value.name)
         
+def emptySpace():
+    return Space({})
+    
 class Expression(object):
     def __init__(self,expr,params):
         self.expr = expr
