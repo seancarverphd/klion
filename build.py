@@ -7,15 +7,24 @@ class Level(object):
         self.name = name
         self.mean = mean
         self.std = std
+        self.integrity() # calls reparameterize()
+    def reparameterize(self):
         self.PS = parameter.emptySpace()
         self.PS.append(parameter.getSpace(self.mean))
         self.PS.append(parameter.getSpace(self.std))
-        self.integrity()
+        # called by integrity()
+    def setMean(self,mean):
+        self.mean = mean
+        self.integrity() # calls reparameterize()
+    def setStd(self,std):
+        self.std = std
+        self.integrity() # calls reparameterize()
     def __repr__(self):
         return '%s\n  Mean %s\n  Std %s' % (self.name,repr(self.mean),repr(self.std))
     def __str__(self):
         return '%s\n Mean %s\n Std %s' % (self.name,str(self.mean),str(self.std))
     def integrity(self):
+        self.reparameterize()
         assert(isinstance(self.name,basestring))
         float(self.mean)
         assert float(self.std) >= 0.

@@ -192,7 +192,7 @@ class Expression(object):
         s = 'Expression: '
         s += self.expr+" = "+str(float(self))+', where'
         for key,value in self.lastP.iteritems():
-            s += "\n "+key+" = "+str(value)
+            s += "\n   "+key+" = "+str(value)
         return s
     def __str__(self):
         return self.expr
