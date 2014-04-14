@@ -48,10 +48,10 @@ class Channel(object):
     def __init__(self,nodes):
         # Define dictionary of nodes
         self.nodes = nodes
-        self.reorder()       # defines nodeOrder dictionary
-        self.disconnect()  # defines self.PS and self.Q = zero-matrix
-        self.integrity()      # calls makeQ()
-    def reorder(self):
+        self.recordOrder() # defines nodeOrder dictionary
+        self.disconnect()  # sets Q and QList = zero-matrix initializes; calls integrity() which calls reparametrize()
+    def recordOrder(self):
+    # records order of nodes into a dictionary to reference them by string name
         self.nodeOrder = {}
         for n in range(len(self.nodes)):
             self.nodeOrder[self.nodes[n].name] = n
@@ -60,6 +60,11 @@ class Channel(object):
         for n in self.nodes:
             levels.append(n.level)
         return set(levels)
+    def getNodeNames(self):
+        nodeNames = []
+        for n in self.nodes:
+            nodeNames.append(n.name)
+        return set(nodeNames)  # should all be distinct, used for checking distictiveness
     def __repr__(self):
         nNodes = len(self.nodes)
         s = 'Channel'
@@ -90,50 +95,56 @@ class Channel(object):
     def addNode(self,new):
         self.nodes.append(new)
         self.PS.append(new.level.PS)
-        self.reorder()
+        self.recordOrder()
         self.padQList()
         self.integrity()
     #The next four functions define/modify the Q matrix
-    #disconnect() defines a disconnected graph; no transitions
     def disconnect(self):
+    #disconnect() defines a disconnected graph; no transitions
         self.Q = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes))))
         self.QList = self.Q.tolist()   # makeQ makes Q from QList, here the other way around
-        self.PS = parameter.emptySpace()  # clear the parameter space
-        for n in self.nodes:
-            self.PS.append(n.level.PS)          # now recreate the parameter space from just nodes
-    #fillQdiag() enforces (by modifying the diagonal of Q): sum of each row is zero
+        self.integrity()  # calls makeQ() and reparameterize()
     def makeQ(self):
+    #fillQdiag() enforces (by modifying the diagonal of Q): sum of each row is zero
         self.Q = numpy.matrix(self.QList)
         Qdiag = -self.Q.sum(axis=1)
         numpy.fill_diagonal(self.Q,Qdiag)
+    def biEdge(self,node1,node2,q12,q21):
     #addBiEdge() modifies parameters of a transition in both directions
-    def addBiEdge(self,node1,node2,q12,q21):
         first = self.nodeOrder[node1]
         second = self.nodeOrder[node2]
         self.QList[first][second] = q12 # first row, second column, order reverse in list
         self.QList[second][first] = q21 # second row, first column
-        self.PS.append(parameter.getSpace(q12))
-        self.PS.append(parameter.getSpace(q21))
-        self.integrity()  # calls makeQ()
+        self.integrity()  # calls makeQ() and reparameterize()
+    def edge(self,node1,node2,q12):
     #addEdge() modifies parameters of a transition in one direction
-    def addEdge(self,node1,node2,q12):
         first = self.nodeOrder[node1]
         second = self.nodeOrder[node2]
         self.QList[first][second] = q12
-        self.PS.append(parameter.getSpace(q12))
-        self.integrity() # calls makeQ()
+        self.integrity() # calls makeQ() and reparameterize()
+    def reparameterize(self):
+    # defines parameter space;  called by integrity()
+        self.PS = parameter.emptySpace()  # clear the parameter space
+        for n in self.nodes:
+            self.PS.append(n.level.PS)          # now recreate the parameter space from just nodes
+        for rownum in range(len(self.QList)):
+            for element in self.QList[rownum]:
+                self.PS.append(parameter.getSpace(element))
     def integrity(self): # Checks that channel is well defined
         #Nodes
         for n in self.nodes:
             assert(isinstance(n,Node))
-        #EdgesQ
+        assert(len(self.nodes) == len(self.getNodeNames())) # makes sure node names are distinct 
+        assert(len(self.nodes) == len(set(self.nodes)))  # make sure nodes are distinct
+        #Edges
         for n in range(len(self.nodes)):
             assert(self.QList[n][n]==0)
         self.makeQ()
-        Q0 = self.Q.copy()
-        numpy.fill_diagonal(Q0,0.)
-        assert(numpy.amin(Q0)==0)
+        Q0 = self.Q.copy()  # Q0 is for checking that off diagonal is positive
+        numpy.fill_diagonal(Q0,0.)  # diagonal is negative so set to zero
+        assert(numpy.amin(Q0)==0)  # now minimum element should be zero (on diagonal)
         assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
+        self.reparameterize()
 
 #This code sets up a canonical channel
 Open = Level("Open",mean=1.0,std=0.6)
@@ -142,6 +153,6 @@ C1 = Node("C1",Closed)
 C0 = Node("C0",Closed)
 O = Node("O",Open)
 ch3 = Channel([C1,C0,O])
-ch3.addBiEdge("C1","C0",2.,3.)
-ch3.addEdge("C0","O",4.)
-ch3.addEdge("O","C0",5.)
+ch3.biEdge("C1","C0",2.,3.)
+ch3.edge("C0","O",4.)
+ch3.edge("O","C0",5.)
