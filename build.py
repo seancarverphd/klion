@@ -46,9 +46,15 @@ class Node(object):
 # A Channel is a model of an ion channel
 class Channel(object):
     def __init__(self,nodes):
+        # Define dictionary of nodes
         self.nodes = nodes
+        self.reorder()       # defines nodeOrder dictionary
         self.disconnect()  #defines self.PS and self.Q = zero-matrix
         self.integrity()
+    def reorder(self):
+        self.nodeOrder = {}
+        for n in range(len(self.nodes)):
+            self.nodeOrder[self.nodes[n].name] = n
     def getLevels(self):
         levels = []
         for n in self.nodes:
@@ -74,8 +80,10 @@ class Channel(object):
                     s += '\n Edge %s <--> %s:\n  q (-->) %s\n  q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]),str(self.Q[j,i]))
         return s
     def addNode(self,new):
+        assert(False) # haven't finished coding, need to add row and column to QList and Q
         self.nodes.append(new)
         self.PS.append(new.level.PS)
+        self.reorder()
     #The next four functions define/modify the Q matrix
     #disconnect() defines a disconnected graph; no transitions
     def disconnect(self):
