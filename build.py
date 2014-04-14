@@ -49,8 +49,8 @@ class Channel(object):
         # Define dictionary of nodes
         self.nodes = nodes
         self.reorder()       # defines nodeOrder dictionary
-        self.disconnect()  #defines self.PS and self.Q = zero-matrix
-        self.integrity()
+        self.disconnect()  # defines self.PS and self.Q = zero-matrix
+        self.integrity()      # calls makeQ()
     def reorder(self):
         self.nodeOrder = {}
         for n in range(len(self.nodes)):
@@ -79,11 +79,20 @@ class Channel(object):
                 else:
                     s += '\n Edge %s <--> %s:\n  q (-->) %s\n  q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]),str(self.Q[j,i]))
         return s
+    def padQList(self):
+    # Add a new row and column to QList
+        newrow = []
+        for row in self.QList:
+            row.append(0)  # adds new column element by element
+            newrow.append(0) # adds final column
+        newrow.append(0)
+        self.QList.append(newrow)
     def addNode(self,new):
-        assert(False) # haven't finished coding, need to add row and column to QList and Q
         self.nodes.append(new)
         self.PS.append(new.level.PS)
         self.reorder()
+        self.padQList()
+        self.integrity()
     #The next four functions define/modify the Q matrix
     #disconnect() defines a disconnected graph; no transitions
     def disconnect(self):
@@ -98,14 +107,18 @@ class Channel(object):
         Qdiag = -self.Q.sum(axis=1)
         numpy.fill_diagonal(self.Q,Qdiag)
     #addBiEdge() modifies parameters of a transition in both directions
-    def addBiEdge(self,first,second,q12,q21):
+    def addBiEdge(self,node1,node2,q12,q21):
+        first = self.nodeOrder[node1]
+        second = self.nodeOrder[node2]
         self.QList[first][second] = q12 # first row, second column, order reverse in list
         self.QList[second][first] = q21 # second row, first column
         self.PS.append(parameter.getSpace(q12))
         self.PS.append(parameter.getSpace(q21))
         self.integrity()  # calls makeQ()
     #addEdge() modifies parameters of a transition in one direction
-    def addEdge(self,first,second,q12):
+    def addEdge(self,node1,node2,q12):
+        first = self.nodeOrder[node1]
+        second = self.nodeOrder[node2]
         self.QList[first][second] = q12
         self.PS.append(parameter.getSpace(q12))
         self.integrity() # calls makeQ()
@@ -123,12 +136,12 @@ class Channel(object):
         assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
 
 #This code sets up a canonical channel
-Open = Level("Open",1.0,0.6)
-Closed = Level("Closed",0.0,0.3)
+Open = Level("Open",mean=1.0,std=0.6)
+Closed = Level("Closed",mean=0.0,std=0.3)
 C1 = Node("C1",Closed)
 C0 = Node("C0",Closed)
 O = Node("O",Open)
 ch3 = Channel([C1,C0,O])
-ch3.addBiEdge(0,1,2.,3.)
-ch3.addEdge(1,2,4.)
-ch3.addEdge(2,1,5.)
+ch3.addBiEdge("C1","C0",2.,3.)
+ch3.addEdge("C0","O",4.)
+ch3.addEdge("O","C0",5.)
