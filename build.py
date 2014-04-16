@@ -1,5 +1,6 @@
 import numpy
 import parameter
+from parameter import u
 
 # A Level is a defined (mean, std) that will be the same across certain Nodes (ie states)
 class Level(object):
@@ -147,6 +148,17 @@ class Channel(object):
         self.reparameterize()
 
 #This code sets up a canonical channel
+gmax_khh = parameter.Parameter("gmax_khh",0.02979,"siemens/cm**2",log=True)
+ta1 = parameter.Parameter("ta1",4.4,"ms",log=True)
+tk1 = parameter.Parameter("tk1",-0.025,"1/mV",log=False)
+d1 = parameter.Parameter("d1",21.,"mV",log=False)
+k1 = parameter.Parameter("k1",0.2,"1/mV",log=False)
+
+ta2 = parameter.Parameter("ta2",2.6,"ms",log=True)
+tk2 = parameter.Parameter("tk2",-0.007,"1/mV",log=False)
+d2 = parameter.Parameter("d2",43,"mV",log=False)
+k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
+
 Open = Level("Open",mean=1.0,std=0.6)
 Closed = Level("Closed",mean=0.0,std=0.3)
 C1 = Node("C1",Closed)
