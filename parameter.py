@@ -9,13 +9,19 @@ def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
 class Parameter(object):
-    def __init__(self,name):
+    def __init__(self,name,value=1.,units='dimensionless',default=1.,log=False):
         self.name = name
+        # must define values so that setting routines work
         self.useLog = False
-        # if (useLog): then the next 4 still on linear scale
-        self.value = 1.*u.dimensionless
-        self.default = 1.*u.dimensionless
-        self.bounds = numpy.matrix([-numpy.inf, numpy.inf]) *u.dimensionless
+        self.value = 1. * u.dimensionless
+        self.default = 1. * u.dimensionless
+        if log:
+            self.bounds = numpy.matrix([0, numpy.inf]) *u.dimensionless
+            self.setLog()
+        else:
+            self.bounds = numpy.matrix([-numpy.inf, numpy.inf]) *u.dimensionless
+        self.assign(value,units)
+        self.setDefault(default)
         self.integrity()
     def rename(self,name):
         self.name = name
