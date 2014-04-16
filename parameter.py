@@ -1,37 +1,52 @@
 import numpy
 import math
 import copy
+import pint
+
+u = pint.UnitRegistry()
+
+def setUnit(x,units):
+    return x._magnitude * getattr(u,units)
 
 class Parameter(object):
     def __init__(self,name):
         self.name = name
         self.useLog = False
         # if (useLog): then the next 4 still on linear scale
-        self.value = 1.
-        self.default = 1.
-        self.lower = -numpy.inf
-        self.upper = numpy.inf
+        self.value = 1.*u.dimensionless
+        self.default = 1.*u.dimensionless
+        self.lower = -numpy.inf*u.dimensionless
+        self.upper = numpy.inf*u.dimensionless
         self.integrity()
     def rename(self,name):
         self.name = name
         self.integrity()
+    def setUnits(self,units):
+        self.value = setUnit(self.value,units)
+        self.default = setUnit(self.default,units)
+        self.lower = setUnit(self.lower,units)
+        self.upper = setUnit(self.upper,units)
     def setLog(self):
         self.useLog = True
-        if self.lower<0:
+        if self.lower.magnitude<0.:
             print("Warning: lower limit of range is negative; setting to zero")
-            self.lower = 0
+            self.lower._magnitude = 0.
         self.integrity()
     def setLinear(self):
         self.useLog = False
         self.integrity()
-    def assign(self,value):
-        self.value = value
+    def assign(self,value,units=None):
+        if not units==None:
+            self.setUnits(units)
+        self.value._magnitude = value
         self.checkValue()  # a weak version of integrity()
-    def assignLog(self,logValue):
+    def assignLog(self,logValue,units=None):
+        if not units==None:
+            self.setUnits(units)
         if self.useLog:
-            self.value = math.exp(logValue)
+            self.value._magnitude = math.exp(logValue)
         else:
-            self.value = logValue
+            self.value._magnitude = logValue
         self.checkValue() # a weak version of integrity()
     def setDefault(default):
         set.default = default
@@ -78,25 +93,25 @@ class Parameter(object):
     def __float__(self):
         return float(self.value)
     def __add__(self, x):
-        return float(self) + float(x)
+        return self.value + x.value
     def __sub__(self, x):
-        return float(self) - float(x)
+        return self.value - x.value
     def __mul__(self, x):
-        return float(self) * float(x)
+        return self.value * x.value
     def __div__(self, x):
-        return float(self) / float(x)
+        return self.value / x.value
     def __pow__(self,x):
-        return float(self)**float(x)
+        return self.value ** x.value
     def __radd__(self, x):
-        return float(x) + float(self)
+        return x.value + self.value
     def __rsub__(self, x):
-        return float(x) - float(self)
+        return x.value - self.value
     def __rmul__(self, x):
-        return float(x) * float(self)
+        return x.value * self.value
     def __rdiv__(self, x):
-        return float(x) / float(self)
+        return x.value / self.value
     def __rpow__(self, x):
-        return float(x)**float(self)
+        return x.value ** self.value
     # The next two functions work, but I haven't decided if they are a good idea
     #~ def __rxor__(self, x):  # So you can type B^A for B**A
         #~ return float(x)**float(self)
@@ -112,10 +127,10 @@ class Parameter(object):
         assert(self.default <= self.upper)
         self.checkValue()
         if self.useLog:
-            assert(self.lower >=0)
-            assert(self.value > 0)
-            assert(self.default >0)
-            assert(self.upper > 0)
+            assert(self.lower.magnitude >=0.)
+            assert(self.value.magnitude > 0.)
+            assert(self.default.magnitude >0.)
+            assert(self.upper.magnitude > 0.)
             
 class Space(object):
     def __init__(self,pDict):
