@@ -15,8 +15,7 @@ class Parameter(object):
         # if (useLog): then the next 4 still on linear scale
         self.value = 1.*u.dimensionless
         self.default = 1.*u.dimensionless
-        self.lower = -numpy.inf*u.dimensionless
-        self.upper = numpy.inf*u.dimensionless
+        self.bounds = numpy.matrix([-numpy.inf, numpy.inf]) *u.dimensionless
         self.integrity()
     def rename(self,name):
         self.name = name
@@ -24,13 +23,12 @@ class Parameter(object):
     def setUnits(self,units):
         self.value = setUnit(self.value,units)
         self.default = setUnit(self.default,units)
-        self.lower = setUnit(self.lower,units)
-        self.upper = setUnit(self.upper,units)
+        self.bounds = setUnit(self.bounds,units)
     def setLog(self):
         self.useLog = True
-        if self.lower.magnitude<0.:
+        if self.Lower() <0.:
             print("Warning: lower limit of range is negative; setting to zero")
-            self.lower._magnitude = 0.
+            self.setLower(0.)
         self.integrity()
     def setLinear(self):
         self.useLog = False
@@ -48,32 +46,32 @@ class Parameter(object):
         else:
             self.value._magnitude = logValue
         self.checkValue() # a weak version of integrity()
-    def setDefault(default):
-        set.default = default
+    def setDefault(self, default):
+        self.default._magnitude = default
         self.integrity()
     def setUpper(self, upper):
-        self.upper = upper
+        self.bounds._magnitude[0,1] = upper
         self.integrity()
     def setLower(self,lower):
-        self.lower = lower
+        self.bounds._magnitude[0,0] = lower
         self.integrity()
     def constrained(self):
         # returns True if there are constraints 
         # that is, if limits are different from [0,inf] for log, or [-inf,inf] for linear
         self.integrity()
-        isR = not (numpy.isfinite(self.lower) or numpy.isfinite(self.upper))
-        isRplus = (self.lower == 0) and (not numpy.isfinite(self.upper))
+        isR = not (numpy.isfinite(self.Lower()) or numpy.isfinite(self.Upper()))
+        isRplus = (self.Lower() == 0) and (not numpy.isfinite(self.Upper()))
         if self.useLog:
             return not isRplus
         else:
             return not isR
     def setPositive(self):
-        self.lower = 0
-        self.upper = numpy.inf
+        self.setLower(0.)
+        self.setUpper(numpy.inf)
         self.integrity()
     def setReal(self):
-        self.lower = -numpy.inf
-        self.upper = numpy.inf
+        self.setLower(-numpy.inf)
+        self.setUpper(numpy.inf)
         self.integrity()
     def __repr__(self):
         if (self.useLog):
@@ -85,7 +83,7 @@ class Parameter(object):
         else:
             C = ' (unconstrained)'
         s = "Parameter: "+self.name+" = "+str(self.value)+'\n'
-        s += LL + C + ' in ['+str(self.lower)+','+str(self.upper) +']'
+        s += LL + C + ' in '+str(self.bounds)
         s += '\n   Defaults to: '+str(self.default)
         return s
     def __str__(self):
@@ -117,20 +115,27 @@ class Parameter(object):
         #~ return float(x)**float(self)
     #~ def __xor__(self,x):  # So you can type A^B for A**B
         #~ return float(self)**float(x)
+    def Upper(self):
+        return self.bounds._magnitude[0,1]
+    def Lower(self):
+        return self.bounds._magnitude[0,0]
+    def Default(self):
+        return self.default._magnitude
+    def Value(self):
+        return self.default._magnitude
     def checkValue(self):   # a weak version of integrity()
-        assert(self.lower <= self.value)
-        assert(self.value <= self.upper)
+        assert(self.Lower() <= self.Value())
+        assert(self.Value() <= self.Upper())
     def integrity(self):
         assert(isinstance(self.name,basestring))
-        assert(self.lower < self.upper)
-        assert(self.lower <= self.default)
-        assert(self.default <= self.upper)
+        assert(self.Lower() <= self.Default())
+        assert(self.Default() <= self.Upper())
         self.checkValue()
         if self.useLog:
-            assert(self.lower.magnitude >=0.)
-            assert(self.value.magnitude > 0.)
-            assert(self.default.magnitude >0.)
-            assert(self.upper.magnitude > 0.)
+            assert(self.Lower() >=0.)
+            assert(self.Value() > 0.)
+            assert(self.Default() > 0.)
+            assert(self.Upper() > 0.)
             
 class Space(object):
     def __init__(self,pDict):
