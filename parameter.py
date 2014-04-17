@@ -97,7 +97,10 @@ class Parameter(object):
     def __float__(self):
         return float(self.value)
     def __add__(self, x):
-        return self.value + x.value
+        try:
+            return self.value + x.value
+        except:
+            return self.value + x
     def __sub__(self, x):
         return self.value - x.value
     def __mul__(self, x):
@@ -149,7 +152,6 @@ class Space(object):
             self.pDict = {}
             for p in x:
                 self.pDict[p.name] = p
-            print self.pDict
         except:  # assume it is already a dictionary (fix: make sure of this)
             self.pDict = x
         self.integrity()
@@ -211,18 +213,23 @@ def emptySpace():
 class Expression(object):
     def __init__(self,expr,PS):
         self.expr = expr
-        self.PS = PS
+        try:
+            self.PS = Space(PS)
+        except:
+            self.PS = PS
         # the following command checks integrity & defines 
         #     self.value (frozen numeric value of of expression), and
         #     self.frozen (frozen params that created the value)
-        self.freeze()  
+        self.thaw()  
     def __float__(self):
         if not self.frozen:
             self.evaluate()
-        return self.lastV
+        return float(self.lastV._magnitude)
     def __repr__(self):
+        if not self.frozen:
+            self.evaluate()
         s = 'Expression: '
-        s += self.expr+" = "+str(float(self))+', where'
+        s += self.expr+" = "+str(self.lastV)+', where'
         for key,value in self.lastP.iteritems():
             s += "\n   "+key+" = "+str(value)
         return s
@@ -242,16 +249,19 @@ class Expression(object):
                             "tan":__import__('math').tan,
                             "log10":__import__('math').log10,
                             "pi":__import__('math').pi,
-                            "e":__import__('math').e}
+                            "e":__import__('math').e,
+                            "u":__import__('parameter').u}
         self.lastP = {}
         for key, v in self.PS.pDict.iteritems():
-            self.lastP[key] = float(v)
+            self.lastP[key] = v
         methods.update(self.lastP)
-        self.lastV = float(eval(self.expr,methods))
+        self.lastV = eval(self.expr,methods)
+        return(self.lastV)
     def freeze(self):
         self.evaluate()
         self.frozen = True
     def thaw(self):
+        self.evaluate()
         self.frozen = False
 
 def getSpace(x):

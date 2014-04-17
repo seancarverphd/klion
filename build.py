@@ -159,6 +159,9 @@ tk2 = parameter.Parameter("tk2",-0.007,"1/mV",log=False)
 d2 = parameter.Parameter("d2",43,"mV",log=False)
 k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
 
+v = parameter.Parameter("v",-65.,"mV",log=False)
+vr = parameter.Expression("v + 65*u.mV",[v])
+
 Open = Level("Open",mean=1.0,std=0.6)
 Closed = Level("Closed",mean=0.0,std=0.3)
 C1 = Node("C1",Closed)
