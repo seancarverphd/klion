@@ -144,8 +144,14 @@ class Parameter(object):
             assert(self.Upper() > 0.)
             
 class Space(object):
-    def __init__(self,pDict):
-        self.pDict = pDict
+    def __init__(self,x):
+        try:
+            self.pDict = {}
+            for p in x:
+                self.pDict[p.name] = p
+            print self.pDict
+        except:  # assume it is already a dictionary (fix: make sure of this)
+            self.pDict = x
         self.integrity()
     def __repr__(self):
         if not any(self.pDict):
