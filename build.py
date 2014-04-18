@@ -149,6 +149,7 @@ class Channel(object):
 
 #This code sets up a canonical channel
 gmax_khh = parameter.Parameter("gmax_khh",0.02979,"siemens/cm**2",log=True)
+# for one channel units of gmax_khh should be siemens
 ta1 = parameter.Parameter("ta1",4.4,"ms",log=True)
 tk1 = parameter.Parameter("tk1",-0.025,"1/mV",log=False)
 d1 = parameter.Parameter("d1",21.,"mV",log=False)
@@ -161,6 +162,7 @@ k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
 
 v = parameter.Parameter("v",-65.,"mV",log=False)
 vr = parameter.Expression("v + 65*u.mV",[v])
+tau1 = parameter.Expression("ta1*exp(tk1*vr)",[ta1,tk1,vr])
 
 Open = Level("Open",mean=1.0,std=0.6)
 Closed = Level("Closed",mean=0.0,std=0.3)

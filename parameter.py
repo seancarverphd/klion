@@ -5,6 +5,12 @@ import pint
 
 u = pint.UnitRegistry()
 
+def v(x):
+    try:
+        return x.evaluate()
+    except:
+        return x
+        
 def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
@@ -39,6 +45,8 @@ class Parameter(object):
     def setLinear(self):
         self.useLog = False
         self.integrity()
+    def evaluate(self):
+        return self.value
     def assign(self,value,units=None):
         if not units==None:
             self.setUnits(units)
@@ -98,27 +106,54 @@ class Parameter(object):
         return float(self.value)
     def __add__(self, x):
         try:
-            return self.value + x.value
+            return self.evaluate() + x.evaluate()
         except:
-            return self.value + x
+            return self.evaluate() + x
     def __sub__(self, x):
-        return self.value - x.value
+        try:
+            return self.evaluate() - x.evaluate()
+        except:
+            return self.evaluate() - x
     def __mul__(self, x):
-        return self.value * x.value
+        try:
+            return self.evaluate() * x.evaluate()
+        except:
+            return self.evaluate() * x
     def __div__(self, x):
-        return self.value / x.value
+        try:
+            return self.evaluate() / x.evaluate()
+        except:
+            return self.evaluate() / x
     def __pow__(self,x):
-        return self.value ** x.value
+        try:
+            return self.evaluate() ** x.evaluate()
+        except:
+            return self.evaluate() ** x
     def __radd__(self, x):
-        return x.value + self.value
+        try:
+            return x.evaluate() + self.evaluate()
+        except:
+            return x + self.evaluate()
     def __rsub__(self, x):
-        return x.value - self.value
+        try:
+            return x.evaluate() - self.evaluate()
+        except:
+            return x - self.evaluate()
     def __rmul__(self, x):
-        return x.value * self.value
+        try:
+            return x.evaluate() * self.evaluate()
+        except:
+            return x * self.evaluate()
     def __rdiv__(self, x):
-        return x.value / self.value
+        try:
+            return x.evaluate() / self.evaluate()
+        except:
+            return x / self.evaluate()
     def __rpow__(self, x):
-        return x.value ** self.value
+        try:
+            return x.evaluate() ** self.evaluate()
+        except:
+            return x ** self.evaluate()
     # The next two functions work, but I haven't decided if they are a good idea
     #~ def __rxor__(self, x):  # So you can type B^A for B**A
         #~ return float(x)**float(self)
@@ -145,15 +180,24 @@ class Parameter(object):
             assert(self.Value() > 0.)
             assert(self.Default() > 0.)
             assert(self.Upper() > 0.)
-            
+
+class ESpace(object):
+    def __init__(self,x):
+        
+        for expr in x:
+            assert(isinstance(p,Expression)
+            self.eDict[expr.name] = expr
 class Space(object):
     def __init__(self,x):
-        try:
-            self.pDict = {}
-            for p in x:
+        self.pDict = {}
+        for p in x:
+            if isinstance(p,Expression):
+                for key,val in p.PS.pDict.iteritems():
+                    self.pDict[key] = val
+            elif isinstance(p,Parameter)
                 self.pDict[p.name] = p
-        except:  # assume it is already a dictionary (fix: make sure of this)
-            self.pDict = x
+            else:
+                assert(False)
         self.integrity()
     def __repr__(self):
         if not any(self.pDict):
@@ -208,15 +252,12 @@ def nameSet(x):
         return set()
         
 def emptySpace():
-    return Space({})
+    return Space([])
         
 class Expression(object):
-    def __init__(self,expr,PS):
+    def __init__(self,expr,items):
         self.expr = expr
-        try:
-            self.PS = Space(PS)
-        except:
-            self.PS = PS
+        self.PS = Space(items)
         # the following command checks integrity & defines 
         #     self.value (frozen numeric value of of expression), and
         #     self.frozen (frozen params that created the value)
@@ -250,7 +291,8 @@ class Expression(object):
                             "log10":__import__('math').log10,
                             "pi":__import__('math').pi,
                             "e":__import__('math').e,
-                            "u":__import__('parameter').u}
+                            "u":__import__('parameter').u,
+                            "v":__import__('parameter').v}
         self.lastP = {}
         for key, v in self.PS.pDict.iteritems():
             self.lastP[key] = v
@@ -263,6 +305,56 @@ class Expression(object):
     def thaw(self):
         self.evaluate()
         self.frozen = False
+    def __add__(self, x):
+        try:
+            return self.evaluate() + x.evaluate()
+        except:
+            return self.evaluate() + x
+    def __sub__(self, x):
+        try:
+            return self.evaluate() - x.evaluate()
+        except:
+            return self.evaluate() - x
+    def __mul__(self, x):
+        try:
+            return self.evaluate() * x.evaluate()
+        except:
+            return self.evaluate() * x
+    def __div__(self, x):
+        try:
+            return self.evaluate() / x.evaluate()
+        except:
+            return self.evaluate() / x
+    def __pow__(self,x):
+        try:
+            return self.evaluate() ** x.evaluate()
+        except:
+            return self.evaluate() ** x
+    def __radd__(self, x):
+        try:
+            return x.evaluate() + self.evaluate()
+        except:
+            return x + self.evaluate()
+    def __rsub__(self, x):
+        try:
+            return x.evaluate() - self.evaluate()
+        except:
+            return x - self.evaluate()
+    def __rmul__(self, x):
+        try:
+            return x.evaluate() * self.evaluate()
+        except:
+            return x * self.evaluate()
+    def __rdiv__(self, x):
+        try:
+            return x.evaluate() / self.evaluate()
+        except:
+            return x / self.evaluate()
+    def __rpow__(self, x):
+        try:
+            return x.evaluate() ** self.evaluate()
+        except:
+            return x ** self.evaluate()
 
 def getSpace(x):
     try:  # if object has a attribute names PS, return PS
@@ -270,7 +362,7 @@ def getSpace(x):
     except:
         pass
     if isinstance(x,Parameter):  # if it's a Parameter return singleton: Space(Param)
-        return Space({x.name:x})
+        return Space([x])
     if isinstance(x,Space):  # if it's a Space return the same object
         return x
     else:  # if all else fails return the empty space.
