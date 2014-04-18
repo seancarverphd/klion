@@ -154,11 +154,10 @@ class Parameter(object):
             return x.evaluate() ** self.evaluate()
         except:
             return x ** self.evaluate()
-    # The next two functions work, but I haven't decided if they are a good idea
-    #~ def __rxor__(self, x):  # So you can type B^A for B**A
-        #~ return float(x)**float(self)
-    #~ def __xor__(self,x):  # So you can type A^B for A**B
-        #~ return float(self)**float(x)
+    def getParameters(self):
+        return {self.name:self}
+    def getExpressions(self):
+        return {}
     def Upper(self):
         return self.bounds._magnitude[0,1]
     def Lower(self):
@@ -181,46 +180,23 @@ class Parameter(object):
             assert(self.Default() > 0.)
             assert(self.Upper() > 0.)
 
-class ESpace(object):
-    def __init__(self,items):
-        self.eDict = {}
-        for item in items:
-            if isinstance(item,Expression):
-                self.eDict[item.name] = item
-            else:
-                assert(False)
-        self.integrity()
-    def __repr__(self):
-        if not any(eDict):
-            s = 'Empty Expression Space'
-        else:
-            s = 'Expression Space'
-        for value in self.eDict.itervalues():
-            s += '\n '+repr(value)
-        return s
-    def __str__(self):
-        s = 'Expression Space'
-        for value in self.pDict.itervalues():
-            
 class Space(object):
     def __init__(self,items):
         self.pDict = {}
-        for item in items:
-            if isinstance(item,Expression):
-                for key,val in item.PS.pDict.iteritems():
-                    self.pDict[key] = val
-            elif isinstance(item,Parameter)
-                self.pDict[item.name] = item
-            else:
-                assert(False)
+        self.eDict = {}
+        for i in items:
+            self.pDict.update(i.getParameters())
+            self.eDict.update(i.getExpressions())
         self.integrity()
     def __repr__(self):
         if not any(self.pDict):
-            s = 'Empty Parameter Space'
+            s = 'Empty Space'
         else:
-            s = 'Parameter Space'
+            s = 'Space'
         for value in self.pDict.itervalues():
             s += '\n '+repr(value)
+        for value in self.eDict.itervalues():
+            s += '\n '+repr(Value)
         return s
     def __str__(self):
         s = 'Parameter Space'
@@ -228,10 +204,14 @@ class Space(object):
             whole = repr(value)
             first = whole.split('\n',1)[0]
             s += '\n '+str(first)
+        for value in self.eDict.itervalues():
+            whole = repr(value)
+            first = whole.split('\n',1)[0]
+            s += '\n '+str(first)
         return s
     def append(self,x):
-        keys = nameSet(self)
-        newkeys = nameSet(x)
+        keys = pNameSet(self)
+        newkeys = pNameSet(x)
         doubles = set.intersection(keys,newkeys)
         for d in doubles:
             if isinstance(x,Space):
@@ -240,6 +220,16 @@ class Space(object):
             else:
                 # parameter with same name: must have same identity
                 assert(self.pDict[d] is x)
+        keys = eNameSet(self)
+        newkeys = eNameSet(x)
+        doubles = set.intersection(keys,newkeys)
+        for d in doubles:
+            if isinstance(x,Space):
+                # parameter with same name: must have same identity
+                assert(self.eDict[d] is x.eDict[d])
+            else:
+                # parameter with same name: must have same identity
+                assert(self.eDict[d] is x)
         if isinstance(x,Space):
             self.pDict.update(x.pDict)
         else:
@@ -252,16 +242,22 @@ class Space(object):
         for key, value in self.pDict.iteritems():
             assert(isinstance(value,Parameter))
             assert(key==value.name)
+        for key, value in self.eDict.iteritems():
+            assert(isinstance(value,Expression))
+            assert(key==value.name)
 
-def nameSet(x):
+def pNameSet(x):
     if isinstance(x,Space):
         return set(x.pDict.iterkeys())
-    try:
-        if isinstance(x.PS,Space):
-            return namesOfParmas(x.PS)
-    except:
-        pass
     if isinstance(x,Parameter):
+        return set(x.name)
+    else:
+        return set()
+        
+def eNameSet(x):
+    if isinstance(x,Space):
+        return set(x.eDict.iterkeys())
+    if isinstance(x,Expression):
         return set(x.name)
     else:
         return set()
@@ -270,7 +266,8 @@ def emptySpace():
     return Space([])
         
 class Expression(object):
-    def __init__(self,expr,items):
+    def __init__(self,name,expr,items):
+        self.name = name
         self.expr = expr
         self.PS = Space(items)
         # the following command checks integrity & defines 
@@ -286,6 +283,12 @@ class Expression(object):
             self.evaluate()
         s = 'Expression: '
         s += self.expr+" = "+str(self.lastV)+', where'
+        if len(self.lastE) > 0:
+            s += '\n Nested Expressions:'
+        for key,value in self.lastE.iteritems():
+            s += "\n   "+key+" = "+str(value)+" = "+str(value.lastV)
+        if len(self.lastP) > 0:
+            s += '\n Parameters:'
         for key,value in self.lastP.iteritems():
             s += "\n   "+key+" = "+str(value)
         return s
@@ -309,9 +312,13 @@ class Expression(object):
                             "u":__import__('parameter').u,
                             "v":__import__('parameter').v}
         self.lastP = {}
+        self.lastE = {}
         for key, v in self.PS.pDict.iteritems():
             self.lastP[key] = v
+        for key,v in self.PS.eDict.iteritems():
+            self.lastE[key] = v
         methods.update(self.lastP)
+        methods.update(self.lastE)
         self.lastV = eval(self.expr,methods)
         return(self.lastV)
     def freeze(self):
@@ -370,6 +377,18 @@ class Expression(object):
             return x.evaluate() ** self.evaluate()
         except:
             return x ** self.evaluate()
+    def getParameters(self):
+        new = {}
+        for v in self.PS.pDict.itervalues():
+            new.update(v.getParameters())
+        for v in self.PS.eDict.itervalues():
+            new.update(v.getParameters())
+        return new
+    def getExpressions(self):
+        new = {self.name:self}
+        for v in self.PS.eDict.itervalues():
+            new.update(v.getExpressions())
+        return new
 
 def getSpace(x):
     try:  # if object has a attribute names PS, return PS
