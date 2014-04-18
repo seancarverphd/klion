@@ -182,20 +182,35 @@ class Parameter(object):
             assert(self.Upper() > 0.)
 
 class ESpace(object):
-    def __init__(self,x):
-        
-        for expr in x:
-            assert(isinstance(p,Expression)
-            self.eDict[expr.name] = expr
+    def __init__(self,items):
+        self.eDict = {}
+        for item in items:
+            if isinstance(item,Expression):
+                self.eDict[item.name] = item
+            else:
+                assert(False)
+        self.integrity()
+    def __repr__(self):
+        if not any(eDict):
+            s = 'Empty Expression Space'
+        else:
+            s = 'Expression Space'
+        for value in self.eDict.itervalues():
+            s += '\n '+repr(value)
+        return s
+    def __str__(self):
+        s = 'Expression Space'
+        for value in self.pDict.itervalues():
+            
 class Space(object):
-    def __init__(self,x):
+    def __init__(self,items):
         self.pDict = {}
-        for p in x:
-            if isinstance(p,Expression):
-                for key,val in p.PS.pDict.iteritems():
+        for item in items:
+            if isinstance(item,Expression):
+                for key,val in item.PS.pDict.iteritems():
                     self.pDict[key] = val
-            elif isinstance(p,Parameter)
-                self.pDict[p.name] = p
+            elif isinstance(item,Parameter)
+                self.pDict[item.name] = item
             else:
                 assert(False)
         self.integrity()
