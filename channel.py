@@ -59,7 +59,7 @@ class Channel(object):
                 try:
                     flatrow.append(float(element))
                 except:
-                    flatrow.append(element.evaluate())
+                    flatrow.append(element._magnitude)
             flatQ.append(flatrow)
         # Convert to matrix
         Q = numpy.matrix(flatQ)
@@ -67,7 +67,7 @@ class Channel(object):
         Qdiag = -Q.sum(axis=1)
         numpy.fill_diagonal(Q,Qdiag)
         return Q
-    def makeM(self):
+    def makeMean(self):
         means = []
         for n in self.nodes:
             try:
@@ -75,6 +75,14 @@ class Channel(object):
             except:
                 means.append(n.level.mean._magnitude)
         return means
+    def makeStd(self):
+        stds = []
+        for n in self.nodes:
+            try:
+                stds.append(float(n.level.std))
+            except:
+                stds.append(n.level.std._magnitude)
+        return stds
     def recordOrder(self):
     # records order of nodes into a dictionary to reference them by string name
         self.nodeOrder = {}
