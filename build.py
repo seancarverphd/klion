@@ -23,12 +23,11 @@ class Level(object):
     def __repr__(self):
         return '%s\n  Mean %s\n  Std %s' % (self.name,repr(self.mean),repr(self.std))
     def __str__(self):
-        return '%s\n Mean %s\n Std %s' % (self.name,str(self.mean),str(self.std))
+        return '%s\n  Mean %s\n  Std %s' % (self.name,str(self.mean),str(self.std))
     def integrity(self):
         self.reparameterize()
         assert(isinstance(self.name,basestring))
-        float(self.mean)
-        assert float(self.std) >= 0.
+        assert float(self.std.Value()) >= 0.
         
 # A Node is a state of the channel
 class Node(object):
@@ -70,7 +69,7 @@ class Channel(object):
         nNodes = len(self.nodes)
         s = 'Channel'
         for l in self.getLevels():
-            s += '\n Level: '+repr(l)
+            s += '\n Level: '+str(l)
         for n in self.nodes:
             s += '\n '
             s += str(n)
@@ -149,7 +148,9 @@ class Channel(object):
         self.reparameterize()
 
 #This code sets up a canonical channel
-gmax_khh = parameter.Parameter("gmax_khh",0.02979,"siemens/cm**2",log=True)
+gmax_khh = parameter.Parameter("gmax_khh",0.02979,"microsiemens",log=True)
+gstd_open = parameter.Parameter("gstd_open", 0.01,"microsiemens",log=True)
+gstd_closed = parameter.Parameter("gstd_closed",0.001,"microsiemens",log=True)
 # for one channel units of gmax_khh should be siemens
 ta1 = parameter.Parameter("ta1",4.4,"ms",log=True)
 tk1 = parameter.Parameter("tk1",-0.025,"1/mV",log=False)
@@ -173,8 +174,8 @@ b1 = parameter.Expression("b1","1/(tau1*(K1+1))",[K1,tau1])
 a2 = parameter.Expression("a2","K2/(tau2*(K2+1))",[K2,tau2])
 b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
 
-Open = Level("Open",mean=1.0,std=0.6)
-Closed = Level("Closed",mean=0.0,std=0.3)
+Open = Level("Open",mean=gmax_khh,std=gstd_open)
+Closed = Level("Closed",mean=0.*u.microsiemens,std=gstd_closed)
 C1 = Node("C1",Closed)
 C2 = Node("C2",Closed)
 O = Node("O",Open)

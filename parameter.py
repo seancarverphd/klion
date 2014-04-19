@@ -101,7 +101,7 @@ class Parameter(object):
         s += '\n   Defaults to: '+str(self.default)
         return s
     def __str__(self):
-        return str(self.value)
+        return self.name +" = "+str(self.value)
     def __float__(self):
         return float(self.value)
     def __add__(self, x):
@@ -212,7 +212,7 @@ class Space(object):
         if len(self.pDict) > 0:
             s += ' Parameters:'
             for key, value in self.pDict.iteritems():
-                s += "\n  "+key+" = "+str(value)
+                s += "\n  "+str(value)
         return s
     def append(self,x):
         keys = pNameSet(self)
