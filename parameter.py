@@ -29,6 +29,8 @@ class Parameter(object):
         self.assign(value,units)
         self.setDefault(default)
         self.integrity()
+    def __float__(self):
+        return float(self.value._magnitude)
     def rename(self,name):
         self.name = name
         self.integrity()
@@ -102,8 +104,6 @@ class Parameter(object):
         return s
     def __str__(self):
         return self.name +" = "+str(self.value)
-    def __float__(self):
-        return float(self.value)
     def __add__(self, x):
         try:
             return self.evaluate() + x.evaluate()
@@ -165,7 +165,7 @@ class Parameter(object):
     def Default(self):
         return self.default._magnitude
     def Value(self):
-        return self.default._magnitude
+        return self.value._magnitude
     def checkValue(self):   # a weak version of integrity()
         assert(self.Lower() <= self.Value())
         assert(self.Value() <= self.Upper())

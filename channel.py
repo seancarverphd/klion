@@ -50,6 +50,31 @@ class Channel(object):
         self.nodes = nodes
         self.recordOrder() # defines nodeOrder dictionary
         self.disconnect()  # sets Q and QList = zero-matrix initializes; calls integrity() which calls reparametrize()
+    def makeQ(self):
+        # make a QList without the units
+        flatQ = []
+        for row in self.QList:
+            flatrow = []
+            for element in row:
+                try:
+                    flatrow.append(float(element))
+                except:
+                    flatrow.append(element.evaluate())
+            flatQ.append(flatrow)
+        # Convert to matrix
+        Q = numpy.matrix(flatQ)
+        # Add diagonal (not zero)
+        Qdiag = -Q.sum(axis=1)
+        numpy.fill_diagonal(Q,Qdiag)
+        return Q
+    def makeM(self):
+        means = []
+        for n in self.nodes:
+            try:
+                means.append(float(n.level.mean))
+            except:
+                means.append(n.level.mean._magnitude)
+        return means
     def recordOrder(self):
     # records order of nodes into a dictionary to reference them by string name
         self.nodeOrder = {}
