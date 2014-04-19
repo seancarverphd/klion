@@ -76,14 +76,15 @@ class Channel(object):
             s += str(n)
         for i in range(0, nNodes-1):
             for j in range(i+1, nNodes):
-                if self.Q[i,j] == 0. and self.Q[j,i] == 0.:
+                if self.QList[i][j] == 0. and self.QList[j][i] == 0.:
                     assert(True)
-                elif self.Q[j,i] == 0.:
-                    s += '\n Edge %s --> %s:\n q (-->) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]))
-                elif self.Q[i,j] == 0:
-                    s += '\n Edge %s <-- %s:\n q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[j,i]))
+                elif self.QList[j][i] == 0.:
+                    s += '\n Edge %s --> %s:\n q (-->) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.QList[i][j]))
+                elif self.QList[i][j] == 0:
+                    s += '\n Edge %s <-- %s:\n q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.QList[j][i]))
                 else:
-                    s += '\n Edge %s <--> %s:\n  q (-->) %s\n  q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.Q[i,j]),str(self.Q[j,i]))
+                    s += '\n Edge %s <--> %s:\n  q (-->) %s\n  q (<--) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.QList[i][j]),str(self.QList[j][i]))
+        s += '\n'+str(self.PS)
         return s
     def padQList(self):
     # Add a new row and column to QList
@@ -140,11 +141,11 @@ class Channel(object):
         #Edges
         for n in range(len(self.nodes)):
             assert(self.QList[n][n]==0)
-        self.makeQ()
-        Q0 = self.Q.copy()  # Q0 is for checking that off diagonal is positive
-        numpy.fill_diagonal(Q0,0.)  # diagonal is negative so set to zero
-        assert(numpy.amin(Q0)==0)  # now minimum element should be zero (on diagonal)
-        assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
+        #self.makeQ()
+        #Q0 = self.Q.copy()  # Q0 is for checking that off diagonal is positive
+        #numpy.fill_diagonal(Q0,0.)  # diagonal is negative so set to zero
+        #assert(numpy.amin(Q0)==0)  # now minimum element should be zero (on diagonal)
+        #assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
         self.reparameterize()
 
 #This code sets up a canonical channel
@@ -175,9 +176,9 @@ b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
 Open = Level("Open",mean=1.0,std=0.6)
 Closed = Level("Closed",mean=0.0,std=0.3)
 C1 = Node("C1",Closed)
-C0 = Node("C0",Closed)
+C2 = Node("C2",Closed)
 O = Node("O",Open)
-ch3 = Channel([C1,C0,O])
-ch3.biEdge("C1","C0",2.,3.)
-ch3.edge("C0","O",4.)
-ch3.edge("O","C0",5.)
+khh = Channel([C1,C2,O])
+khh.biEdge("C1","C2",a1,b1)
+khh.edge("C2","O",a2)
+khh.edge("O","C2",b2)

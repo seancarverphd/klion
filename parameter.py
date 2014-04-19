@@ -199,15 +199,18 @@ class Space(object):
             s += '\n '+repr(Value)
         return s
     def __str__(self):
-        s = 'Parameter Space'
-        for value in self.pDict.itervalues():
-            whole = repr(value)
-            first = whole.split('\n',1)[0]
-            s += '\n '+str(first)
-        for value in self.eDict.itervalues():
-            whole = repr(value)
-            first = whole.split('\n',1)[0]
-            s += '\n '+str(first)
+        if len(self.pDict)==0 and len(self.eDict) == 0:
+            s = ' Empty Expression/Parameter Space'
+        else:
+            s = ''
+        if len(self.eDict) > 0:
+            s += ' Expressions:'
+        for key, value in self.eDict.iteritems():
+            s += "\n   "+key+" = "+str(value)+" = "+str(value.lastV)
+        if len(self.pDict) > 0:
+            s += ' Parameters:'
+        for key, value in self.pDict.iteritems():
+            s += "\n   "+key+" = "+str(value)
         return s
     def append(self,x):
         keys = pNameSet(self)
