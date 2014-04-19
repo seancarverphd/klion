@@ -161,8 +161,16 @@ d2 = parameter.Parameter("d2",43,"mV",log=False)
 k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
 
 v = parameter.Parameter("v",-65.,"mV",log=False)
-vr = parameter.Expression("v + 65*u.mV",[v])
-tau1 = parameter.Expression("ta1*exp(tk1*vr)",[ta1,tk1,vr])
+vr = parameter.Expression("vr","v + 65*u.mV",[v])
+tau1 = parameter.Expression("tau1","ta1*exp(tk1*vr)",[ta1,tk1,vr])
+K1 = parameter.Expression("K1","exp((k2*(d2-vr))-(k1*(d1-vr)))",[k1,k2,d1,d2,vr])
+tau2 = parameter.Expression("tau2","ta2*exp(tk2*vr)",[ta2,tk2,vr])
+K2 = parameter.Expression("K2","exp(-(k2*(d2-vr)))",[k2,d2,vr])
+
+a1 = parameter.Expression("a1","K1/(tau1*(K1+1))",[K1,tau1])
+b1 = parameter.Expression("b1","1/(tau1*(K1+1))",[K1,tau1])
+a2 = parameter.Expression("a2","K2/(tau2*(K2+1))",[K2,tau2])
+b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
 
 Open = Level("Open",mean=1.0,std=0.6)
 Closed = Level("Closed",mean=0.0,std=0.3)
