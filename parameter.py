@@ -205,12 +205,14 @@ class Space(object):
             s = ''
         if len(self.eDict) > 0:
             s += ' Expressions:'
-        for key, value in self.eDict.iteritems():
-            s += "\n   "+key+" = "+str(value)+" = "+str(value.lastV)
+            for key, value in self.eDict.iteritems():
+                s += "\n  "+key+" = "+str(value)+" = "+str(value.lastV)
+        if len(self.pDict) > 0 and len(self.eDict) > 0:
+            s += '\n'
         if len(self.pDict) > 0:
             s += ' Parameters:'
-        for key, value in self.pDict.iteritems():
-            s += "\n   "+key+" = "+str(value)
+            for key, value in self.pDict.iteritems():
+                s += "\n  "+key+" = "+str(value)
         return s
     def append(self,x):
         keys = pNameSet(self)
@@ -235,6 +237,7 @@ class Space(object):
                 assert(self.eDict[d] is x)
         if isinstance(x,Space):
             self.pDict.update(x.pDict)
+            self.eDict.update(x.eDict)
         else:
             self.pDict[x.name] = x
         self.integrity()
