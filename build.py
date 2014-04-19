@@ -99,17 +99,11 @@ class Channel(object):
         self.recordOrder()
         self.padQList()
         self.integrity()
-    #The next four functions define/modify the Q matrix
+    #The next three functions define/modify the edges
     def disconnect(self):
     #disconnect() defines a disconnected graph; no transitions
-        self.Q = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes))))
-        self.QList = self.Q.tolist()   # makeQ makes Q from QList, here the other way around
+        self.QList = numpy.matrix(numpy.zeros(shape=(len(self.nodes),len(self.nodes)))).tolist()
         self.integrity()  # calls makeQ() and reparameterize()
-    def makeQ(self):
-    #fillQdiag() enforces (by modifying the diagonal of Q): sum of each row is zero
-        self.Q = numpy.matrix(self.QList)
-        Qdiag = -self.Q.sum(axis=1)
-        numpy.fill_diagonal(self.Q,Qdiag)
     def biEdge(self,node1,node2,q12,q21):
     #addBiEdge() modifies parameters of a transition in both directions
         first = self.nodeOrder[node1]
@@ -140,7 +134,6 @@ class Channel(object):
         #Edges
         for n in range(len(self.nodes)):
             assert(self.QList[n][n]==0)
-        #self.makeQ()
         #Q0 = self.Q.copy()  # Q0 is for checking that off diagonal is positive
         #numpy.fill_diagonal(Q0,0.)  # diagonal is negative so set to zero
         #assert(numpy.amin(Q0)==0)  # now minimum element should be zero (on diagonal)
