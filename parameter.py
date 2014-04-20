@@ -15,7 +15,7 @@ def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
 class Parameter(object):
-    def __init__(self,name,value=1.,units='dimensionless',default=1.,log=False):
+    def __init__(self,name,value=1.,units='dimensionless',default=None,log=False):
         self.name = name
         # must define values so that setting routines work
         self.useLog = False
@@ -27,6 +27,8 @@ class Parameter(object):
         else:
             self.bounds = numpy.matrix([-numpy.inf, numpy.inf]) *u.dimensionless
         self.assign(value,units)
+        if default == None:
+            default = value
         self.setDefault(default)
         self.integrity()
     def __float__(self):
