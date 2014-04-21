@@ -1,0 +1,85 @@
+Klion Project
+
+------------------------------------
+Currently implemented:
+
+(1) A sophisticated way of specifying single channel models.
+(2) A simulator.
+
+------------------------------------
+We have implemented the khh model from the NEURON Channel Builder
+tutorial http://www.neuron.yale.edu/.  The khh channel can be accessed
+through the channel module (channel.khh) OR by defining it with the
+following interactive commands
+
+import parameter
+import channel
+from parameter import u
+
+# first type in parameters
+# (name, default value, units, log=True (log scale) OR log=False (linear)
+
+gmax_khh = parameter.Parameter("gmax_khh",0.02979,"microsiemens",log=True)
+gstd_open = parameter.Parameter("gstd_open", 0.01,"microsiemens",log=True)
+gstd_closed = parameter.Parameter("gstd_closed",0.001,"microsiemens",log=True)
+ta1 = parameter.Parameter("ta1",4.4,"ms",log=True)
+tk1 = parameter.Parameter("tk1",-0.025,"1/mV",log=False)
+d1 = parameter.Parameter("d1",21.,"mV",log=False)
+k1 = parameter.Parameter("k1",0.2,"1/mV",log=False)
+ta2 = parameter.Parameter("ta2",2.6,"ms",log=True)
+tk2 = parameter.Parameter("tk2",-0.007,"1/mV",log=False)
+d2 = parameter.Parameter("d2",43,"mV",log=False)
+k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
+v = parameter.Parameter("v",-65.,"mV",log=False)
+
+# now type in expressions
+# (name, string, parameters and nested expressions used)
+# note scalars must have units, e.g 65*u.mV for 65 millivolts
+
+vr = parameter.Expression("vr","v + 65*u.mV",[v])
+tau1 = parameter.Expression("tau1","ta1*exp(tk1*vr)",[ta1,tk1,vr])
+K1 = parameter.Expression("K1","exp((k2*(d2-vr))-(k1*(d1-vr)))",[k1,k2,d1,d2,vr])
+tau2 = parameter.Expression("tau2","ta2*exp(tk2*vr)",[ta2,tk2,vr])
+K2 = parameter.Expression("K2","exp(-(k2*(d2-vr)))",[k2,d2,vr])
+a1 = parameter.Expression("a1","K1/(tau1*(K1+1))",[K1,tau1])
+b1 = parameter.Expression("b1","1/(tau1*(K1+1))",[K1,tau1])
+a2 = parameter.Expression("a2","K2/(tau2*(K2+1))",[K2,tau2])
+b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
+
+# Now type in Levels (e.g. Open and Closed)
+# Levels are corrupted with white noise (for now)
+# Put in (name + mean and standard deviation of noise (having
+# units of conductance)
+
+Open = channel.Level("Open",mean=gmax_khh,std=gstd_open)
+Closed = channel.Level("Closed",mean=0.*u.microsiemens,std=gstd_closed)
+
+# Now define Nodes (i.e. States)
+
+C1 = channel.Node("C1",Closed)
+C2 = channel.Node("C2",Closed)
+O = channel.Node("O",Open)
+
+# Define channel (intially no transitions)
+
+khh = channel.Channel([C1,C2,O])
+
+# Now define Edges (two functions for this)
+
+khh.biEdge("C1","C2",a1,b1)
+khh.edge("C2","O",a2)
+khh.edge("O","C2",b2)
+
+# Now define Patch code below specifies a single channel of khh
+# Single channel is all that has been implemented so far
+
+import patch
+P = patch.Patch([(1,khh)])
+P.sim(seed=2)
+
+# Now plot
+
+import matplotlib
+import matplotlib.pyplot
+matplotlib.pyplot.plot(P.simDataT,P.simDataX)
+matplotlib.pyplot.show()

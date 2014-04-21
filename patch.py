@@ -1,7 +1,10 @@
 import channel
 import numpy as np
+import math
 import random
 import parameter
+import scipy
+import scipy.linalg
 
 def equilQ(Q):
     (V,D) = np.linalg.eig(Q.T)   # eigenspace
@@ -45,6 +48,29 @@ class Patch(object):
             tstop = parameter.tstop
         if dt == None:  # use tstop from parameter module if not passed
             dt = parameter.dt
-        return self.simStates
-            
+        self.simdt = dt
+        self.simtstop = tstop
+        self.eQ = scipy.linalg.expm(dt*self.Q)
+        self.nsamples = int(math.ceil(tstop/dt))
+        tol = 1e-7
+        # assert sum of rows is row of ones to tolerance
+        assert(np.amin(np.sum(self.eQ,axis=1))>1.-tol)
+        assert(np.amax(np.sum(self.eQ,axis=1))<1.+tol)
+        assert(tstop > 0.0)
+        for i in range(self.nsamples-1):
+            # simStates[-1] is the row of eQ to work with, selected as from equilibrium()
+            self.simStates.append(self.select(self.eQ,self.simStates[-1]))
+        self.simOut = []
+        self.simSigma = []
+        for s in self.simStates:
+            self.simOut.append(self.Mean[s])
+            self.simSigma.append(self.Std[s])
+        self.simDataX = []
+        self.simDataT = []
+        t = parameter.v(0.*dt)
+        for i in range(len(self.simOut)):
+            t += parameter.v(dt)
+            self.simDataT.append(t._magnitude)
+            self.simDataX.append(self.R.normalvariate(self.simOut[i],self.simSigma[i]))
+        self.simmed = True
 P = Patch([(1, channel.khh)])
