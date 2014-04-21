@@ -409,4 +409,6 @@ def getSpace(x):
         return x
     else:  # if all else fails return the empty space.
         return emptySpace()
+
+dt = Parameter("dt",0.05,"ms",log=True)
         
