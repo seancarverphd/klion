@@ -1,6 +1,7 @@
 import channel
 import numpy as np
 import random
+import parameter
 
 def equilQ(Q):
     (V,D) = np.linalg.eig(Q.T)   # eigenspace
@@ -31,7 +32,7 @@ class Patch(object):
             if p < rowsum:
                 return col
         assert(False)
-    def sim(self,seed=None,firstState=None,tstop=None,dt=None):
+    def sim(self,seed=None,firstState=None,dt=None,tstop=None):
         if not seed == None:  # if seed not passed, don't initialize R
             self.R.seed(seed)
         self.simStates = []
@@ -40,8 +41,10 @@ class Patch(object):
             self.simStates.append(s)
         else:
             self.simStates.append(firstState)
-        #~ if tstop == None:  #
-            #~ tstop = parameter.tstop
+        if tstop == None:  # use tstop from parameter module if not passed
+            tstop = parameter.tstop
+        if dt == None:  # use tstop from parameter module if not passed
+            dt = parameter.dt
         return self.simStates
             
 P = Patch([(1, channel.khh)])

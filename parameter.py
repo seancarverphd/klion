@@ -411,4 +411,4 @@ def getSpace(x):
         return emptySpace()
 
 dt = Parameter("dt",0.05,"ms",log=True)
-        
+tstop = Parameter("tstop",20,"ms",log=True)        
