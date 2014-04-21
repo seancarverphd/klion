@@ -47,9 +47,9 @@ class Node(object):
 class Channel(object):
     def __init__(self,nodes):
         # Define dictionary of nodes
-        self.nodes = nodes
+        self.nodes = nodes # list of nodes, defines order
         self.recordOrder() # defines nodeOrder dictionary
-        self.disconnect()  # sets Q and QList = zero-matrix initializes; calls integrity() which calls reparametrize()
+        self.disconnect()  # QList = 0; calls integrity() which calls reparametrize()
     def makeQ(self):
         # make a QList without the units
         flatQ = []
@@ -68,6 +68,7 @@ class Channel(object):
         numpy.fill_diagonal(Q,Qdiag)
         return Q
     def makeMean(self):
+        # Records means of nodes (conductances) in list
         means = []
         for n in self.nodes:
             try:
@@ -76,6 +77,7 @@ class Channel(object):
                 means.append(n.level.mean._magnitude)
         return means
     def makeStd(self):
+        # Records std of nodes (conductances) in list
         stds = []
         for n in self.nodes:
             try:
@@ -84,7 +86,9 @@ class Channel(object):
                 stds.append(n.level.std._magnitude)
         return stds
     def recordOrder(self):
-    # records order of nodes into a dictionary to reference them by string name
+    # Records order of nodes into a dictionary 
+    # Now can reference order by string name
+    # Eg returns {'C1':0,'C2':1,'O':2}
         self.nodeOrder = {}
         for n in range(len(self.nodes)):
             self.nodeOrder[self.nodes[n].name] = n
