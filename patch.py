@@ -1,5 +1,6 @@
 import channel
 import numpy as np
+import random
 
 def equilQ(Q):
     (V,D) = np.linalg.eig(Q.T)   # eigenspace
@@ -11,6 +12,7 @@ class Patch(object):
         self.channels = channels
         self.assertOneChannel()
         self.Q = self.ch.makeQ()
+        self.R = random.Random()
         self.Mean = self.ch.makeMean()
         self.Std = self.ch.makeStd()
     def assertOneChannel(self):
@@ -21,5 +23,25 @@ class Patch(object):
     def equilibrium(self):
         self.Q = self.ch.makeQ()
         return equilQ(self.Q)
-
+    def select(self,mat,row=0):  # select from matrix[row,:]
+        p = self.R.random()
+        rowsum = 0
+        for col in range(mat.shape[1]):  # iterate over columns of mat
+            rowsum += mat[row, col]  # row constant passed into select
+            if p < rowsum:
+                return col
+        assert(False)
+    def sim(self,seed=None,firstState=None,tstop=None,dt=None):
+        if not seed == None:  # if seed not passed, don't initialize R
+            self.R.seed(seed)
+        self.simStates = []
+        if firstState == None: # if firstState not passed draw from equilibrium
+            s = self.select(self.equilibrium())
+            self.simStates.append(s)
+        else:
+            self.simStates.append(firstState)
+        #~ if tstop == None:  #
+            #~ tstop = parameter.tstop
+        return self.simStates
+            
 P = Patch([(1, channel.khh)])
