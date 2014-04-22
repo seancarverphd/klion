@@ -60,17 +60,12 @@ class Patch(object):
         for i in range(self.nsamples-1):
             # simStates[-1] is the row of eQ to work with, selected as from equilibrium()
             self.simStates.append(self.select(self.eQ,self.simStates[-1]))
-        self.simOut = []
-        self.simSigma = []
-        for s in self.simStates:
-            self.simOut.append(self.Mean[s])
-            self.simSigma.append(self.Std[s])
         self.simDataX = []
         self.simDataT = []
         t = parameter.v(0.*dt)
-        for i in range(len(self.simOut)):
+        for s in self.simStates:
             t += parameter.v(dt)
             self.simDataT.append(t._magnitude)
-            self.simDataX.append(self.R.normalvariate(self.simOut[i],self.simSigma[i]))
-        self.simmed = True
+            self.simDataX.append(self.R.normalvariate(self.Mean[s],self.Std[s]))
+
 P = Patch([(1, channel.khh)])
