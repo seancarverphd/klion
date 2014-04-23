@@ -69,3 +69,4 @@ class Patch(object):
             self.simDataX.append(self.R.normalvariate(self.Mean[s],self.Std[s]))
 
 P = Patch([(1, channel.khh)])
+P.sim(seed=2)
