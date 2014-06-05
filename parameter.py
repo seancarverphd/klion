@@ -272,6 +272,12 @@ def eNameSet(x):
         
 def emptySpace():
     return Space([])
+
+class Function(object):
+    def __init__(self,name,expr,args,items):
+        self.name = name
+        self.expr = expr
+        self.PS = Space(items)
         
 class Expression(object):
     def __init__(self,name,expr,items):
