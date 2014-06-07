@@ -20,9 +20,9 @@ class Patch(object):
         self.channels = channels
         self.assertOneChannel()  # temporary; defines self.ch as temp handle to the channel
         self.voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1
-        self.voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # tstop is a global parameter
-        self.firstState = None
-        self.dt = default_dt  # dt is a global parameter
+        self.voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
+        self.firstState = None # if None, draws firstState from equilibrium distribution
+        self.dt = default_dt  # default_dt is a global parameter
         # ^^^ Repeated variables affect differentiation via chain rule
         self.R = random.Random()
         self.Mean = self.ch.makeMean()
