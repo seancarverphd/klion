@@ -192,7 +192,12 @@ tk2 = parameter.Parameter("tk2",-0.007,"1/mV",log=False)
 d2 = parameter.Parameter("d2",43,"mV",log=False)
 k2 = parameter.Parameter("k2",0.036,"1/mV",log=False)
 
+V0 = parameter.Parameter("V0",-80.,"mV",log=False)
+V1 = parameter.Parameter("V0",20.,"mV",log=False)
+
 v = parameter.Parameter("v",-65.,"mV",log=False)
+v.remap(V0)
+
 vr = parameter.Expression("vr","v + 65*u.mV",[v])
 tau1 = parameter.Expression("tau1","ta1*exp(tk1*vr)",[ta1,tk1,vr])
 K1 = parameter.Expression("K1","exp((k2*(d2-vr))-(k1*(d1-vr)))",[k1,k2,d1,d2,vr])

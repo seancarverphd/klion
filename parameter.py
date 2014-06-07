@@ -21,6 +21,8 @@ class Parameter(object):
         self.useLog = False
         self.value = 1. * u.dimensionless
         self.default = 1. * u.dimensionless
+        self.remapped = False
+        self.mappedValue = None
         if log:
             self.bounds = numpy.matrix([0, numpy.inf]) *u.dimensionless
             self.setLog()
@@ -31,8 +33,23 @@ class Parameter(object):
             default = value
         self.setDefault(default)
         self.integrity()
+    def remap(self, mappedValue):
+        self.remapped = True
+        self.mappedValue = mappedValue
+    def unmap(self):
+        self.remapped = False
+        self.mappedValue = None
     def __float__(self):
-        return float(self.value._magnitude)
+        if self.remapped:
+            try:
+                return float(self.mappedValue)  # will raise error if has units
+            except:
+                return float(self.mappedValue._magnitude)
+        else:
+            try:
+                return float(self.value) # will raise error if has units
+            except:
+                return float(self.value._magnitude)
     def rename(self,name):
         self.name = name
         self.integrity()
@@ -50,7 +67,13 @@ class Parameter(object):
         self.useLog = False
         self.integrity()
     def evaluate(self):
-        return self.value
+        if self.remapped:
+            try:
+                return self.mappedValue.evaluate()
+            except: # in case mappedValue is a number with or without units
+                return self.mappedValue
+        else:
+            return self.value
     def assign(self,value,units=None):
         if not units==None:
             self.setUnits(units)
@@ -198,7 +221,7 @@ class Space(object):
         for value in self.pDict.itervalues():
             s += '\n '+repr(value)
         for value in self.eDict.itervalues():
-            s += '\n '+repr(Value)
+            s += '\n '+repr(value)
         return s
     def __str__(self):
         if len(self.pDict)==0 and len(self.eDict) == 0:
@@ -273,12 +296,6 @@ def eNameSet(x):
 def emptySpace():
     return Space([])
 
-class Function(object):
-    def __init__(self,name,expr,args,items):
-        self.name = name
-        self.expr = expr
-        self.PS = Space(items)
-        
 class Expression(object):
     def __init__(self,name,expr,items):
         self.name = name
@@ -304,7 +321,7 @@ class Expression(object):
         if len(self.lastP) > 0:
             s += '\n Parameters:'
         for key,value in self.lastP.iteritems():
-            s += "\n   "+key+" = "+str(value)
+            s += "\n   "+str(value)
         return s
     def __str__(self):
         return self.expr
@@ -333,7 +350,7 @@ class Expression(object):
             self.lastE[key] = v
         methods.update(self.lastP)
         methods.update(self.lastE)
-        self.lastV = eval(self.expr,methods)
+        self.lastV = eval(self.expr,methods) # Evaluate string based on dictionary
         return(self.lastV)
     def freeze(self):
         self.evaluate()
