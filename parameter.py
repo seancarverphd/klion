@@ -10,7 +10,14 @@ def v(x):
         return x.evaluate()
     except:
         return x
-        
+
+def m(x):
+    y = v(x)
+    try:
+        return y._magnitude
+    except:
+        return y
+
 def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
@@ -433,5 +440,3 @@ def getSpace(x):
     else:  # if all else fails return the empty space.
         return emptySpace()
 
-dt = Parameter("dt",0.05,"ms",log=True)
-tstop = Parameter("tstop",20,"ms",log=True)
