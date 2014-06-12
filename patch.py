@@ -17,6 +17,7 @@ def equilQ(Q):
     imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
     eigvect0 = D[:,imin]  # corresponding eigenvector
     return eigvect0.T/sum(eigvect0) # normalize and return (fixes sign)
+
 class StepProtocol(object):
     def __init__(self, patch, voltages, voltageStepDurations):
         self.thePatch = patch
