@@ -40,7 +40,7 @@ class StepProtocol(object):
         self.simDataX = []
         self.simDataV = []
         if firstState == None: # if firstState not passed, draw from equilibrium
-            theState = self.thePatch.select(self.thePatch.equilibrium(self.voltages[0]))
+            theState = self.thePatch.select(self.R,self.thePatch.equilibrium(self.voltages[0]))
         else:
             theState = firstState
         time = 0.
@@ -59,11 +59,11 @@ class StepProtocol(object):
             volts = parameter.m(self.voltages[i])
             nsamples = int(math.ceil(self.voltageStepDurations[i]/parameter.v(self.dt)))
             assert(nsamples >= 0)
-            eQ = self.thePatch.geteQ(self.voltages[i])
+            A = self.thePatch.getA(self.voltages[i],self.dt)
             # The next for-loop does the simulation on states
             for j in range(nsamples-1):
-                # self.simStates[-1] is the row of eQ to work with, selected as from equilibrium()
-                nextState = self.thePatch.select(eQ,self.simStates[-1])
+                # self.simStates[-1] is the row of A to work with, selected as from equilibrium()
+                nextState = self.thePatch.select(self.R,A,self.simStates[-1])
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
                 
@@ -89,28 +89,23 @@ class RepeatedSteps(StepProtocol):
 class singleChannelPatch(object):
     def __init__(self, ch):
         self.ch = ch
-        self.voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1
-        self.voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
-        self.firstState = None # if None, draws firstState from equilibrium distribution
-        self.dt = default_dt  # default_dt is a global parameter
-        self.R = random.Random()
         self.Mean = self.ch.makeMean()
         self.Std = self.ch.makeStd()
     def getQ(self,volts):
         channel.VOLTAGE.remap(volts)
         return self.ch.makeQ()
-    def geteQ(self,volts):
+    def getA(self,volts,dt):
         Q = self.getQ(volts)
-        eQ = scipy.linalg.expm(self.dt*Q)
+        A = scipy.linalg.expm(dt*Q)
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
-        assert(np.amin(np.sum(eQ,axis=1))>1.-tol)
-        assert(np.amax(np.sum(eQ,axis=1))<1.+tol)
-        return eQ
+        assert(np.amin(np.sum(A,axis=1))>1.-tol)
+        assert(np.amax(np.sum(A,axis=1))<1.+tol)
+        return A
     def equilibrium(self,volts):
         return equilQ(self.getQ(volts))
-    def select(self,mat,row=0):  # select from matrix[row,:]
-        p = self.R.random()
+    def select(self,R,mat,row=0):  # select from matrix[row,:]
+        p = R.random()
         rowsum = 0
         # cols should add to 1
         for col in range(mat.shape[1]):  # iterate over columns of mat
@@ -123,10 +118,10 @@ P = singleChannelPatch(channel.khh)
 voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
 voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
 S = StepProtocol(P,voltages,voltageStepDurations)
-S.initTrajectory(2)
+S.initTrajectory(3)
 S.sim()
 RS = RepeatedSteps(P,voltages,voltageStepDurations)
 RS.initTrajectory(4)
 RS.sim(3)
-# pyplot.plot(S.simDataT,S.simDataX)
-# pyplot.show()
+pyplot.plot(S.simDataT,S.simDataX)
+pyplot.show()
