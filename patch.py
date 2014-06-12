@@ -15,6 +15,28 @@ def equilQ(Q):
     imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
     eigvect0 = D[:,imin]  # corresponding eigenvector
     return eigvect0.T/sum(eigvect0) # normalize and return (fixes sign)
+class StepProtocol(object):
+    def __init__(self, patch, voltages, voltageStepDurations):
+        self.thePatch = patch
+        self.voltages = voltages
+        self.voltageStepDurations = voltageStepDurations
+        self.R = random.Random()
+    def initTrajectory(self,seed,firstState=None):
+        self.R.seed(seed)
+        self.simStates = []
+        self.simDataT = []
+        self.simDataX = []
+        self.simDataV = []
+        if firstState == None: # if firstState not passed, draw from equilibrium
+            state = self.thePatch.select(self.thePatch.equilibrium(self.voltages[0]))
+        else:
+            state = firstState
+        self.simStates.append(state)
+        self.simDataT.append(0.)
+        # Might want to modify next line: multiply conductance by "voltage" to get current
+        # I think "voltage" should really be difference between voltage and reversal potential
+        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
+        self.simDataV.append(parameter.m(self.voltages[0]))
 class Patch(object):
     def __init__(self, channels):
         self.channels = channels
@@ -90,3 +112,6 @@ class Patch(object):
 
 P = Patch([(1, channel.khh)])
 P.sim(seed=2)
+voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1
+voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
+S = StepProtocol(P,voltages,voltageStepDurations)
