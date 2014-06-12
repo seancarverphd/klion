@@ -28,11 +28,13 @@ class StepProtocol(object):
     def setSampleInterval(self,dt):
         assert(parameter.m(dt)>0)
         self.dt = dt
-    def initTrajectory(self,seed,firstState=None):
-        if isinstance(seed,random.Random):  # if 1st arg passed is a random num generator, then use it
-            self.R = seed                   # allows multiple trajs to have same generator
-        else:                              
-            self.R.seed(seed)
+    def initRNG(self,rng):
+        if isinstance(rng,random.Random):  # if 1st arg passed is a random num generator, then use it
+            self.R = rng                   # allows multiple trajs to have same generator
+        else:                              # if 1 arg an integer, use as a seed
+            self.R.seed(rng)
+    def initTrajectory(self,rng,firstState=None):
+        self.initRNG(rng)
         self.simStates = []
         self.simDataT = []
         self.simDataX = []
@@ -64,6 +66,24 @@ class StepProtocol(object):
                 nextState = self.thePatch.select(eQ,self.simStates[-1])
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
+                
+class RepeatedSteps(StepProtocol):
+    def initTrajectory(self,rng,firstState=None):
+        self.initRNG(rng)
+        self.firstState = firstState
+        self.trajs = []
+        self.nReps = 0
+    def appendTrajectory(self,nReps):
+        for i in range(nReps):
+            T = StepProtocol(self.thePatch,self.voltages,self.voltageStepDurations)
+            T.initTrajectory(self.R,self.firstState)
+            T.sim()
+            self.trajs.append(T)
+        self.nReps+=nReps
+    def sim(self,nReps):
+        assert(len(self.trajs)==0)
+        self.appendTrajectory(nReps)
+        
 
 class singleChannelPatch(object):
     def __init__(self, ch):
@@ -104,5 +124,8 @@ voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # def
 S = StepProtocol(P,voltages,voltageStepDurations)
 S.initTrajectory(2)
 S.sim()
-pyplot.plot(S.simDataT,S.simDataX)
-pyplot.show()
+R = RepeatedSteps(P,voltages,voltageStepDurations)
+R.initTrajectory(4)
+R.sim(3)
+# pyplot.plot(S.simDataT,S.simDataX)
+# pyplot.show()
