@@ -80,6 +80,7 @@ class RepeatedSteps(StepProtocol):
             T.sim()
             self.trajs.append(T)
         self.nReps+=nReps
+        assert(self.nReps==len(self.trajs))
     def sim(self,nReps):
         assert(len(self.trajs)==0)
         self.appendTrajectory(nReps)
