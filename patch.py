@@ -6,6 +6,8 @@ import parameter
 import scipy
 import scipy.linalg
 from parameter import u
+import matplotlib
+import matplotlib.pyplot as pyplot
 
 default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
 default_tstop = parameter.Parameter("tstop",20,"ms",log=True)
@@ -26,27 +28,26 @@ class StepProtocol(object):
         assert(parameter.m(dt)>0)
         self.dt = dt
     def initTrajectory(self,seed,firstState=None):
-        if isinstance(seed,random.Random):  # if seed a random num generator
-            self.R = seed
-        else:
+        if isinstance(seed,random.Random):  # if 1st arg passed is a random num generator, then use it
+            self.R = seed                   # allows multiple trajs to have same generator
+        else:                              
             self.R.seed(seed)
         self.simStates = []
         self.simDataT = []
         self.simDataX = []
         self.simDataV = []
         if firstState == None: # if firstState not passed, draw from equilibrium
-            state = self.thePatch.select(self.thePatch.equilibrium(self.voltages[0]))
+            theState = self.thePatch.select(self.thePatch.equilibrium(self.voltages[0]))
         else:
-            state = firstState
-        self.simStates.append(state)
-        self.simDataT.append(0.)
-        # Might want to modify next line: multiply conductance by "voltage" to get current
-        # I think "voltage" should really be difference between voltage and reversal potential
-        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
-        self.simDataV.append(parameter.m(self.voltages[0]))
+            theState = firstState
+        time = 0.
+        volts = parameter.m(self.voltages[0])
+        self.appendTrajectory(theState,time,volts)
     def appendTrajectory(self,nextState,time,volts):
         self.simStates.append(nextState)
         self.simDataT.append(time)
+        # Might want to modify next line: multiply conductance by "voltage" to get current
+        # I think "voltage" should really be difference between voltage and reversal potential
         self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[nextState],self.thePatch.Std[nextState]))
         self.simDataV.append(volts)
     def sim(self):
@@ -63,7 +64,6 @@ class StepProtocol(object):
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
 
-        
 class Patch(object):
     def __init__(self, channels):
         self.channels = channels
@@ -97,6 +97,7 @@ class Patch(object):
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()
         rowsum = 0
+        # cols should add to 1
         for col in range(mat.shape[1]):  # iterate over columns of mat
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
@@ -144,3 +145,5 @@ voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # def
 S = StepProtocol(P,voltages,voltageStepDurations)
 S.initTrajectory(2)
 S.sim()
+pyplot.plot(S.simDataT,S.simDataX)
+pyplot.show()
