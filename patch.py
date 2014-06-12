@@ -20,9 +20,16 @@ class StepProtocol(object):
         self.thePatch = patch
         self.voltages = voltages
         self.voltageStepDurations = voltageStepDurations
+        self.dt = default_dt
         self.R = random.Random()
+    def setSampleInterval(self,dt):
+        assert(parameter.m(dt)>0)
+        self.dt = dt
     def initTrajectory(self,seed,firstState=None):
-        self.R.seed(seed)
+        if isinstance(seed,random.Random):  # if seed a random num generator
+            self.R = seed
+        else:
+            self.R.seed(seed)
         self.simStates = []
         self.simDataT = []
         self.simDataX = []
@@ -37,6 +44,26 @@ class StepProtocol(object):
         # I think "voltage" should really be difference between voltage and reversal potential
         self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
         self.simDataV.append(parameter.m(self.voltages[0]))
+    def appendTrajectory(self,nextState,time,volts):
+        self.simStates.append(nextState)
+        self.simDataT.append(time)
+        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[nextState],self.thePatch.Std[nextState]))
+        self.simDataV.append(volts)
+    def sim(self):
+        mag_dt = parameter.m(self.dt)
+        for i in range(len(self.voltages)):
+            volts = parameter.m(self.voltages[i])
+            nsamples = int(math.ceil(self.voltageStepDurations[i]/parameter.v(self.dt)))
+            assert(nsamples >= 0)
+            eQ = self.thePatch.geteQ(self.voltages[i])
+            # The next for-loop does the simulation on states
+            for j in range(nsamples-1):
+                # self.simStates[-1] is the row of eQ to work with, selected as from equilibrium()
+                nextState = self.thePatch.select(eQ,self.simStates[-1])
+                time = self.simDataT[-1] + mag_dt
+                self.appendTrajectory(nextState,time,volts)
+
+        
 class Patch(object):
     def __init__(self, channels):
         self.channels = channels
@@ -115,3 +142,5 @@ P.sim(seed=2)
 voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1
 voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
 S = StepProtocol(P,voltages,voltageStepDurations)
+S.initTrajectory(2)
+S.sim()
