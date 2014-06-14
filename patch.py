@@ -8,6 +8,7 @@ import scipy.linalg
 from parameter import u
 import matplotlib
 import matplotlib.pyplot as pyplot
+import pandas
 
 default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
 default_tstop = parameter.Parameter("tstop",20,"ms",log=True)
@@ -33,6 +34,11 @@ class StepProtocol(object):
             self.R = rng                   # allows multiple trajs to have same generator
         else:                              # if 1 arg an integer, use as a seed
             self.R.seed(rng)
+    def dataFrame(self):
+        nodeNames = []
+        for s in self.simStates:
+            nodeNames.append(self.thePatch.ch.nodes[s])
+        return(pandas.DataFrame({'Time':self.simDataT,'Node':nodeNames,'NodeNum':self.simStates,'Voltage':self.simDataV,'Conductance':self.simDataX}))
     def initTrajectory(self,rng,firstState=None):
         self.initRNG(rng)
         self.simStates = []
@@ -53,7 +59,8 @@ class StepProtocol(object):
         # I think "voltage" should really be difference between voltage and reversal potential
         self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[nextState],self.thePatch.Std[nextState]))
         self.simDataV.append(volts)
-    def sim(self):
+    def sim(self,rng=3,firstState=None):
+        self.initTrajectory(rng,firstState)
         mag_dt = parameter.m(self.dt)
         for i in range(len(self.voltages)):
             volts = parameter.m(self.voltages[i])
@@ -81,7 +88,8 @@ class RepeatedSteps(StepProtocol):
             self.trajs.append(T)
         self.nReps+=nReps
         assert(self.nReps==len(self.trajs))
-    def sim(self,nReps):
+    def sim(self,rng=3,nReps=2,firstState=None):
+        self.initTrajectory(rng,firstState)
         assert(len(self.trajs)==0)
         self.appendTrajectory(nReps)
         
@@ -118,10 +126,8 @@ P = singleChannelPatch(channel.khh)
 voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
 voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
 S = StepProtocol(P,voltages,voltageStepDurations)
-S.initTrajectory(3)
-S.sim()
+S.sim(rng=3)
 RS = RepeatedSteps(P,voltages,voltageStepDurations)
-RS.initTrajectory(4)
-RS.sim(3)
+RS.sim(rng=3,nReps=4)
 pyplot.plot(S.simDataT,S.simDataX)
 pyplot.show()
