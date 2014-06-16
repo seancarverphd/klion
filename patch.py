@@ -9,9 +9,10 @@ from parameter import u
 import matplotlib
 import matplotlib.pyplot as pyplot
 import pandas
+import engine
 
 default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
-default_tstop = parameter.Parameter("tstop",20,"ms",log=True)
+default_tstop = parameter.Parameter("tstop",20.,"ms",log=True)
 
 def equilQ(Q):
     (V,D) = np.linalg.eig(Q.T)   # eigenspace
@@ -52,12 +53,12 @@ class StepProtocol(object):
         time = 0.
         volts = parameter.m(self.voltages[0])
         self.appendTrajectory(theState,time,volts)
-    def appendTrajectory(self,nextState,time,volts):
-        self.simStates.append(nextState)
+    def appendTrajectory(self,state,time,volts):
+        self.simStates.append(state)
         self.simDataT.append(time)
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # I think "voltage" should really be difference between voltage and reversal potential
-        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[nextState],self.thePatch.Std[nextState]))
+        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
         self.simDataV.append(volts)
     def sim(self,rng=3,firstState=None):
         self.initTrajectory(rng,firstState)
@@ -68,12 +69,30 @@ class StepProtocol(object):
             assert(nsamples >= 0)
             A = self.thePatch.getA(self.voltages[i],self.dt)
             # The next for-loop does the simulation on states
-            for j in range(nsamples-1):
+            for j in range(nsamples-1):  # Why the -1?
                 # self.simStates[-1] is the row of A to work with, selected as from equilibrium()
                 nextState = self.thePatch.select(self.R,A,self.simStates[-1])
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
-                
+    def flatten(self,seed=3):
+        FS = engine.flatStepProtocol(seed)
+        initDistrib = self.thePatch.equilibrium(self.voltages[0])
+        mvoltages = []
+        theA = []
+        for v in self.voltages:
+            mvoltages.append(parameter.m(v))
+            theA.append(self.thePatch.getA(v,self.dt))
+        mdurations = []
+        for dur in self.voltageStepDurations:
+            mdurations.append(parameter.m(dur))
+        theMean = []
+        theStd = []
+        for s in range(len(self.thePatch.ch.nodes)):
+            theMean.append(self.thePatch.Mean[s])
+            theStd.append(self.thePatch.Std[s])
+        dt = parameter.m(self.dt)
+        FS.initTrajectory(initDistrib,mvoltages,mdurations,theMean,theStd,theA,dt)
+        return FS
 class RepeatedSteps(StepProtocol):
     def initTrajectory(self,rng,firstState=None):
         self.initRNG(rng)
@@ -112,6 +131,7 @@ class singleChannelPatch(object):
         return A
     def equilibrium(self,volts):
         return equilQ(self.getQ(volts))
+    # Select is now also defined in engine.flatStepProtocol
     def select(self,R,mat,row=0):  # select from matrix[row,:]
         p = R.random()
         rowsum = 0
@@ -120,7 +140,7 @@ class singleChannelPatch(object):
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
                 return col
-        assert(False)
+        assert(False) # Should never reach this point
 
 P = singleChannelPatch(channel.khh)
 voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
