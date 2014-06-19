@@ -162,6 +162,17 @@ class Channel(object):
         for rownum in range(len(self.QList)):
             for element in self.QList[rownum]:
                 self.PS.append(parameter.getSpace(element))
+    def makeLevelMap(self):
+        nonUniqueLevels= []
+        for n in self.nodes:
+            nonUniqueLevels.append(n.level)
+        self.uniqueLevels = list(set(nonUniqueLevels))
+        self.levelMap = []
+        for n in self.nodes:
+            for i in range(len(self.uniqueLevels)):
+                if n.level is self.uniqueLevels[i]:
+                    self.levelMap.append(i)
+        assert(len(self.levelMap)==len(self.nodes))        
     def integrity(self): # Checks that channel is well defined
         #Nodes
         for n in self.nodes:
@@ -177,8 +188,13 @@ class Channel(object):
         #assert(self.Q.shape == (len(self.nodes),len(self.nodes)))
         self.reparameterize()
 
-#This code sets up a canonical channel
+# This code sets up a canonical channel
+# EK is Hodgkin Huxley value take from http://icwww.epfl.ch/~gerstner/SPNM/node14.html
+EK = parameter.Parameter("EK",-77,"mV",log=False)
+# gmax_khh is from www.neuron.yale.edu, but is a density parameter inappropriate for a single channel
 gmax_khh = parameter.Parameter("gmax_khh",0.02979,"microsiemens",log=True)
+# The following two parameters were made up:
+# I = gV
 gstd_open = parameter.Parameter("gstd_open", 0.01,"microsiemens",log=True)
 gstd_closed = parameter.Parameter("gstd_closed",0.001,"microsiemens",log=True)
 # for one channel units of gmax_khh should be siemens
