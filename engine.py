@@ -11,23 +11,31 @@ class flatStepProtocol(object):
         self.simStates.append(state)
         self.simDataT.append(time)
         # Might want to modify next line: multiply conductance by "voltage" to get current
-        # I think "voltage" should really be difference between voltage and reversal potential
-        self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
+        # where I think "voltage" should really be difference between voltage and reversal potential
+        # NOISE: 
+        # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
+        # self.simDataX.append(self.Mean[state])
+        # NO NOISE:
+        self.simDataL.append(self.levelMap[state])
         self.simDataV.append(volts)
-    def initTrajectory(self,initDistrib,voltages,durations,Mean,Std,A,dt):
+    def initTrajectory(self,initDistrib,voltages,durations,levels,levelMap,A,dt):
         self.initDistrib = initDistrib
         self.voltages = voltages
         self.durations = durations
         self.nsamples = []
         for dur in self.durations:
             self.nsamples.append(int(math.ceil(dur/dt)))
-        # These might depend on voltage as well as state
-        self.Mean = Mean
-        self.Std = Std
+        # NOISE: These might depend on voltage as well as state
+        # self.Mean = Mean
+        # self.Std = Std
+        self.levels = levels
+        self.levelMap = levelMap # maps states to levels
+        self.nStates = len(levelMap)
         self.A = A
         self.simStates = []
         self.simDataT = []
-        self.simDataX = []
+        # self.simDataX = []
+        self.simDataL = []
         self.simDataV = []
         self.dt = dt
         state0 = self.select(self.initDistrib)
@@ -49,3 +57,12 @@ class flatStepProtocol(object):
             if p < rowsum:
                 return col
         assert(False) # Should never reach this point
+    def makeB(self):
+        self.B = []
+        for uniqueLevel in self.levels:
+            Blevel = numpy.zeros([self.nStates,self.nStates])
+            for d in range(self.nStates):
+                if self.levelMap[d] is uniqueLevel:
+                    Blevel[d,d] = 1
+            self.B.append(Blevel)
+            

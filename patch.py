@@ -42,8 +42,10 @@ class StepProtocol(object):
         return(pandas.DataFrame({'Time':self.simDataT,'Node':nodeNames,'NodeNum':self.simStates,'Voltage':self.simDataV,'Conductance':self.simDataX}))
     def initTrajectory(self,rng,firstState=None):
         self.initRNG(rng)
+        self.thePatch.ch.makeLevelMap()
         self.simStates = []
         self.simDataT = []
+        self.simDataL = []
         self.simDataX = []
         self.simDataV = []
         if firstState == None: # if firstState not passed, draw from equilibrium
@@ -58,7 +60,9 @@ class StepProtocol(object):
         self.simDataT.append(time)
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # I think "voltage" should really be difference between voltage and reversal potential
-        self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
+        # self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
+        self.simDataL.append(self.thePatch.ch.levelMap[state])
+        self.simDataX.append(self.thePatch.Mean[state])
         self.simDataV.append(volts)
     def sim(self,rng=3,firstState=None):
         self.initTrajectory(rng,firstState)
@@ -85,13 +89,15 @@ class StepProtocol(object):
         mdurations = []
         for dur in self.voltageStepDurations:
             mdurations.append(parameter.m(dur))
-        theMean = []
-        theStd = []
-        for s in range(len(self.thePatch.ch.nodes)):
-            theMean.append(self.thePatch.Mean[s])
-            theStd.append(self.thePatch.Std[s])
+        theLevels = self.thePatch.ch.uniqueLevels
+        theLevelMap = self.thePatch.ch.levelMap
+        # theMean = []
+        # theStd = []
+        #for s in range(len(self.thePatch.ch.nodes)):
+            #t heMean.append(self.thePatch.Mean[s])
+            # theStd.append(self.thePatch.Std[s])
         dt = parameter.m(self.dt)
-        FS.initTrajectory(initDistrib,mvoltages,mdurations,theMean,theStd,theA,dt)
+        FS.initTrajectory(initDistrib,mvoltages,mdurations,theLevels,theLevelMap,theA,dt)
         return FS
 class RepeatedSteps(StepProtocol):
     def initTrajectory(self,rng,firstState=None):

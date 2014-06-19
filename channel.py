@@ -169,9 +169,9 @@ class Channel(object):
         self.uniqueLevels = list(set(nonUniqueLevels))
         self.levelMap = []
         for n in self.nodes:
-            for i in range(len(self.uniqueLevels)):
-                if n.level is self.uniqueLevels[i]:
-                    self.levelMap.append(i)
+            for uniqueLevel in self.uniqueLevels:
+                if n.level is uniqueLevel:
+                    self.levelMap.append(uniqueLevel)
         assert(len(self.levelMap)==len(self.nodes))        
     def integrity(self): # Checks that channel is well defined
         #Nodes
