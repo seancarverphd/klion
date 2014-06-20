@@ -32,15 +32,17 @@ class flatStepProtocol(object):
         self.levelMap = levelMap # maps states to levels
         self.nStates = len(levelMap)
         self.A = A
+        self.dt = dt
+        self.state0 = self.select(self.initDistrib)
+    def reInit(self):
         self.simStates = []
         self.simDataT = []
         # self.simDataX = []
         self.simDataL = []
         self.simDataV = []
-        self.dt = dt
-        state0 = self.select(self.initDistrib)
-        self.appendTrajectory(state0,0.,voltages[0])
+        self.appendTrajectory(self.state0,0.,self.voltages[0])
     def sim(self):
+        self.reInit()
         time = 0
         for i in range(len(self.voltages)):
             for j in range(self.nsamples[i]-1):  # Why the -1?
@@ -70,4 +72,8 @@ class flatStepProtocol(object):
             for A in self.A:
                 ABs.append(A.dot(Blevel))
             self.AB.append(ABs)
+    def fit(self):
+        for v in range(self.A):
+            for k in self.nsamples:
+                pass
             
