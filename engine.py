@@ -1,12 +1,42 @@
 import numpy
 import math
 import random
+import parameter
 
 class flatStepProtocol(object):
-    def __init__(self,seed):
+    def __init__(self,parent,seed):
         self.seed = seed
         self.R = random.Random()
         self.R.seed(seed)
+        self.initDistrib = parent.thePatch.equilibrium(parent.voltages[0])
+        self.voltages = []
+        self.A = []
+        for v in parent.voltages:
+            self.voltages.append(parameter.m(v))
+            self.A.append(parent.thePatch.getA(v,parent.dt))
+        self.durations = []
+        self.nsamples = []
+        self.dt = parameter.m(parent.dt)
+        for dur in parent.voltageStepDurations:
+            self.durations.append(parameter.m(dur))
+            self.nsamples.append(int(math.ceil(parameter.m(dur)/self.dt)))
+        self.levels = parent.thePatch.ch.uniqueLevels
+        self.levelMap = parent.thePatch.ch.levelMap
+        self.nStates = len(self.levelMap)
+        self.state0 = self.select(self.initDistrib)
+        # NOISE: These might depend on voltage as well as state
+        # theMean = []
+        # theStd = []
+        # for s in range(len(self.thePatch.ch.nodes)):
+            # theMean.append(self.thePatch.Mean[s])
+            # theStd.append(self.thePatch.Std[s])
+    def reInit(self):
+        self.simStates = []
+        self.simDataT = []
+        # self.simDataX = []
+        self.simDataL = []
+        self.simDataV = []
+        self.appendTrajectory(self.state0,0.,self.voltages[0])
     def appendTrajectory(self,state,time,volts):
         self.simStates.append(state)
         self.simDataT.append(time)
@@ -18,29 +48,6 @@ class flatStepProtocol(object):
         # NO NOISE:
         self.simDataL.append(self.levelMap[state])
         self.simDataV.append(volts)
-    def initTrajectory(self,initDistrib,voltages,durations,levels,levelMap,A,dt):
-        self.initDistrib = initDistrib
-        self.voltages = voltages
-        self.durations = durations
-        self.nsamples = []
-        for dur in self.durations:
-            self.nsamples.append(int(math.ceil(dur/dt)))
-        # NOISE: These might depend on voltage as well as state
-        # self.Mean = Mean
-        # self.Std = Std
-        self.levels = levels
-        self.levelMap = levelMap # maps states to levels
-        self.nStates = len(levelMap)
-        self.A = A
-        self.dt = dt
-        self.state0 = self.select(self.initDistrib)
-    def reInit(self):
-        self.simStates = []
-        self.simDataT = []
-        # self.simDataX = []
-        self.simDataL = []
-        self.simDataV = []
-        self.appendTrajectory(self.state0,0.,self.voltages[0])
     def sim(self):
         self.reInit()
         time = 0

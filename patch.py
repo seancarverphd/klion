@@ -79,25 +79,8 @@ class StepProtocol(object):
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
     def flatten(self,seed=3):
-        FS = engine.flatStepProtocol(seed)
-        initDistrib = self.thePatch.equilibrium(self.voltages[0])
-        mvoltages = []
-        theA = []
-        for v in self.voltages:
-            mvoltages.append(parameter.m(v))
-            theA.append(self.thePatch.getA(v,self.dt))
-        mdurations = []
-        for dur in self.voltageStepDurations:
-            mdurations.append(parameter.m(dur))
-        theLevels = self.thePatch.ch.uniqueLevels
-        theLevelMap = self.thePatch.ch.levelMap
-        # theMean = []
-        # theStd = []
-        #for s in range(len(self.thePatch.ch.nodes)):
-            #t heMean.append(self.thePatch.Mean[s])
-            # theStd.append(self.thePatch.Std[s])
-        dt = parameter.m(self.dt)
-        FS.initTrajectory(initDistrib,mvoltages,mdurations,theLevels,theLevelMap,theA,dt)
+        parent = self # for readablility
+        FS = engine.flatStepProtocol(parent,seed)
         return FS
 class RepeatedSteps(StepProtocol):
     def initTrajectory(self,rng,firstState=None):
