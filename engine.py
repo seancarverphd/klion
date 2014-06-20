@@ -59,10 +59,15 @@ class flatStepProtocol(object):
         assert(False) # Should never reach this point
     def makeB(self):
         self.B = []
+        self.AB = []
         for uniqueLevel in self.levels:
             Blevel = numpy.zeros([self.nStates,self.nStates])
             for d in range(self.nStates):
                 if self.levelMap[d] is uniqueLevel:
                     Blevel[d,d] = 1
             self.B.append(Blevel)
+            ABs = []
+            for A in self.A:
+                ABs.append(A.dot(Blevel))
+            self.AB.append(ABs)
             
