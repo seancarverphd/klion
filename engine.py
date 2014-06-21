@@ -1,10 +1,11 @@
 import numpy
 import math
 import random
+import time
 import parameter
 
 class flatStepProtocol(object):
-    def __init__(self,parent,seed=0):
+    def __init__(self,parent,seed=None):
         # Nothing below changes until indicated
         self.R = random.Random()
         self.dt = parameter.m(parent.dt) 
@@ -22,8 +23,9 @@ class flatStepProtocol(object):
         self.levels = parent.thePatch.uniqueLevels # This is a set
         self.levelList = list(self.levels)
         # Nothing above changes, but below can change
-        self.seed = seed  # changes with reseed()
+        self.seed = seed # changes with reseed()
         self.change(parent.thePatch)  # call change(newPatch) possible
+        self.clearData()
     def change(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
@@ -33,7 +35,6 @@ class flatStepProtocol(object):
             self.A.append(newPatch.getA(v,self.dt))  # getA() called with same args, value can change
         self.states2levels(newPatch)
         self.makeB() # NO-NOISE only. For NOISE: Set MEAN and STD here
-        self.clearData()
     def states2levels(self,newPatch):
         self.levelMap = []
         self.levelNum = []
@@ -46,7 +47,11 @@ class flatStepProtocol(object):
         self.nStates = len(self.levelMap)  # changes
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def clearData(self):
-        self.R.seed(self.seed)
+        if self.seed == None:
+            self.usedSeed = long(time.time()*256)
+        else:
+            self.usedSeed = self.seed  # changes with reseed()
+        self.R.seed(self.usedSeed)
         self.state0 = self.select(self.initDistrib)
         self.simStates = []
         self.simDataT = []
