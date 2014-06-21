@@ -78,7 +78,7 @@ class StepProtocol(object):
                 nextState = self.thePatch.select(self.R,A,self.simStates[-1])
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
-    def flatten(self,seed=3):
+    def flatten(self,seed=None):
         parent = self # for readablility of pass to engine command
         FS = engine.flatStepProtocol(parent,seed)
         return FS
