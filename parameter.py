@@ -46,17 +46,11 @@ class Parameter(object):
     def unmap(self):
         self.remapped = False
         self.mappedValue = None
-    def __float__(self):
+    def __float__(self):  # Don't use this if you can avoid it
         if self.remapped:
-            try:
-                return float(self.mappedValue)  # will raise error if has units
-            except:
-                return float(self.mappedValue._magnitude)
+            return float(m(self.mappedValue))  # will raise error if has units
         else:
-            try:
-                return float(self.value) # will raise error if has units
-            except:
-                return float(self.value._magnitude)
+            return float(m(self.value)) # will raise error if has units
     def rename(self,name):
         self.name = name
         self.integrity()
