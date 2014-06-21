@@ -101,13 +101,20 @@ class RepeatedSteps(StepProtocol):
         self.initTrajectory(rng,firstState)
         assert(len(self.trajs)==0)
         self.appendTrajectory(nReps)
-        
 
 class singleChannelPatch(object):
     def __init__(self, ch):
         self.ch = ch
         self.Mean = self.ch.makeMean()
         self.Std = self.ch.makeStd()
+        self.noise(False)
+    def noise(self,toggle):
+        self.hasNoise = toggle
+        if self.hasNoise==False:
+            self.ch.makeLevelMap()
+            self.uniqueLevels = set(self.ch.uniqueLevels)
+        else:
+            assert(False)  # Take this out after implementing noise
     def getQ(self,volts):
         channel.VOLTAGE.remap(volts)
         return self.ch.makeQ()

@@ -5,32 +5,46 @@ import parameter
 
 class flatStepProtocol(object):
     def __init__(self,parent,seed=0):
+        # Nothing below changes until indicated
         self.R = random.Random()
-        self.seed = seed
-        self.initDistrib = parent.thePatch.equilibrium(parent.voltages[0])
+        self.dt = parameter.m(parent.dt) 
         self.voltages = []
-        self.A = []
+        self.unitsVoltages = []
+        self.durations = []  
+        self.nsamples = [] 
         for v in parent.voltages:
+            self.unitsVoltages.append(v)
             self.voltages.append(parameter.m(v))
-            self.A.append(parent.thePatch.getA(v,parent.dt))
-        self.durations = []
-        self.nsamples = []
-        self.dt = parameter.m(parent.dt)
         for dur in parent.voltageStepDurations:
             self.durations.append(parameter.m(dur))
             self.nsamples.append(int(math.ceil(parameter.m(dur)/self.dt)))
-        self.levels = parent.thePatch.ch.uniqueLevels
-        self.levelMap = parent.thePatch.ch.levelMap
-        self.levelNum = parent.thePatch.ch.levelNum
-        self.nStates = len(self.levelMap)
-        self.makeB() # only good for no-noise
+        # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
+        self.levels = parent.thePatch.uniqueLevels # This is a set
+        self.levelList = list(self.levels)
+        # Nothing above changes, but below can change
+        self.seed = seed  # changes with reseed()
+        self.change(parent.thePatch)  # call change(newPatch) possible
+    def change(self,newPatch):
+        assert(newPatch.hasNoise==False)  # Later will implement NOISE
+        assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
+        self.initDistrib = newPatch.equilibrium(self.unitsVoltages[0])
+        self.A = []  
+        for v in self.unitsVoltages:
+            self.A.append(newPatch.getA(v,self.dt))  # getA() called with same args, value can change
+        self.states2levels(newPatch)
+        self.makeB() # NO-NOISE only. For NOISE: Set MEAN and STD here
         self.clearData()
-        # NOISE: These might depend on voltage as well as state
-        # theMean = []
-        # theStd = []
-        # for s in range(len(self.thePatch.ch.nodes)):
-            # theMean.append(self.thePatch.Mean[s])
-            # theStd.append(self.thePatch.Std[s])
+    def states2levels(self,newPatch):
+        self.levelMap = []
+        self.levelNum = []
+        for n in newPatch.ch.nodes:
+            for u in range(len(self.levelList)):
+                if n.level is self.levelList[u]:
+                    self.levelMap.append(self.levelList[u])
+                    self.levelNum.append(u)
+                    continue
+        self.nStates = len(self.levelMap)  # changes
+        assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def clearData(self):
         self.R.seed(self.seed)
         self.state0 = self.select(self.initDistrib)
