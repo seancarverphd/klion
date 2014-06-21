@@ -9,15 +9,15 @@ class flatStepProtocol(object):
     def __init__(self,parent,seed=None):
         # Nothing below changes until indicated
         self.R = random.Random()
-        self.dt = parameter.m(parent.dt) 
+        self.dt = parameter.v(parent.dt) 
         self.voltages = []
         self.durations = []  
         self.nsamples = [] 
         for v in parent.voltages:
             self.voltages.append(parameter.v(v))
         for dur in parent.voltageStepDurations:
-            self.durations.append(parameter.m(dur))
-            self.nsamples.append(int(math.ceil(parameter.m(dur)/self.dt)))
+            self.durations.append(parameter.v(dur))
+            self.nsamples.append(int(math.ceil(parameter.v(dur)/self.dt)))
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
         self.levels = parent.thePatch.uniqueLevels # This is a set
         self.levelList = list(self.levels)
@@ -81,7 +81,7 @@ class flatStepProtocol(object):
                 nextState = self.select(self.A[i],self.simStates[-1])
                 self.appendTrajectory(nextState,self.voltages[i])
         self.hasData = True
-    def dataFrame(self):
+    def dataFrame(self):  # strips units off for plotting; pyplot can't handle units
         assert(self.hasData)
         mdt = parameter.m(self.dt)
         simDataT = numpy.arange(0,mdt*len(self.simStates),mdt)
