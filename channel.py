@@ -56,10 +56,7 @@ class Channel(object):
         for row in self.QList:
             flatrow = []
             for element in row:
-                try:
-                    flatrow.append(float(element))
-                except:
-                    flatrow.append(element._magnitude)
+                flatrow.append(parameter.m(element))
             flatQ.append(flatrow)
         # Convert to matrix
         Q = numpy.matrix(flatQ)
