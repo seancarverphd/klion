@@ -68,19 +68,13 @@ class Channel(object):
         # Records means of nodes (conductances) in list
         means = []
         for n in self.nodes:
-            try:
-                means.append(float(n.level.mean))
-            except:
-                means.append(n.level.mean._magnitude)
+            means.append(parameter.v(n.level.mean))
         return means
     def makeStd(self):
         # Records std of nodes (conductances) in list
         stds = []
         for n in self.nodes:
-            try:
-                stds.append(float(n.level.std))
-            except:
-                stds.append(n.level.std._magnitude)
+            stds.append(parameter.v(n.level.std))
         return stds
     def recordOrder(self):
     # Records order of nodes into a dictionary 
