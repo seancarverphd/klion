@@ -5,9 +5,8 @@ import parameter
 
 class flatStepProtocol(object):
     def __init__(self,parent,seed):
-        self.seed = seed
         self.R = random.Random()
-        self.R.seed(seed)
+        self.seed = seed
         self.initDistrib = parent.thePatch.equilibrium(parent.voltages[0])
         self.voltages = []
         self.A = []
@@ -22,21 +21,26 @@ class flatStepProtocol(object):
             self.nsamples.append(int(math.ceil(parameter.m(dur)/self.dt)))
         self.levels = parent.thePatch.ch.uniqueLevels
         self.levelMap = parent.thePatch.ch.levelMap
+        self.levelNum = parent.thePatch.ch.levelNum
         self.nStates = len(self.levelMap)
-        self.state0 = self.select(self.initDistrib)
+        self.makeB() # only good for no-noise
+        self.clearData()
         # NOISE: These might depend on voltage as well as state
         # theMean = []
         # theStd = []
         # for s in range(len(self.thePatch.ch.nodes)):
             # theMean.append(self.thePatch.Mean[s])
             # theStd.append(self.thePatch.Std[s])
-    def reInit(self):
+    def clearData(self):
+        self.R.seed(self.seed)
+        self.state0 = self.select(self.initDistrib)
         self.simStates = []
         self.simDataT = []
         # self.simDataX = []
         self.simDataL = []
         self.simDataV = []
         self.appendTrajectory(self.state0,0.,self.voltages[0])
+        self.hasData=False
     def appendTrajectory(self,state,time,volts):
         self.simStates.append(state)
         self.simDataT.append(time)
@@ -46,16 +50,20 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
         # self.simDataX.append(self.Mean[state])
         # NO NOISE:
-        self.simDataL.append(self.levelMap[state])
+        self.simDataL.append(self.levelNum[state])  # use self.levelMap for actual levels (not nums)
         self.simDataV.append(volts)
     def sim(self):
-        self.reInit()
+        assert(self.hasData==False)
         time = 0
         for i in range(len(self.voltages)):
-            for j in range(self.nsamples[i]-1):  # Why the -1?
+            for j in range(self.nsamples[i]):
                 nextState = self.select(self.A[i],self.simStates[-1])
                 time += self.dt
                 self.appendTrajectory(nextState,time,self.voltages[i])
+        self.hasData = True
+    def resim(self):
+        self.clearData()
+        self.sim()
     # Select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()
@@ -66,21 +74,41 @@ class flatStepProtocol(object):
             if p < rowsum:
                 return col
         assert(False) # Should never reach this point
-    def makeB(self):
+    def makeB(self):  # Only good for no-noise
         self.B = []
         self.AB = []
-        for uniqueLevel in self.levels:
+        for uniqueLevel in range(len(self.levels)):
+            # Blevel is the B-matrix for the observation of level==uniqueLevel
             Blevel = numpy.zeros([self.nStates,self.nStates])
-            for d in range(self.nStates):
-                if self.levelMap[d] is uniqueLevel:
+            for d in range(self.nStates):  # Fill B with corresponding 1's
+                if self.levelNum[d]==uniqueLevel:
                     Blevel[d,d] = 1
             self.B.append(Blevel)
-            ABs = []
-            for A in self.A:
-                ABs.append(A.dot(Blevel))
-            self.AB.append(ABs)
-    def fit(self):
-        for v in range(self.A):
-            for k in self.nsamples:
-                pass
-            
+            # ABlevel is AB-matricies for all voltage steps, at given level
+            ABlevel = []
+            # AVolt is A-matrix for given voltage
+            for Avolt in self.A:
+                ABlevel.append(Avolt.dot(Blevel))
+            self.AB.append(ABlevel)
+    def normalize(self, new):
+        c = 1/new.sum()
+        return (c*new,c)
+    def update(self,distrib,k):
+        new = distrib*self.B[self.simDataL[k]]
+        return self.normalize(new)
+    def predictupdate(self,distrib,k,iv):
+        new = distrib*self.AB[self.simDataL[k]][iv]  # [level num][voltage num]
+        return self.normalize(new)
+    def minuslike(self):  # returns minus the log-likelihood
+        assert(self.hasData)
+        (alphak,ck) = self.update(self.initDistrib,0)
+        self.mll = math.log(ck)
+        k0 = 1   # Offset
+        for iv in range(len(self.voltages)):
+            for k in range(k0,k0+self.nsamples[iv]):
+                (alphak,ck) = self.predictupdate(alphak,k,iv)
+                self.mll += math.log(ck)
+            k0 += self.nsamples[iv]
+        return self.mll
+    def like(self):  # returns the log-likelihood
+        return -self.minuslike()

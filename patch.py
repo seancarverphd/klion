@@ -79,9 +79,10 @@ class StepProtocol(object):
                 time = self.simDataT[-1] + mag_dt
                 self.appendTrajectory(nextState,time,volts)
     def flatten(self,seed=3):
-        parent = self # for readablility
+        parent = self # for readablility of pass to engine command
         FS = engine.flatStepProtocol(parent,seed)
         return FS
+    
 class RepeatedSteps(StepProtocol):
     def initTrajectory(self,rng,firstState=None):
         self.initRNG(rng)
