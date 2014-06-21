@@ -22,6 +22,7 @@ class flatStepProtocol(object):
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
         self.levels = parent.thePatch.uniqueLevels # This is a set
         self.levelList = list(self.levels)
+        self.voltageTrajectory()  # Only needed for plotting
         # Nothing above changes, but below can change
         self.seed = seed # changes with reseed()
         self.change(parent.thePatch)  # call change(newPatch) possible
@@ -49,6 +50,12 @@ class flatStepProtocol(object):
                     continue
         self.nStates = len(self.levelMap)  # changes
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
+    def voltageTrajectory(self):
+        self.simDataV = []
+        self.simDataV.append(self.voltages[0])
+        for i in range(len(self.voltages)):
+            for j in range(self.nsamples[i]):
+               self.simDataV.append(self.voltages[i])
     def clearData(self):
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
@@ -57,30 +64,30 @@ class flatStepProtocol(object):
         self.R.seed(self.usedSeed)
         self.state0 = self.select(self.initDistrib)
         self.simStates = []
-        # self.simDataX = []
         self.simDataL = []
-        self.simDataV = []
-        self.appendTrajectory(self.state0,self.voltages[0])
+        self.appendTrajectory(self.state0)
         self.hasData=False
     def reseed(self,seed):
         self.seed = seed
         self.clearData()
-    def appendTrajectory(self,state,volts):
+    def appendTrajectory(self,state):
         self.simStates.append(state)
-        # Might want to modify next line: multiply conductance by "voltage" to get current
-        # where I think "voltage" should really be difference between voltage and reversal potential
-        # NOISE: 
-        # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
-        # self.simDataX.append(self.Mean[state])
         # NO NOISE:
         self.simDataL.append(self.levelNum[state])  # use self.levelMap for actual levels (not nums)
-        self.simDataV.append(volts)
+        # NOISE: 
+        # Might want to modify next line: multiply conductance by "voltage" to get current
+        # where I think "voltage" should really be difference between voltage and reversal potential
+        # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
+        # self.simDataX.append(self.Mean[state])
+        # IF SAVING VOLTAGE:
+        # self.simDataV.append(volts)
     def sim(self):
         assert(self.hasData==False)
+        state = self.simStates[-1]
         for i in range(len(self.voltages)):
             for j in range(self.nsamples[i]):
-                nextState = self.select(self.A[i],self.simStates[-1])
-                self.appendTrajectory(nextState,self.voltages[i])
+                state = self.select(self.A[i],state)
+                self.appendTrajectory(state)
         self.hasData = True
     def dataFrame(self):  # strips units off for plotting; pyplot can't handle units
         assert(self.hasData)
@@ -92,7 +99,7 @@ class flatStepProtocol(object):
         simDataT = []
         simDataC = []
         for s in self.simStates:
-            simNodes.append(self.states[s])
+            simNodes.append(self.states[s])   # simNodes are Node classes; simStates are integers
             simDataT.append(copy.copy(time))
             simDataC.append(parameter.v(self.levelMap[s].mean) )
             # simDataCm.append(parameter.m(self.levelMap[s].mean))
@@ -100,7 +107,8 @@ class flatStepProtocol(object):
         #simDataVm = []
         #for v in self.simDataV:
         #    simDataVm.append(parameter.m(v))
-        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}))
+        # simDataC taken out of DataFrame
+        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':self.simDataV}))
     def resim(self):
         self.clearData()
         self.sim()
