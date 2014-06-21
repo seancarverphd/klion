@@ -2,6 +2,7 @@ import numpy
 import math
 import random
 import time
+import copy
 import parameter
 import pandas
 
@@ -83,17 +84,23 @@ class flatStepProtocol(object):
         self.hasData = True
     def dataFrame(self):  # strips units off for plotting; pyplot can't handle units
         assert(self.hasData)
-        mdt = parameter.m(self.dt)
-        simDataT = numpy.arange(0,mdt*len(self.simStates),mdt)
+        time = 0*self.dt  # multiplying by 0 preseves units
+        # Commented out lines below are for computing quantities without units
+        # mdt = parameter.m(self.dt)
+        # simDataTm = numpy.arange(0,mdt*len(self.simStates),mdt)
         simNodes = []
+        simDataT = []
         simDataC = []
         for s in self.simStates:
             simNodes.append(self.states[s])
-            simDataC.append(parameter.m(self.levelMap[s].mean))
-        simDataVm = []
-        for v in self.simDataV:
-            simDataVm.append(parameter.m(v))
-        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':simDataVm,'Conductance':simDataC}))
+            simDataT.append(copy.copy(time))
+            simDataC.append(parameter.v(self.levelMap[s].mean) )
+            # simDataCm.append(parameter.m(self.levelMap[s].mean))
+            time += self.dt
+        #simDataVm = []
+        #for v in self.simDataV:
+        #    simDataVm.append(parameter.m(v))
+        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}))
     def resim(self):
         self.clearData()
         self.sim()
