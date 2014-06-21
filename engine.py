@@ -56,18 +56,16 @@ class flatStepProtocol(object):
         self.R.seed(self.usedSeed)
         self.state0 = self.select(self.initDistrib)
         self.simStates = []
-        self.simDataT = []
         # self.simDataX = []
         self.simDataL = []
         self.simDataV = []
-        self.appendTrajectory(self.state0,0.,self.voltages[0])
+        self.appendTrajectory(self.state0,self.voltages[0])
         self.hasData=False
     def reseed(self,seed):
         self.seed = seed
         self.clearData()
-    def appendTrajectory(self,state,time,volts):
+    def appendTrajectory(self,state,volts):
         self.simStates.append(state)
-        self.simDataT.append(time)
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # where I think "voltage" should really be difference between voltage and reversal potential
         # NOISE: 
@@ -78,15 +76,15 @@ class flatStepProtocol(object):
         self.simDataV.append(volts)
     def sim(self):
         assert(self.hasData==False)
-        time = 0
         for i in range(len(self.voltages)):
             for j in range(self.nsamples[i]):
                 nextState = self.select(self.A[i],self.simStates[-1])
-                time += self.dt
-                self.appendTrajectory(nextState,time,self.voltages[i])
+                self.appendTrajectory(nextState,self.voltages[i])
         self.hasData = True
     def dataFrame(self):
         assert(self.hasData)
+        mdt = parameter.m(self.dt)
+        simDataT = numpy.arange(0,mdt*len(self.simStates),mdt)
         simNodes = []
         simDataC = []
         for s in self.simStates:
@@ -94,8 +92,8 @@ class flatStepProtocol(object):
             simDataC.append(parameter.m(self.levelMap[s].mean))
         simDataVm = []
         for v in self.simDataV:
-            simDataVm.append(v._magnitude)
-        return(pandas.DataFrame({'Time':self.simDataT,'Node':simNodes,'Voltage':simDataVm,'Conductance':simDataC}))
+            simDataVm.append(parameter.m(v))
+        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':simDataVm,'Conductance':simDataC}))
     def resim(self):
         self.clearData()
         self.sim()
