@@ -8,7 +8,6 @@ import scipy.linalg
 from parameter import u
 import matplotlib
 import matplotlib.pyplot as pyplot
-import pandas
 import engine
 
 default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
@@ -25,59 +24,10 @@ class StepProtocol(object):
         self.thePatch = patch
         self.voltages = voltages
         self.voltageStepDurations = voltageStepDurations
-        self.dt = default_dt
-        self.R = random.Random()
+        self.setSampleInterval(default_dt)
     def setSampleInterval(self,dt):
-        assert(parameter.m(dt)>0)
+        assert(parameter.v(dt)>0*u.milliseconds)  # dt > 0 regardless of units
         self.dt = dt
-    def initRNG(self,rng):
-        if isinstance(rng,random.Random):  # if 1st arg passed is a random num generator, then use it
-            self.R = rng                   # allows multiple trajs to have same generator
-        else:                              # if 1 arg an integer, use as a seed
-            self.R.seed(rng)
-    def dataFrame(self):
-        nodeNames = []
-        for s in self.simStates:
-            nodeNames.append(self.thePatch.ch.nodes[s])
-        return(pandas.DataFrame({'Time':self.simDataT,'Node':nodeNames,'NodeNum':self.simStates,'Voltage':self.simDataV,'Conductance':self.simDataX}))
-    def initTrajectory(self,rng,firstState=None):
-        self.initRNG(rng)
-        self.thePatch.ch.makeLevelMap()
-        self.simStates = []
-        self.simDataT = []
-        self.simDataL = []
-        self.simDataX = []
-        self.simDataV = []
-        if firstState == None: # if firstState not passed, draw from equilibrium
-            theState = self.thePatch.select(self.R,self.thePatch.equilibrium(self.voltages[0]))
-        else:
-            theState = firstState
-        time = 0.
-        volts = parameter.m(self.voltages[0])
-        self.appendTrajectory(theState,time,volts)
-    def appendTrajectory(self,state,time,volts):
-        self.simStates.append(state)
-        self.simDataT.append(time)
-        # Might want to modify next line: multiply conductance by "voltage" to get current
-        # I think "voltage" should really be difference between voltage and reversal potential
-        # self.simDataX.append(self.R.normalvariate(self.thePatch.Mean[state],self.thePatch.Std[state]))
-        self.simDataL.append(self.thePatch.ch.levelMap[state])
-        self.simDataX.append(self.thePatch.Mean[state])
-        self.simDataV.append(volts)
-    def sim(self,rng=3,firstState=None):
-        self.initTrajectory(rng,firstState)
-        mag_dt = parameter.m(self.dt)
-        for i in range(len(self.voltages)):
-            volts = parameter.m(self.voltages[i])
-            nsamples = int(math.ceil(self.voltageStepDurations[i]/parameter.v(self.dt)))
-            assert(nsamples >= 0)
-            A = self.thePatch.getA(self.voltages[i],self.dt)
-            # The next for-loop does the simulation on states
-            for j in range(nsamples-1):  # Why the -1?
-                # self.simStates[-1] is the row of A to work with, selected as from equilibrium()
-                nextState = self.thePatch.select(self.R,A,self.simStates[-1])
-                time = self.simDataT[-1] + mag_dt
-                self.appendTrajectory(nextState,time,volts)
     def flatten(self,seed=None):
         parent = self # for readablility of pass to engine command
         FS = engine.flatStepProtocol(parent,seed)
@@ -143,8 +93,9 @@ P = singleChannelPatch(channel.khh)
 voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
 voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
 S = StepProtocol(P,voltages,voltageStepDurations)
-S.sim(rng=3)
-RS = RepeatedSteps(P,voltages,voltageStepDurations)
-RS.sim(rng=3,nReps=4)
-pyplot.plot(S.simDataT,S.simDataX)
-pyplot.show()
+FS = S.flatten(3)
+FS.sim()
+# RS = RepeatedSteps(P,voltages,voltageStepDurations)
+# RS.sim(rng=3,nReps=4)
+# pyplot.plot(FS.simDataT,FS.simDataX)
+# pyplot.show()

@@ -3,6 +3,7 @@ import math
 import random
 import time
 import parameter
+import pandas
 
 class flatStepProtocol(object):
     def __init__(self,parent,seed=None):
@@ -10,12 +11,10 @@ class flatStepProtocol(object):
         self.R = random.Random()
         self.dt = parameter.m(parent.dt) 
         self.voltages = []
-        self.unitsVoltages = []
         self.durations = []  
         self.nsamples = [] 
         for v in parent.voltages:
-            self.unitsVoltages.append(v)
-            self.voltages.append(parameter.m(v))
+            self.voltages.append(parameter.v(v))
         for dur in parent.voltageStepDurations:
             self.durations.append(parameter.m(dur))
             self.nsamples.append(int(math.ceil(parameter.m(dur)/self.dt)))
@@ -29,16 +28,19 @@ class flatStepProtocol(object):
     def change(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
-        self.initDistrib = newPatch.equilibrium(self.unitsVoltages[0])
+        self.initDistrib = newPatch.equilibrium(self.voltages[0])
         self.A = []  
-        for v in self.unitsVoltages:
+        for v in self.voltages:
             self.A.append(newPatch.getA(v,self.dt))  # getA() called with same args, value can change
         self.states2levels(newPatch)
         self.makeB() # NO-NOISE only. For NOISE: Set MEAN and STD here
     def states2levels(self,newPatch):
         self.levelMap = []
         self.levelNum = []
+        self.states = []
+        self.means = []
         for n in newPatch.ch.nodes:
+            self.states.append(n)  # saved for output
             for u in range(len(self.levelList)):
                 if n.level is self.levelList[u]:
                     self.levelMap.append(self.levelList[u])
@@ -83,6 +85,17 @@ class flatStepProtocol(object):
                 time += self.dt
                 self.appendTrajectory(nextState,time,self.voltages[i])
         self.hasData = True
+    def dataFrame(self):
+        assert(self.hasData)
+        simNodes = []
+        simDataC = []
+        for s in self.simStates:
+            simNodes.append(self.states[s])
+            simDataC.append(parameter.m(self.levelMap[s].mean))
+        simDataVm = []
+        for v in self.simDataV:
+            simDataVm.append(v._magnitude)
+        return(pandas.DataFrame({'Time':self.simDataT,'Node':simNodes,'Voltage':simDataVm,'Conductance':simDataC}))
     def resim(self):
         self.clearData()
         self.sim()
