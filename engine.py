@@ -4,7 +4,7 @@ import random
 import parameter
 
 class flatStepProtocol(object):
-    def __init__(self,parent,seed):
+    def __init__(self,parent,seed=0):
         self.R = random.Random()
         self.seed = seed
         self.initDistrib = parent.thePatch.equilibrium(parent.voltages[0])
@@ -41,6 +41,9 @@ class flatStepProtocol(object):
         self.simDataV = []
         self.appendTrajectory(self.state0,0.,self.voltages[0])
         self.hasData=False
+    def reseed(self,seed):
+        self.seed = seed
+        self.clearData()
     def appendTrajectory(self,state,time,volts):
         self.simStates.append(state)
         self.simDataT.append(time)
