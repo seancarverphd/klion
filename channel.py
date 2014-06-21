@@ -51,15 +51,15 @@ class Channel(object):
         self.recordOrder() # defines nodeOrder dictionary
         self.disconnect()  # QList = 0; calls integrity() which calls reparametrize()
     def makeQ(self):
-        # make a QList without the units
-        flatQ = []
-        for row in self.QList:
-            flatrow = []
-            for element in row:
-                flatrow.append(parameter.m(element))
-            flatQ.append(flatrow)
-        # Convert to matrix
-        Q = numpy.matrix(flatQ)
+        # make Q with units
+        s = len(self.QList[0])  # QList should be square
+        Q = numpy.matrix(numpy.zeros([s,s]))/u.millisecond  # QList should be square
+        for row in range(s):
+            for element in range(s):
+                if self.QList[row][element] == 0.:
+                    Q[row,element] = 0/u.millisecond
+                else:
+                    Q[row,element] = parameter.v(self.QList[row][element])
         # Add diagonal (not zero)
         Qdiag = -Q.sum(axis=1)
         numpy.fill_diagonal(Q,Qdiag)
@@ -110,7 +110,7 @@ class Channel(object):
         for i in range(0, nNodes-1):
             for j in range(i+1, nNodes):
                 if self.QList[i][j] == 0. and self.QList[j][i] == 0.:
-                    assert(True)
+                    pass
                 elif self.QList[j][i] == 0.:
                     s += '\n Edge %s --> %s:\n q (-->) %s' % (self.nodes[i].name, self.nodes[j].name, str(self.QList[i][j]))
                 elif self.QList[i][j] == 0:
