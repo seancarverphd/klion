@@ -133,9 +133,14 @@ class Parameter(object):
         s = "Parameter: "+self.name+" = "+str(self.value)+'\n'
         s += LL + C + ' in '+str(self.bounds)
         s += '\n   Defaults to: '+str(self.default)
+        if self.remapped:
+            s += "\n   REMAPPED --> "+str(self.mappedValue)
         return s
     def __str__(self):
-        return self.name +" = "+str(self.value)
+        if not self.remapped:
+            return self.name +" = "+str(self.value)
+        else:
+            return self.name +" --> "+str(self.mappedValue)
     def __add__(self, x):
         try:
             return self.evaluate() + x.evaluate()
