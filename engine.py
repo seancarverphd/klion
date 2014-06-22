@@ -63,10 +63,8 @@ class flatStepProtocol(object):
         else:
             self.usedSeed = self.seed  # changes with reseed()
         self.R.seed(self.usedSeed)
-        self.state0 = self.select(self.initDistrib)
         self.simStates = []
         self.simDataL = []
-        #self.appendTrajectory(self.state0,self.simStates,self.simDataL)
     def makeNewTraj(self):
         simS = []
         simL = []
@@ -90,7 +88,6 @@ class flatStepProtocol(object):
     def sim(self,nReps):
         for n in range(nReps - len(self.simDataL)):
             (simS,simL) = self.makeNewTraj()
-            #assert(self.hasData==False)
             state = simS[0]
             for i in range(len(self.voltages)):
                 for j in range(self.nsamples[i]):
@@ -99,9 +96,9 @@ class flatStepProtocol(object):
             self.simStates.append(simS)
             self.simDataL.append(simL)
         self.nReps = nReps
-    def resim(self):
+    def resim(self,nReps):
         self.clearData()
-        self.sim()
+        self.sim(nReps)
     def dataFrame(self,n):  # strips units off for plotting; pyplot can't handle units
         time = 0*self.dt  # multiplying by 0 preseves units
         # Commented out lines below are for computing quantities without units
