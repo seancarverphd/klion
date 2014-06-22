@@ -32,25 +32,6 @@ class StepProtocol(object):
         parent = self # for readablility of pass to engine command
         FS = engine.flatStepProtocol(parent,seed)
         return FS
-    
-class RepeatedSteps(StepProtocol):
-    def initTrajectory(self,rng,firstState=None):
-        self.initRNG(rng)
-        self.firstState = firstState
-        self.trajs = []
-        self.nReps = 0
-    def appendTrajectory(self,nReps):
-        for i in range(nReps):
-            T = StepProtocol(self.thePatch,self.voltages,self.voltageStepDurations)
-            T.initTrajectory(self.R,self.firstState)
-            T.sim()
-            self.trajs.append(T)
-        self.nReps+=nReps
-        assert(self.nReps==len(self.trajs))
-    def sim(self,rng=3,nReps=2,firstState=None):
-        self.initTrajectory(rng,firstState)
-        assert(len(self.trajs)==0)
-        self.appendTrajectory(nReps)
 
 class singleChannelPatch(object):
     def __init__(self, ch):
