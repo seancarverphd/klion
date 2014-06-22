@@ -153,9 +153,11 @@ class flatStepProtocol(object):
     def predictupdate(self,distrib,k,iv,n):
         new = distrib*self.AB[self.simDataL[n][k]][iv]  # [[traj num][level num]][voltage num]
         return self.normalize(new)
-    def minuslike(self):  # returns minus the log-likelihood
+    def minuslike(self,reps):  # returns minus the log-likelihood
+        if reps == None:
+            reps = range(self.nReps)
         self.mll = 0
-        for n in range(self.nReps):
+        for n in reps:
             (alphak,ck) = self.update(self.initDistrib,0,n)
             self.mll += math.log(ck)
             k0 = 1   # Offset
@@ -165,5 +167,5 @@ class flatStepProtocol(object):
                     self.mll += math.log(ck)
                 k0 += self.nsamples[iv]
         return self.mll
-    def like(self):  # returns the log-likelihood
-        return -self.minuslike()
+    def like(self,reps=None):  # returns the log-likelihood
+        return -self.minuslike(reps)
