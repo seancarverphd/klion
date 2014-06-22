@@ -57,6 +57,7 @@ class flatStepProtocol(object):
             for j in range(self.nsamples[i]):
                self.simDataV.append(self.voltages[i])
     def clearData(self):
+        self.nReps = None
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
         else:
@@ -65,15 +66,20 @@ class flatStepProtocol(object):
         self.state0 = self.select(self.initDistrib)
         self.simStates = []
         self.simDataL = []
-        self.appendTrajectory(self.state0)
-        self.hasData=False
+        #self.appendTrajectory(self.state0,self.simStates,self.simDataL)
+    def makeNewTraj(self):
+        simS = []
+        simL = []
+        state0 = self.select(self.initDistrib)
+        self.appendTrajectory(state0,simS,simL)
+        return (simS,simL)
     def reseed(self,seed):
         self.seed = seed
         self.clearData()
-    def appendTrajectory(self,state):
-        self.simStates.append(state)
+    def appendTrajectory(self,state,simS,simL):
+        simS.append(state)
         # NO NOISE:
-        self.simDataL.append(self.levelNum[state])  # use self.levelMap for actual levels (not nums)
+        simL.append(self.levelNum[state])  # use self.levelMap for actual levels (not nums)
         # NOISE: 
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # where I think "voltage" should really be difference between voltage and reversal potential
@@ -81,16 +87,22 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.Mean[state])
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
-    def sim(self):
-        assert(self.hasData==False)
-        state = self.simStates[-1]
-        for i in range(len(self.voltages)):
-            for j in range(self.nsamples[i]):
-                state = self.select(self.A[i],state)
-                self.appendTrajectory(state)
-        self.hasData = True
-    def dataFrame(self):  # strips units off for plotting; pyplot can't handle units
-        assert(self.hasData)
+    def sim(self,nReps):
+        for n in range(nReps - len(self.simDataL)):
+            (simS,simL) = self.makeNewTraj()
+            #assert(self.hasData==False)
+            state = simS[0]
+            for i in range(len(self.voltages)):
+                for j in range(self.nsamples[i]):
+                    state = self.select(self.A[i],state)
+                    self.appendTrajectory(state,simS,simL)
+            self.simStates.append(simS)
+            self.simDataL.append(simL)
+        self.nReps = nReps
+    def resim(self):
+        self.clearData()
+        self.sim()
+    def dataFrame(self,n):  # strips units off for plotting; pyplot can't handle units
         time = 0*self.dt  # multiplying by 0 preseves units
         # Commented out lines below are for computing quantities without units
         # mdt = parameter.m(self.dt)
@@ -98,8 +110,8 @@ class flatStepProtocol(object):
         simNodes = []
         simDataT = []
         simDataC = []
-        for s in self.simStates:
-            simNodes.append(self.states[s])   # simNodes are Node classes; simStates are integers
+        for s in self.simStates[n]:
+            simNodes.append(self.states[s])   # simNodes are Node classes; simStates are  integers
             simDataT.append(copy.copy(time))
             simDataC.append(parameter.v(self.levelMap[s].mean) )
             # simDataCm.append(parameter.m(self.levelMap[s].mean))
@@ -109,9 +121,6 @@ class flatStepProtocol(object):
         #    simDataVm.append(parameter.m(v))
         # simDataC taken out of DataFrame
         return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':self.simDataV}))
-    def resim(self):
-        self.clearData()
-        self.sim()
     # Select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()
@@ -141,22 +150,23 @@ class flatStepProtocol(object):
     def normalize(self, new):
         c = 1/new.sum()
         return (c*new,c)
-    def update(self,distrib,k):
-        new = distrib*self.B[self.simDataL[k]]
+    def update(self,distrib,k,n):
+        new = distrib*self.B[self.simDataL[n][k]]  # n is trajectory number, k=0 is sample num; doesn't depend on voltage
         return self.normalize(new)
-    def predictupdate(self,distrib,k,iv):
-        new = distrib*self.AB[self.simDataL[k]][iv]  # [level num][voltage num]
+    def predictupdate(self,distrib,k,iv,n):
+        new = distrib*self.AB[self.simDataL[n][k]][iv]  # [[traj num][level num]][voltage num]
         return self.normalize(new)
     def minuslike(self):  # returns minus the log-likelihood
-        assert(self.hasData)
-        (alphak,ck) = self.update(self.initDistrib,0)
-        self.mll = math.log(ck)
-        k0 = 1   # Offset
-        for iv in range(len(self.voltages)):
-            for k in range(k0,k0+self.nsamples[iv]):
-                (alphak,ck) = self.predictupdate(alphak,k,iv)
-                self.mll += math.log(ck)
-            k0 += self.nsamples[iv]
+        self.mll = 0
+        for n in range(self.nReps):
+            (alphak,ck) = self.update(self.initDistrib,0,n)
+            self.mll += math.log(ck)
+            k0 = 1   # Offset
+            for iv in range(len(self.voltages)):
+                for k in range(k0,k0+self.nsamples[iv]):
+                    (alphak,ck) = self.predictupdate(alphak,k,iv,n)
+                    self.mll += math.log(ck)
+                k0 += self.nsamples[iv]
         return self.mll
     def like(self):  # returns the log-likelihood
         return -self.minuslike()

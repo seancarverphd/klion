@@ -94,8 +94,8 @@ voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated 
 voltageStepDurations = [0*u.ms,default_tstop,default_tstop,default_tstop]  # default_tstop is a global parameter
 S = StepProtocol(P,voltages,voltageStepDurations)
 FS = S.flatten(3)
-FS.sim()
-DF = FS.dataFrame()
+FS.sim(1)
+DF = FS.dataFrame(0)
 # RS = RepeatedSteps(P,voltages,voltageStepDurations)
 # RS.sim(rng=3,nReps=4)
 # pyplot.plot(FS.simDataT,FS.simDataX)
