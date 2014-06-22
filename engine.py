@@ -85,7 +85,7 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.Mean[state])
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
-    def sim(self,nReps):
+    def sim(self,nReps=1):
         for n in range(nReps - len(self.simDataL)):
             (simS,simL) = self.makeNewTraj()
             state = simS[0]
@@ -96,7 +96,7 @@ class flatStepProtocol(object):
             self.simStates.append(simS)
             self.simDataL.append(simL)
         self.nReps = nReps
-    def resim(self,nReps):
+    def resim(self,nReps=1):
         self.clearData()
         self.sim(nReps)
     def dataFrame(self,n):  # strips units off for plotting; pyplot can't handle units
