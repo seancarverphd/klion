@@ -184,13 +184,17 @@ class Channel(object):
 # This code sets up a canonical channel
 # EK is Hodgkin Huxley value take from http://icwww.epfl.ch/~gerstner/SPNM/node14.html
 EK = parameter.Parameter("EK",-77,"mV",log=False)
-# gmax_khh is from www.neuron.yale.edu, but is a density parameter inappropriate for a single channel
-gmax_khh = parameter.Parameter("gmax_khh",0.02979,"microsiemens",log=True)
-# The following two parameters were made up:
 # I = gV
-gstd_open = parameter.Parameter("gstd_open", 0.01,"microsiemens",log=True)
-gstd_closed = parameter.Parameter("gstd_closed",0.001,"microsiemens",log=True)
-# for one channel units of gmax_khh should be siemens
+# gmax_khh is from www.neuron.yale.edu, but is a density parameter inappropriate for a single channel; use g_open instead
+gmax_khh = parameter.Parameter("gmax_khh",0.02979,"microsiemens",log=True)
+# "The single-channel conductance of typical ion channels ranges from 0.1 to 100 pS (picosiemens)."  Bertil Hille (2008), Scholarpedia, 3(10):6051.
+# For now, g_open is used only for plotting
+g_open = parameter.Parameter("g_open",1.,"picosiemens",log=True)
+# The following two parameters were made up (but they are not used at the moment):  
+gstd_open = parameter.Parameter("gstd_open", 0.1,"picosiemens",log=True)
+gstd_closed = parameter.Parameter("gstd_closed",0.01,"picosiemens",log=True)
+
+# The rest of these parameters come from www.neuron.yale.edu (khh channel) channel builder tutorial
 ta1 = parameter.Parameter("ta1",4.4,"ms",log=True)
 tk1 = parameter.Parameter("tk1",-0.025,"1/mV",log=False)
 d1 = parameter.Parameter("d1",21.,"mV",log=False)
@@ -219,7 +223,7 @@ b1 = parameter.Expression("b1","1/(tau1*(K1+1))",[K1,tau1])
 a2 = parameter.Expression("a2","K2/(tau2*(K2+1))",[K2,tau2])
 b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
 
-Open = Level("Open",mean=gmax_khh,std=gstd_open)
+Open = Level("Open",mean=g_open,std=gstd_open)
 Closed = Level("Closed",mean=0.*u.microsiemens,std=gstd_closed)
 C1 = Node("C1",Closed)
 C2 = Node("C2",Closed)
