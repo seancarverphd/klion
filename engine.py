@@ -10,17 +10,17 @@ class flatStepProtocol(object):
     def __init__(self,parent,seed=None):
         # Nothing below changes until indicated
         self.R = random.Random()
-        self.dt = parameter.v(parent.dt) 
+        self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
         self.voltages = []
         self.durations = []  
         self.nsamples = [] 
         for v in parent.voltages:
-            self.voltages.append(parameter.v(v))
+            self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
         for dur in parent.voltageStepDurations:
-            self.durations.append(parameter.v(dur))
-            self.nsamples.append(int(math.ceil(parameter.v(dur)/self.dt)))
+            self.durations.append(copy.copy(parameter.v(dur)))
+            self.nsamples.append(int(self.durations[-1]/self.dt))
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
-        self.levels = parent.thePatch.uniqueLevels # This is a set
+        self.levels = copy.copy(parent.thePatch.uniqueLevels) # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
         self.voltageTrajectory()  # Only needed for plotting
         # Nothing above changes, but below can change
@@ -30,10 +30,10 @@ class flatStepProtocol(object):
     def change(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
-        self.initDistrib = newPatch.equilibrium(self.voltages[0])
+        self.initDistrib = newPatch.equilibrium(self.voltages[0])  # deepcopy not necessary here, or with A
         self.A = []  
         for v in self.voltages:
-            self.A.append(newPatch.getA(v,self.dt))  # getA() called with same args, value can change
+            self.A.append(newPatch.getA(v,self.dt))  # when change, getA() called with same v's, value can change
         self.states2levels(newPatch)
         self.makeB() # NO-NOISE only. For NOISE: Set MEAN and STD here
     def states2levels(self,newPatch):
