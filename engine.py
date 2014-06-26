@@ -34,6 +34,7 @@ class flatStepProtocol(object):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.initDistrib = newPatch.equilibrium(self.voltages[0])  # deepcopy not necessary here, or with A
+        self.nextDistrib = []
         for i, ns in enumerate(self.nsamples):        
             if ns == None:   # Requires new initialization of state when simulating
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]))
@@ -59,9 +60,12 @@ class flatStepProtocol(object):
     def voltageTrajectory(self):
         self.simDataV = []
         self.simDataV.append(self.voltages[0])
-        for i in range(len(self.voltages)):
-            for j in range(self.nsamples[i]):
-               self.simDataV.append(self.voltages[i])
+        for i,ns in enumerate(self.nsamples):
+            if ns == None:
+                self.simDataV.append(self.voltages[i])   # only append one voltage here
+                continue
+            for j in range(ns):
+               self.simDataV.append(self.voltages[i]) # append one voltage for each sample
     def clearData(self):
         self.nReps = None
         if self.seed == None:
@@ -92,16 +96,17 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.Mean[state])
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
-    def newInit(self,initNum,simS,simL):
+    def nextInit(self,initNum,simS,simL):
         state0 = self.select(self.nextDistrib[initNum])
         self.appendTrajectory(state0,simS,simL)
+        return state0
     def sim(self,nReps=1):
         for n in range(nReps - len(self.simDataL)):
             (simS,simL,initNum) = self.makeNewTraj()  # sets initNum=0
             state = simS[0]
             for i,ns in enumerate(self.nsamples):
                 if ns == None:
-                    state = self.newInit(initNum,simS,simL)
+                    state = self.nextInit(initNum,simS,simL)
                     initNum += initNum
                     continue
                 for j in range(ns):

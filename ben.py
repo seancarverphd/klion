@@ -27,8 +27,10 @@ def loop_matrix(n):
     return list
 
 P = patch.singleChannelPatch(channel.khh)
-voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
-voltageStepDurations = [0*u.ms,patch.default_tstop,patch.default_tstop,patch.default_tstop]  # default_tstop is a global parameter
+#voltages = [channel.V0,channel.V1,channel.V2,channel.V1]  # repeat V1; repeated variables affect differentiation via chain rule
+#voltageStepDurations = [0*u.ms,patch.default_tstop,patch.default_tstop,patch.default_tstop]  # default_tstop is a global parameter
+voltages = [channel.V0,channel.V1,channel.V0,channel.V2]
+voltageStepDurations = [0*u.ms,patch.default_tstop,None,patch.default_tstop]
 S = patch.StepProtocol(P,voltages,voltageStepDurations)
 FS = S.flatten(3)
 FS.sim(1)
