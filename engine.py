@@ -66,13 +66,23 @@ class flatStepProtocol(object):
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def voltageTrajectory(self):
         self.simDataV = []
+        self.simDataT = []
+        dtValue = parameter.v(self.dt)
         #self.simDataV.append(self.voltages[0])
         for i,ns in enumerate(self.nsamples):
             if ns == None:
+                time = 0.*dtValue  # to define units
+                self.simDataT.append(numpy.nan)  # time is an infinite interval here
                 self.simDataV.append(self.voltages[i])   # only append one voltage here
                 continue
+            elif i==0:  # not ns==None and i==0
+                time = 0.*dtValue  # to define units
+                self.simDataT.append(time)
+                self.simDataV.append(numpy.nan)
             for j in range(ns):
-               self.simDataV.append(self.voltages[i]) # append one voltage for each sample
+                time = copy.copy(time) + dtValue
+                self.simDataT.append(time)
+                self.simDataV.append(self.voltages[i]) # append one voltage for each sample
     def clearData(self):
         self.nReps = None
         if self.seed == None:
@@ -123,25 +133,14 @@ class flatStepProtocol(object):
         self.clearData()
         self.sim(nReps)
     def dataFrame(self,n):  # strips units off for plotting; pyplot can't handle units
-        time = 0*self.dt  # multiplying by 0 preseves units
-        # Commented out lines below are for computing quantities without units
-        # mdt = parameter.m(self.dt)
-        # simDataTm = numpy.arange(0,mdt*len(self.simStates),mdt)
         simNodes = []
         simDataT = []
         simDataC = []
         for s in self.simStates[n]:
             simNodes.append(self.states[s])   # simNodes are Node classes; simStates are  integers
-            simDataT.append(copy.copy(time))
             simDataC.append(parameter.v(self.levelMap[s].mean) )
-            # simDataCm.append(parameter.m(self.levelMap[s].mean))
-            time += self.dt
-        #simDataVm = []
-        #for v in self.simDataV:
-        #    simDataVm.append(parameter.m(v))
-        # simDataC taken out of DataFrame
-        return(pandas.DataFrame({'Time':simDataT,'Node':simNodes,'Voltage':self.simDataV}))
-    # Select is also defined in patch.singleChannelPatch
+        return(pandas.DataFrame({'Time':self.simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}))
+    # select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()
         rowsum = 0

@@ -245,7 +245,7 @@ a2 = parameter.Expression("a2","K2/(tau2*(K2+1))",[K2,tau2])
 b2 = parameter.Expression("b2","1/(tau2*(K2+1))",[K2,tau2])
 
 Open = Level("Open",mean=g_open,std=gstd_open)
-Closed = Level("Closed",mean=0.*u.microsiemens,std=gstd_closed)
+Closed = Level("Closed",mean=0.*u.picosiemens,std=gstd_closed)
 C1 = Node("C1",Closed)
 C2 = Node("C2",Closed)
 O = Node("O",Open)

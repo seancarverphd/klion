@@ -10,7 +10,8 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import engine
 
-default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
+#default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
+default_dt = parameter.Parameter("dt",5.,"ms",log=True)
 default_tstop = parameter.Parameter("tstop",20.,"ms",log=True)
 
 def equilQ(Q):
