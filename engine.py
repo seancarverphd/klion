@@ -17,11 +17,12 @@ class flatStepProtocol(object):
         for v in parent.voltages:
             self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
         for dur in parent.voltageStepDurations:
-            self.durations.append(copy.copy(parameter.v(dur)))
-            if dur == None:
+            durationValue = copy.copy(parameter.v(dur))
+            self.durations.append(durationValue)
+            if numpy.isinf(durationValue):
                 self.nsamples.append(None)
             else:
-                self.nsamples.append(int(self.durations[-1]/self.dt))
+                self.nsamples.append(int(durationValue/self.dt))
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
         self.levels = copy.copy(parent.thePatch.uniqueLevels) # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
@@ -33,8 +34,14 @@ class flatStepProtocol(object):
     def change(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
-        self.initDistrib = newPatch.equilibrium(self.voltages[0])  # deepcopy not necessary here, or with A
         self.nextDistrib = []
+        initDistrib = newPatch.ch.weightedDistrib()
+        if initDistrib == None:   # No initial distribution because all weights 0, use equilibrium distribution
+            assert(self.nsamples[0]==None)  #Infinite duration for first voltage, use equilibrium
+        else:
+            assert(not self.nsamples[0]==None)  # Finite duration for first voltage
+            self.nextDistrib.append(initDistrib)  # Use initDistrib for initial distribution
+        # OLD:  self.initDistrib = newPatch.equilibrium(self.voltages[0])  # deepcopy not necessary here, or with A
         for i, ns in enumerate(self.nsamples):        
             if ns == None:   # Requires new initialization of state when simulating
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]))
@@ -59,7 +66,7 @@ class flatStepProtocol(object):
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def voltageTrajectory(self):
         self.simDataV = []
-        self.simDataV.append(self.voltages[0])
+        #self.simDataV.append(self.voltages[0])
         for i,ns in enumerate(self.nsamples):
             if ns == None:
                 self.simDataV.append(self.voltages[i])   # only append one voltage here
@@ -75,13 +82,10 @@ class flatStepProtocol(object):
         self.R.seed(self.usedSeed)
         self.simStates = []
         self.simDataL = []
-    def makeNewTraj(self):
-        simS = []
-        simL = []
-        state0 = self.select(self.initDistrib)
-        initNum = 0
-        self.appendTrajectory(state0,simS,simL)
-        return (simS,simL,initNum)
+    #def makeNewTraj(self):
+    #    return self.select(self.initDistrib)
+    def nextInit(self,nextInitNum):
+        return self.select(self.nextDistrib[nextInitNum])
     def reseed(self,seed):
         self.seed = seed
         self.clearData()
@@ -96,18 +100,18 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.Mean[state])
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
-    def nextInit(self,initNum,simS,simL):
-        state0 = self.select(self.nextDistrib[initNum])
-        self.appendTrajectory(state0,simS,simL)
-        return state0
     def sim(self,nReps=1):
         for n in range(nReps - len(self.simDataL)):
-            (simS,simL,initNum) = self.makeNewTraj()  # sets initNum=0
-            state = simS[0]
+            simS = []
+            simL = []
+            #state = self.makeNewTraj()  # sets initNum=0, initial init not counted
+            #self.appendTrajectory(state,simS,simL)
+            nextInitNum = 0
             for i,ns in enumerate(self.nsamples):
-                if ns == None:
-                    state = self.nextInit(initNum,simS,simL)
-                    initNum += initNum
+                if i==0 or ns == None:
+                    state = self.nextInit(nextInitNum)
+                    self.appendTrajectory(state,simS,simL)
+                    nextInitNum += 1
                     continue
                 for j in range(ns):
                     state = self.select(self.A[i],state)

@@ -34,14 +34,20 @@ class Node(object):
     def __init__(self,name,level):
         self.name = name
         self.level = level
+        self.weight = 0.
+        self.integrity()
+    def setWeight(self,w):
+        self.weight = w
         self.integrity()
     def __repr__(self):
-        return 'Node %s: %s' % (self.name, repr(self.level))
+        return 'Node %s: %s \n  Weight for initial distribution: %s' % (self.name, repr(self.level), self.weight)
     def __str__(self):
         return 'Node %s: %s' % (self.name, self.level.name)
     def integrity(self):
         assert(isinstance(self.name,basestring))
         assert(isinstance(self.level,Level))
+        assert(self.weight>=0.)
+        assert(not numpy.isinf(self.weight))
         
 # A Channel is a model of an ion channel
 class Channel(object):
@@ -50,6 +56,21 @@ class Channel(object):
         self.nodes = nodes # list of nodes, defines order
         self.recordOrder() # defines nodeOrder dictionary
         self.disconnect()  # QList = 0; calls integrity() which calls reparametrize()
+    def weightedDistrib(self): 
+        total = 0.
+        weights = []
+        for n in self.nodes:
+            weights.append(n.weight)
+            n.integrity()
+        weights = numpy.array(weights)
+        total = sum(weights)
+        if total == 0:
+            return None
+        else:
+            return weights/total
+    def clearWeights(self):
+        for n in self.nodes:
+            n.weight = 0.
     def makeQ(self):
         # make Q with units
         s = len(self.QList[0])  # QList should be square
