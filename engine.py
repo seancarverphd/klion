@@ -139,7 +139,8 @@ class flatStepProtocol(object):
         for s in self.simStates[n]:
             simNodes.append(self.states[s])   # simNodes are Node classes; simStates are  integers
             simDataC.append(parameter.v(self.levelMap[s].mean) )
-        return(pandas.DataFrame({'Time':self.simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}))
+        dataDict = {'Time':self.simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}
+        return(pandas.DataFrame(dataDict,columns=['Time','Node','Voltage','Conductance']))
     # select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()
