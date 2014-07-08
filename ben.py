@@ -36,7 +36,7 @@ voltageStepDurations = [numpy.inf,patch.default_tstop,numpy.inf,patch.default_ts
 S = patch.StepProtocol(P,voltages,voltageStepDurations)
 FS = S.flatten(3)
 FS.sim(1)
-DF = FS.dataFrame(0)
+DF = FS.dataFrame()
 # RS = RepeatedSteps(P,voltages,voltageStepDurations)
 # RS.sim(rng=3,nReps=4)
 # pyplot.plot(FS.simDataT,FS.simDataX)

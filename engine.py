@@ -17,7 +17,8 @@ class flatStepProtocol(object):
         self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
         self.voltages = []
         self.durations = []  
-        self.nsamples = [] 
+        self.nsamples = []
+        self.preferred = parent.preferred  # preferred units
         for v in parent.voltages:
             self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
         for dur in parent.voltageStepDurations:
@@ -30,6 +31,7 @@ class flatStepProtocol(object):
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
         self.levels = copy.copy(parent.thePatch.uniqueLevels) # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
+        self.hasVoltTraj = False
         self.voltageTrajectory()  # Only needed for plotting
         self.clearData()
     def clearData(self):
@@ -75,24 +77,42 @@ class flatStepProtocol(object):
         self.nStates = len(self.levelMap)  # changes
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def voltageTrajectory(self):
+        if self.hasVoltTraj:
+            return
+        self.voltagesM = [] # Strip units off voltages
+        for v in self.voltages:
+            self.voltagesM.append(parameter.mu(v,self.preferred.voltage))
         self.simDataV = []
+        self.simDataVM = []
         self.simDataT = []
+        self.simDataTM = []
         dtValue = parameter.v(self.dt)
+        dtValueM = parameter.mu(self.dt,self.preferred.time)  # without units
         #self.simDataV.append(self.voltages[0])
         for i,ns in enumerate(self.nsamples):
             if ns == None:
                 time = 0.*dtValue  # to define units
+                timeM = 0 # no units
                 self.simDataT.append(numpy.nan)  # time is an infinite interval here
+                self.simDataTM.append(numpy.nan)
                 self.simDataV.append(self.voltages[i])   # only append one voltage here
+                self.simDataVM.append(self.voltagesM[i])
                 continue
             elif i==0:  # not ns==None and i==0
                 time = 0.*dtValue  # to define units
+                timeM = 0 # no units
                 self.simDataT.append(time)
+                self.simDataTM.append(timeM)
                 self.simDataV.append(numpy.nan)
+                self.simDataVM.append(numpy.nan)
             for j in range(ns):
                 time = copy.copy(time) + dtValue
+                timeM += dtValueM
                 self.simDataT.append(time)
+                self.simDataTM.append(timeM)
                 self.simDataV.append(self.voltages[i]) # append one voltage for each sample
+                self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
+        hasVoltTraj = True
     def nextInit(self,nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(self.nextDistrib[nextInitNum])
     def reseed(self,seed):
@@ -131,24 +151,49 @@ class flatStepProtocol(object):
     def resim(self,nReps=1):
         self.clearData()
         self.sim(nReps)
-    def dataFrame(self,rep=0, downsample=0):  # 
+    def dataFrame(self,rep=0, downsample=0,wantUnits=True):
+        self.voltageTrajectory()
         DFNodes = []
-        DFDataT = []
-        DFDataC = []
-        DFDataV = []
-        counter = 0
+        if wantUnits:
+            DFDataT = []
+            DFDataG = []  # G is standard letter for conductance
+            DFDataV = []
+        else:
+            DFDataTM = []
+            DFDataGM = []
+            DFDataVM = []
+        means = []
+        meansM = []
+        for s in self.states:
+            means.append(parameter.v(s.level.mean))
+            meansM.append(parameter.mu(means[-1],self.preferred.conductance))
+        counter = 0  # The counter is for downsampling
         for i,s in enumerate(self.simStates[rep]):
-            if numpy.isnan(self.simDataT[i]):
+            if numpy.isnan(self.simDataT[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
-            if counter >= downsample:
+            if counter >= downsample:   # Grab a data point
                 counter = 0
-                DFDataT.append(self.simDataT[i])
-                DFDataV.append(self.simDataV[i])
-                DFNodes.append(self.states[s])   # simNodes are Node classes; simStates are integers
-                DFDataC.append(parameter.v(self.levelMap[s].mean) )
+                DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
+                g = parameter.v(self.levelMap[s].mean)
+                if wantUnits:
+                    DFDataT.append(self.simDataT[i])
+                    DFDataV.append(self.simDataV[i])
+                    DFDataG.append(means[s])
+                else:
+                    DFDataTM.append(self.simDataTM[i])
+                    DFDataVM.append(self.simDataVM[i])
+                    DFDataGM.append(meansM[s])
             counter += 1
-        dataDict = {'Time':DFDataT,'Node':DFNodes,'Voltage':DFDataV,'Conductance':DFDataC}
-        return(pandas.DataFrame(dataDict,columns=['Time','Node','Voltage','Conductance']))
+        if wantUnits:
+            dataDict = {'Time':DFDataT,'Node':DFNodes,'Voltage':DFDataV,'Conductance':DFDataG}
+            return(pandas.DataFrame(dataDict,columns=['Time','Node','Voltage','Conductance']))
+        else:  # Convert to preferred units and strip units
+            TLabel = 'T_'+self.preferred.time
+            VLabel = 'V_'+self.preferred.voltage
+            GLabel = 'G_'+self.preferred.conductance
+            dataDict = {TLabel:DFDataTM,'Node':DFNodes,VLabel:DFDataVM,GLabel:DFDataGM}
+            return(pandas.DataFrame(dataDict,columns=[TLabel,'Node',VLabel,GLabel]))
+            
     # select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
         p = self.R.random()

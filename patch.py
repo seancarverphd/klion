@@ -11,8 +11,14 @@ import matplotlib.pyplot as pyplot
 import engine
 
 #default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
-default_dt = parameter.Parameter("dt",5.,"ms",log=True)
+default_dt = parameter.Parameter("dt",0.01,"ms",log=True)
 default_tstop = parameter.Parameter("tstop",20.,"ms",log=True)
+
+preferred = parameter.preferredUnits()
+preferred.time = 'ms'
+preferred.voltage = 'mV'
+preferred.conductance = 'pS'
+preferred.current = "fA"
 
 def equilQ(Q):
     (V,D) = np.linalg.eig(Q.T)   # eigenspace
@@ -26,6 +32,7 @@ class StepProtocol(object):
         self.voltages = voltages
         self.voltageStepDurations = voltageStepDurations
         self.setSampleInterval(default_dt)
+        self.preferred = preferred
     def setSampleInterval(self,dt):
         assert(parameter.v(dt)>0*u.milliseconds)  # dt > 0 regardless of units
         self.dt = dt

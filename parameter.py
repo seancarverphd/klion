@@ -12,12 +12,17 @@ def v(x):
         return x
 
 def m(x):
-    y = v(x)
+    y = v(x)        
     try:
         return y._magnitude
     except:
         return y
 
+def mu(x,finalUnit):
+    y = v(x)
+    z = y.to(getattr(u,finalUnit))
+    return m(z)
+    
 def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
@@ -427,6 +432,10 @@ class Expression(object):
             new.update(v.getExpressions())
         return new
 
+class preferredUnits(object):
+    def __init__(self):
+        pass
+    
 def getSpace(x):
     try:  # if object has a attribute names PS, return PS
         return x.PS
@@ -438,4 +447,5 @@ def getSpace(x):
         return x
     else:  # if all else fails return the empty space.
         return emptySpace()
+
 
