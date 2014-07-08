@@ -93,7 +93,7 @@ class flatStepProtocol(object):
                 time = copy.copy(time) + dtValue
                 self.simDataT.append(time)
                 self.simDataV.append(self.voltages[i]) # append one voltage for each sample
-    def nextInit(self,nextInitNum):
+    def nextInit(self,nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(self.nextDistrib[nextInitNum])
     def reseed(self,seed):
         self.seed = seed
@@ -131,14 +131,23 @@ class flatStepProtocol(object):
     def resim(self,nReps=1):
         self.clearData()
         self.sim(nReps)
-    def dataFrame(self,n):  # strips units off for plotting; pyplot can't handle units
-        simNodes = []
-        simDataT = []
-        simDataC = []
-        for s in self.simStates[n]:
-            simNodes.append(self.states[s])   # simNodes are Node classes; simStates are  integers
-            simDataC.append(parameter.v(self.levelMap[s].mean) )
-        dataDict = {'Time':self.simDataT,'Node':simNodes,'Voltage':self.simDataV,'Conductance':simDataC}
+    def dataFrame(self,rep=0, downsample=0):  # 
+        DFNodes = []
+        DFDataT = []
+        DFDataC = []
+        DFDataV = []
+        counter = 0
+        for i,s in enumerate(self.simStates[rep]):
+            if numpy.isnan(self.simDataT[i]):
+                counter = downsample
+            if counter >= downsample:
+                counter = 0
+                DFDataT.append(self.simDataT[i])
+                DFDataV.append(self.simDataV[i])
+                DFNodes.append(self.states[s])   # simNodes are Node classes; simStates are integers
+                DFDataC.append(parameter.v(self.levelMap[s].mean) )
+            counter += 1
+        dataDict = {'Time':DFDataT,'Node':DFNodes,'Voltage':DFDataV,'Conductance':DFDataC}
         return(pandas.DataFrame(dataDict,columns=['Time','Node','Voltage','Conductance']))
     # select is also defined in patch.singleChannelPatch
     def select(self,mat,row=0):  # select from matrix[row,:]
