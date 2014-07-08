@@ -10,6 +10,10 @@ class flatStepProtocol(object):
     def __init__(self,parent,seed=None):
         # Nothing below changes until indicated
         self.R = random.Random()
+        self.seed = seed # can be changed with self.reseed()
+        self.changeProtocol(parent)  # calls self.clearData()
+        self.changeModel(parent.thePatch)
+    def changeProtocol(self, parent):
         self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
         self.voltages = []
         self.durations = []  
@@ -27,11 +31,17 @@ class flatStepProtocol(object):
         self.levels = copy.copy(parent.thePatch.uniqueLevels) # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
         self.voltageTrajectory()  # Only needed for plotting
-        # Nothing above changes, but below can change
-        self.seed = seed # changes with reseed()
-        self.change(parent.thePatch)  # call change(newPatch) possible
         self.clearData()
-    def change(self,newPatch):
+    def clearData(self):
+        self.nReps = None
+        if self.seed == None:
+            self.usedSeed = long(time.time()*256)
+        else:
+            self.usedSeed = self.seed  # can be changed with self.reseed()
+        self.R.seed(self.usedSeed)
+        self.simStates = []
+        self.simDataL = []
+    def changeModel(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.nextDistrib = []
@@ -83,17 +93,6 @@ class flatStepProtocol(object):
                 time = copy.copy(time) + dtValue
                 self.simDataT.append(time)
                 self.simDataV.append(self.voltages[i]) # append one voltage for each sample
-    def clearData(self):
-        self.nReps = None
-        if self.seed == None:
-            self.usedSeed = long(time.time()*256)
-        else:
-            self.usedSeed = self.seed  # changes with reseed()
-        self.R.seed(self.usedSeed)
-        self.simStates = []
-        self.simDataL = []
-    #def makeNewTraj(self):
-    #    return self.select(self.initDistrib)
     def nextInit(self,nextInitNum):
         return self.select(self.nextDistrib[nextInitNum])
     def reseed(self,seed):
