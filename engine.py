@@ -9,7 +9,8 @@ import pandas
 class flatStepProtocol(object):
     def __init__(self,parent,seed=None):
         # Nothing below changes until indicated
-        self.R = random.Random()
+        self.R = random.Random() # for simulation of states
+        self.RG = random.Random() # for simulation of conductance, currently separate from state
         self.seed = seed # can be changed with self.reseed()
         self.changeProtocol(parent)  # calls self.clearData()
         self.changeModel(parent.thePatch)
@@ -42,6 +43,7 @@ class flatStepProtocol(object):
         self.R.seed(self.usedSeed)
         self.simStates = []
         self.simDataL = []
+        self.simDataG = []  # conductance, simulated separately.
     def changeModel(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
@@ -60,7 +62,8 @@ class flatStepProtocol(object):
         for v in self.voltages:
             self.A.append(newPatch.getA(v,self.dt))  # when change, getA() called with same v's, value can change
         self.states2levels(newPatch)
-        self.makeB() # NO-NOISE only. For NOISE: Set MEAN and STD here
+        self.makeB() # NO-NOISE only.
+        self.makeMeanSTD()
     def states2levels(self,newPatch):
         self.levelMap = []
         self.levelNum = []
@@ -117,7 +120,7 @@ class flatStepProtocol(object):
         return self.select(self.nextDistrib[nextInitNum])
     def reseed(self,seed):
         self.seed = seed
-        self.clearData()
+        self.clearData()  # Reseeds random number generator
     def appendTrajectory(self,state,simS,simL):
         simS.append(state)
         # NO NOISE:
@@ -130,7 +133,7 @@ class flatStepProtocol(object):
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
     def sim(self,nReps=1):
-        for n in range(nReps - len(self.simDataL)):
+        for n in range(nReps - len(self.simDataL)):  # Only does new reps if nReps has increased since las 
             simS = []
             simL = []
             #state = self.makeNewTraj()  # sets initNum=0, initial init not counted
@@ -149,8 +152,22 @@ class flatStepProtocol(object):
             self.simDataL.append(simL)
         self.nReps = nReps
     def resim(self,nReps=1):
-        self.clearData()
+        self.clearData()  # reseeds random number generator
         self.sim(nReps)
+    def makeMeanSTD(self):
+        self.stds = []
+        self.stdsM = []
+        self.means = []
+        self.meansM = []
+        for s in self.states:
+            self.means.append(parameter.v(s.level.mean))
+            self.stds.append(parameter.v(s.level.std))
+            self.meansM.append(parameter.mu(self.means[-1],self.preferred.conductance))
+            self.stdsM.append(parameter.mu(self.stds[-1],self.preferred.conductance))
+    #def simG(self,seedG=0):
+    #    for SimS in simStates:   # simStates is a list of trajectories one for each rep.     
+    #        for s in SS:        
+    #            # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
     def dataFrame(self,rep=0, downsample=0,wantUnits=True):
         self.voltageTrajectory()
         means = []
@@ -167,33 +184,30 @@ class flatStepProtocol(object):
             timeData = self.simDataT
             voltData = self.simDataV
             meanData = means
+            TLabel = 'Time'
+            VLabel = 'Voltage'
+            GLabel = 'Conductance'
         else:
             timeData = self.simDataTM
             voltData = self.simDataVM
             meanData = meansM
+            TLabel = 'T_'+self.preferred.time
+            VLabel = 'V_'+self.preferred.voltage
+            GLabel = 'G_'+self.preferred.conductance
         for i,s in enumerate(self.simStates[rep]):
             if numpy.isnan(self.simDataT[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:   # Grab a data point
                 counter = 0
                 DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
-                #g = parameter.v(self.levelMap[s].mean)
                 DFDataT.append(timeData[i])
                 DFDataV.append(voltData[i])
                 DFDataG.append(meanData[s])
             counter += 1
-        if wantUnits:
-            dataDict = {'Time':DFDataT,'Node':DFNodes,'Voltage':DFDataV,'Conductance':DFDataG}
-            return(pandas.DataFrame(dataDict,columns=['Time','Node','Voltage','Conductance']))
-        else:  # Convert to preferred units and strip units
-            TLabel = 'T_'+self.preferred.time
-            VLabel = 'V_'+self.preferred.voltage
-            GLabel = 'G_'+self.preferred.conductance
-            dataDict = {TLabel:DFDataT,'Node':DFNodes,VLabel:DFDataV,GLabel:DFDataG}
-            return(pandas.DataFrame(dataDict,columns=[TLabel,'Node',VLabel,GLabel]))
-            
-    # select is also defined in patch.singleChannelPatch
+        dataDict = {TLabel:DFDataT,'Node':DFNodes,VLabel:DFDataV,GLabel:DFDataG}
+        return(pandas.DataFrame(dataDict,columns=[TLabel,'Node',VLabel,GLabel]))           
     def select(self,mat,row=0):  # select from matrix[row,:]
+    # select is also defined in patch.singleChannelPatch
         p = self.R.random()
         rowsum = 0
         # cols should add to 1
