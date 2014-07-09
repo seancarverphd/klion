@@ -85,35 +85,24 @@ class flatStepProtocol(object):
         self.voltagesM = [] # Strip units off voltages
         for v in self.voltages:
             self.voltagesM.append(parameter.mu(v,self.preferred.voltage))
-        self.simDataV = []
         self.simDataVM = []
-        self.simDataT = []
         self.simDataTM = []
         dtValue = parameter.v(self.dt)
         dtValueM = parameter.mu(self.dt,self.preferred.time)  # without units
         #self.simDataV.append(self.voltages[0])
         for i,ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
             if ns == None:
-                time = 0.*dtValue  # to define units
-                timeM = 0 # no units
-                self.simDataT.append(numpy.nan)  # time is an infinite interval here
+                timeM = 0 # no units, M is for magnitude (no units)
                 self.simDataTM.append(numpy.nan)
-                self.simDataV.append(self.voltages[i])   # only append one voltage here
                 self.simDataVM.append(self.voltagesM[i])
                 continue
             elif i==0:  # not ns==None and i==0
-                time = 0.*dtValue  # to define units
                 timeM = 0 # no units
-                self.simDataT.append(time)
                 self.simDataTM.append(timeM)
-                self.simDataV.append(numpy.nan)
                 self.simDataVM.append(numpy.nan)
             for j in range(ns):
-                time = copy.copy(time) + dtValue
                 timeM += dtValueM
-                self.simDataT.append(time)
                 self.simDataTM.append(timeM)
-                self.simDataV.append(self.voltages[i]) # append one voltage for each sample
                 self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
         hasVoltTraj = True
     def nextInit(self,nextInitNum):  # initializes state based on stored equilibrium distributions
@@ -155,55 +144,37 @@ class flatStepProtocol(object):
         self.clearData()  # reseeds random number generator
         self.sim(nReps)
     def makeMeanSTD(self):
-        self.stds = []
         self.stdsM = []
-        self.means = []
         self.meansM = []
         for s in self.states:
-            self.means.append(parameter.v(s.level.mean))
-            self.stds.append(parameter.v(s.level.std))
-            self.meansM.append(parameter.mu(self.means[-1],self.preferred.conductance))
-            self.stdsM.append(parameter.mu(self.stds[-1],self.preferred.conductance))
+            newMean = parameter.v(s.level.mean)
+            newSTD = parameter.v(s.level.std)
+            self.meansM.append(parameter.mu(newMean,self.preferred.conductance))
+            self.stdsM.append(parameter.mu(newSTD,self.preferred.conductance))
     #def simG(self,seedG=0):
     #    for SimS in simStates:   # simStates is a list of trajectories one for each rep.     
     #        for s in SS:        
     #            # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
-    def dataFrame(self,rep=0, downsample=0,wantUnits=True):
+    def dataFrame(self,rep=0, downsample=0):
         self.voltageTrajectory()
-        means = []
-        meansM = []
-        for s in self.states:
-            means.append(parameter.v(s.level.mean))
-            meansM.append(parameter.mu(means[-1],self.preferred.conductance))
         DFNodes = []
         DFDataT = []
         DFDataG = []  # G is standard letter for conductance
         DFDataV = []
         counter = 0  # The counter is for downsampling
-        if wantUnits:
-            timeData = self.simDataT
-            voltData = self.simDataV
-            meanData = means
-            TLabel = 'Time'
-            VLabel = 'Voltage'
-            GLabel = 'Conductance'
-        else:
-            timeData = self.simDataTM
-            voltData = self.simDataVM
-            meanData = meansM
-            TLabel = 'T_'+self.preferred.time
-            VLabel = 'V_'+self.preferred.voltage
-            GLabel = 'G_'+self.preferred.conductance
         for i,s in enumerate(self.simStates[rep]):
-            if numpy.isnan(self.simDataT[i]):  # reset counter with initialization (hold at pre-voltage)
+            if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:   # Grab a data point
                 counter = 0
                 DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
-                DFDataT.append(timeData[i])
-                DFDataV.append(voltData[i])
-                DFDataG.append(meanData[s])
+                DFDataT.append(self.simDataTM[i])
+                DFDataV.append(self.simDataVM[i])
+                DFDataG.append(self.meansM[s])
             counter += 1
+        TLabel = 'T_'+self.preferred.time
+        VLabel = 'V_'+self.preferred.voltage
+        GLabel = 'G_'+self.preferred.conductance
         dataDict = {TLabel:DFDataT,'Node':DFNodes,VLabel:DFDataV,GLabel:DFDataG}
         return(pandas.DataFrame(dataDict,columns=[TLabel,'Node',VLabel,GLabel]))           
     def select(self,mat,row=0):  # select from matrix[row,:]
