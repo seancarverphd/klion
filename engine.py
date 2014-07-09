@@ -31,8 +31,7 @@ class flatStepProtocol(object):
         # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
         self.levels = copy.copy(parent.thePatch.uniqueLevels) # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
-        self.hasVoltTraj = False
-        self.voltageTrajectory()  # Only needed for plotting
+        self.hasVoltTraj = False # hasVoltTraj used in self.voltageTrajectory()  # Only needed for plotting
         self.clearData()
     def clearData(self):
         self.nReps = None
@@ -77,7 +76,8 @@ class flatStepProtocol(object):
         self.nStates = len(self.levelMap)  # changes
         assert(self.nStates==len(newPatch.ch.nodes))  # make sure 1 level appended per node
     def voltageTrajectory(self):
-        if self.hasVoltTraj:
+        # The voltageTrajectory only depends on the Protocol not model.
+        if self.hasVoltTraj:  # changeProtocol sets this to False
             return
         self.voltagesM = [] # Strip units off voltages
         for v in self.voltages:
@@ -89,7 +89,7 @@ class flatStepProtocol(object):
         dtValue = parameter.v(self.dt)
         dtValueM = parameter.mu(self.dt,self.preferred.time)  # without units
         #self.simDataV.append(self.voltages[0])
-        for i,ns in enumerate(self.nsamples):
+        for i,ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
             if ns == None:
                 time = 0.*dtValue  # to define units
                 timeM = 0 # no units
