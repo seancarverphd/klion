@@ -40,7 +40,8 @@ class flatStepProtocol(object):
             self.usedSeed = long(time.time()*256)
         else:
             self.usedSeed = self.seed  # can be changed with self.reseed()
-        self.R.seed(self.usedSeed)
+        self.R.seed(self.usedSeed)  # For simulating Markov Chain
+        self.RG.seed(self.usedSeed+1) # For simulating White Noise in Conductance, presently separate 
         self.simStates = []
         self.simDataL = []
         self.simDataG = []  # conductance, simulated separately.
@@ -151,10 +152,13 @@ class flatStepProtocol(object):
             newSTD = parameter.v(s.level.std)
             self.meansM.append(parameter.mu(newMean,self.preferred.conductance))
             self.stdsM.append(parameter.mu(newSTD,self.preferred.conductance))
-    #def simG(self,seedG=0):
-    #    for SimS in simStates:   # simStates is a list of trajectories one for each rep.     
-    #        for s in SS:        
-    #            # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
+    def simG(self):
+        self.simDataG = []
+        for SimS in self.simStates:   # simStates is a list of trajectories one for each rep.     
+            newG = []
+            for state in SimS:
+                newG.append(self.RG.normalvariate(self.meansM[state],self.stdsM[state]))
+            self.simDataG.append(newG)    
     def dataFrame(self,rep=0, downsample=0):
         self.voltageTrajectory()
         DFNodes = []
@@ -168,8 +172,8 @@ class flatStepProtocol(object):
             if counter >= downsample:   # Grab a data point
                 counter = 0
                 DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
-                DFDataT.append(self.simDataTM[i])
-                DFDataV.append(self.simDataVM[i])
+                DFDataT.append(self.simDataTM[i])  #TM means Time Magnitude (no units)
+                DFDataV.append(self.simDataVM[i])  #VM means Voltage Magnitude (no units)
                 DFDataG.append(self.meansM[s])
             counter += 1
         TLabel = 'T_'+self.preferred.time
