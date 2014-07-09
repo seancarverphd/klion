@@ -153,36 +153,34 @@ class flatStepProtocol(object):
         self.sim(nReps)
     def dataFrame(self,rep=0, downsample=0,wantUnits=True):
         self.voltageTrajectory()
-        DFNodes = []
-        if wantUnits:
-            DFDataT = []
-            DFDataG = []  # G is standard letter for conductance
-            DFDataV = []
-        else:
-            DFDataTM = []
-            DFDataGM = []
-            DFDataVM = []
         means = []
         meansM = []
         for s in self.states:
             means.append(parameter.v(s.level.mean))
             meansM.append(parameter.mu(means[-1],self.preferred.conductance))
+        DFNodes = []
+        DFDataT = []
+        DFDataG = []  # G is standard letter for conductance
+        DFDataV = []
         counter = 0  # The counter is for downsampling
+        if wantUnits:
+            timeData = self.simDataT
+            voltData = self.simDataV
+            meanData = means
+        else:
+            timeData = self.simDataTM
+            voltData = self.simDataVM
+            meanData = meansM
         for i,s in enumerate(self.simStates[rep]):
             if numpy.isnan(self.simDataT[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:   # Grab a data point
                 counter = 0
                 DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
-                g = parameter.v(self.levelMap[s].mean)
-                if wantUnits:
-                    DFDataT.append(self.simDataT[i])
-                    DFDataV.append(self.simDataV[i])
-                    DFDataG.append(means[s])
-                else:
-                    DFDataTM.append(self.simDataTM[i])
-                    DFDataVM.append(self.simDataVM[i])
-                    DFDataGM.append(meansM[s])
+                #g = parameter.v(self.levelMap[s].mean)
+                DFDataT.append(timeData[i])
+                DFDataV.append(voltData[i])
+                DFDataG.append(meanData[s])
             counter += 1
         if wantUnits:
             dataDict = {'Time':DFDataT,'Node':DFNodes,'Voltage':DFDataV,'Conductance':DFDataG}
@@ -191,7 +189,7 @@ class flatStepProtocol(object):
             TLabel = 'T_'+self.preferred.time
             VLabel = 'V_'+self.preferred.voltage
             GLabel = 'G_'+self.preferred.conductance
-            dataDict = {TLabel:DFDataTM,'Node':DFNodes,VLabel:DFDataVM,GLabel:DFDataGM}
+            dataDict = {TLabel:DFDataT,'Node':DFNodes,VLabel:DFDataV,GLabel:DFDataG}
             return(pandas.DataFrame(dataDict,columns=[TLabel,'Node',VLabel,GLabel]))
             
     # select is also defined in patch.singleChannelPatch
