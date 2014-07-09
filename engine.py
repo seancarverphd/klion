@@ -44,7 +44,7 @@ class flatStepProtocol(object):
         self.RG.seed(self.usedSeed+1) # For simulating White Noise in Conductance, presently separate 
         self.simStates = []
         self.simDataL = []
-        self.simDataG = []  # conductance, simulated separately.
+        self.simDataGM = []  # conductance, simulated separately.
     def changeModel(self,newPatch):
         assert(newPatch.hasNoise==False)  # Later will implement NOISE
         assert(self.levels==newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
@@ -122,8 +122,10 @@ class flatStepProtocol(object):
         # self.simDataX.append(self.Mean[state])
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
-    def sim(self,nReps=1):
-        for n in range(nReps - len(self.simDataL)):  # Only does new reps if nReps has increased since las 
+    def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+        if clear:
+            self.clearData()
+        for n in range(nReps - len(self.simDataL)):  
             simS = []
             simL = []
             #state = self.makeNewTraj()  # sets initNum=0, initial init not counted
@@ -141,7 +143,7 @@ class flatStepProtocol(object):
             self.simStates.append(simS)
             self.simDataL.append(simL)
         self.nReps = nReps
-    def resim(self,nReps=1):
+    def resim(self,nReps=1):   # Now redundant because can pass clear flag to sim()
         self.clearData()  # reseeds random number generator
         self.sim(nReps)
     def makeMeanSTD(self):
@@ -152,15 +154,18 @@ class flatStepProtocol(object):
             newSTD = parameter.v(s.level.std)
             self.meansM.append(parameter.mu(newMean,self.preferred.conductance))
             self.stdsM.append(parameter.mu(newSTD,self.preferred.conductance))
-    def simG(self):
-        self.simDataG = []
-        for SimS in self.simStates:   # simStates is a list of trajectories one for each rep.     
+    def simG(self,nReps=1,clear=False):
+        if clear:
+            self.clearData()
+        self.sim(nReps)  # Generates state trajectories, if needed
+        for n in range(nReps-len(self.simDataGM)):   # simStates is a list of trajectories one for each rep.     
             newG = []
-            for state in SimS:
+            for state in self.simStates[n]:
                 newG.append(self.RG.normalvariate(self.meansM[state],self.stdsM[state]))
-            self.simDataG.append(newG)    
+            self.simDataGM.append(newG)    
     def dataFrame(self,rep=0, downsample=0):
         self.voltageTrajectory()
+        hasG = (rep<len(self.simDataGM))
         DFNodes = []
         DFDataT = []
         DFDataG = []  # G is standard letter for conductance
@@ -174,7 +179,10 @@ class flatStepProtocol(object):
                 DFNodes.append(self.states[s])   # self.states are Node classes; s (in self.simStates) is an integer
                 DFDataT.append(self.simDataTM[i])  #TM means Time Magnitude (no units)
                 DFDataV.append(self.simDataVM[i])  #VM means Voltage Magnitude (no units)
-                DFDataG.append(self.meansM[s])
+                if hasG:
+                    DFDataG.append(self.simDataGM[rep][i])
+                else:    
+                    DFDataG.append(self.meansM[s])
             counter += 1
         TLabel = 'T_'+self.preferred.time
         VLabel = 'V_'+self.preferred.voltage
