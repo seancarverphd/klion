@@ -125,21 +125,20 @@ class flatStepProtocol(object):
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.clearData()
-        for n in range(nReps - len(self.simDataL)):  
+        numNewReps = nReps - len(self.simDataL)
+        for n in range(numNewReps):  
             simS = []
             simL = []
-            #state = self.makeNewTraj()  # sets initNum=0, initial init not counted
-            #self.appendTrajectory(state,simS,simL)
             nextInitNum = 0
-            for i,ns in enumerate(self.nsamples):
-                if i==0 or ns == None:
-                    state = self.nextInit(nextInitNum)
-                    self.appendTrajectory(state,simS,simL)
+            for i,ns in enumerate(self.nsamples):   # one nsample for each voltage step, equal number of samples in step
+                if i==0 or ns == None:   # if nsamples == None then indicates an initialization at equilibrium distrib
+                    state = self.nextInit(nextInitNum)  # Next: append state and level to simS and simL
+                    self.appendTrajectory(state,simS,simL) # Pass ref to simS & simL so that appendTrajectory works
                     nextInitNum += 1
                     continue
-                for j in range(ns):
+                for j in range(ns):  # Next i (could follow intializatation or another voltage step without init) 
                     state = self.select(self.A[i],state)
-                    self.appendTrajectory(state,simS,simL)
+                    self.appendTrajectory(state,simS,simL) # Pass ref to simS & simL so that appendTrajectory works
             self.simStates.append(simS)
             self.simDataL.append(simL)
         self.nReps = nReps
@@ -219,24 +218,39 @@ class flatStepProtocol(object):
         c = 1/new.sum()
         return (c*new,c)
     def update(self,distrib,k,n):
-        new = distrib*self.B[self.simDataL[n][k]]  # n is trajectory number, k=0 is sample num; doesn't depend on voltage
+        new = distrib*self.B[self.simDataL[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
         return self.normalize(new)
     def predictupdate(self,distrib,k,iv,n):
-        new = distrib*self.AB[self.simDataL[n][k]][iv]  # [[traj num][level num]][voltage num]
+        new = distrib*self.AB[self.simDataL[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
         return self.normalize(new)
-    def minuslike(self,reps):  # returns minus the log-likelihood
-        if reps == None:
-            reps = range(self.nReps)
-        self.mll = 0
-        for n in reps:
-            (alphak,ck) = self.update(self.initDistrib,0,n)
-            self.mll += math.log(ck)
-            k0 = 1   # Offset
-            for iv in range(len(self.voltages)):
-                for k in range(k0,k0+self.nsamples[iv]):
-                    (alphak,ck) = self.predictupdate(alphak,k,iv,n)
+    def minuslike(self):  # returns minus the log-likelihood
+        for n in range(self.nReps):  
+            self.mll = 0.
+            nextInitNum = 0
+            k0 = 0
+            for iv,ns in enumerate(self.nsamples):   # one nsample for each voltage step, equal number of samples in step
+                if iv==0 or ns == None:   # if nsamples == None then indicates an initialization at equilibrium distrib
+                    (alphak,ck) = self.update(self.nextDistrib[nextInitNum],0,n)  # don't pass in alphak
                     self.mll += math.log(ck)
-                k0 += self.nsamples[iv]
+                    nextInitNum += 1
+                    k0 += 1
+                    continue
+                for k in range(k0,k0+ns):  # Next i (could follow intializatation or another voltage step without init) 
+                    (alphak,ck) = self.predictupdate(alphak,k,iv,n)  # pass in and return alphak
+                    self.mll += math.log(ck)
+                k0 += ns
         return self.mll
-    def like(self,reps=None):  # returns the log-likelihood
-        return -self.minuslike(reps)
+        #if reps == None:
+        #    reps = range(self.nReps)
+        #self.mll = 0.
+        #for n in reps:
+        #    (alphak,ck) = self.update(self.initDistrib,0,n)
+        #    self.mll += math.log(ck)
+        #    k0 = 1   # Offset
+        #    for iv in range(len(self.voltages)):
+        #        for k in range(k0,k0+self.nsamples[iv]):
+        #            (alphak,ck) = self.predictupdate(alphak,k,iv,n)
+        #            self.mll += math.log(ck)
+        #        k0 += self.nsamples[iv]
+    def like(self):  # returns the log-likelihood
+        return -self.minuslike()
