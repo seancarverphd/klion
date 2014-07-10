@@ -124,7 +124,7 @@ class flatStepProtocol(object):
         # self.simDataV.append(volts)
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
-            self.clearData()
+            self.clearData()    # reseeds random number generator
         numNewReps = nReps - len(self.simDataL)
         for n in range(numNewReps):  
             simS = []
