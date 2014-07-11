@@ -2,6 +2,7 @@ import numpy
 import random
 import time
 import parameter
+import matplotlib.pylab as plt
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
@@ -46,6 +47,7 @@ class flatToyProtocol(object):
             self.q1 = parameter.mu(parent.q[1],parent.preferred.freq)
         else:
             assert(False) # Length of q should be 1 or 2
+        # Don't clearData(); might want to change Model and use old data 
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.clearData()  # Reseeds random number generator
@@ -56,18 +58,34 @@ class flatToyProtocol(object):
             else:
                 self.taus.append(self.R.expovariate(self.q1)+self.R.expovariate(self.q0))
         self.nReps = nReps
-    def minuslike2(self):      
+    def minuslike2(self): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
         self.mll = 0.
         for n in range(self.nReps):
             self.mll -= numpy.log(self.q) - self.q*self.taus[n]
         return self.mll
-    def minuslike3(self):
+    def minuslike3(self): # Still need to implement MC Sampling
         # q1 must be different from q0 otherwise get 0/0
         self.mll = 0.
         for n in range(self.nReps):
             self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
             self.mll -= numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0))
         return self.mll
+    def pdf(self,tau): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
+        if self.toy2:
+            return numpy.exp(numpy.log(self.q) - self.q*tau)
+        else:
+            return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*tau)-numpy.exp(-self.q1*tau))/(self.q1-self.q0)))
+    def pdfplot(self):
+        assert(len(self.taus)>99)
+        m = min(self.taus)
+        M = max(self.taus)
+        X = numpy.arange(m,M,(M-m)/100)
+        Y = []
+        for x in X:
+            Y.append(self.pdf(x))
+        plt.plot(X,Y)
+        plt.show()
+        plt.hist(self.taus,50,normed=1)
     def minuslike(self):
         if self.toy2:
             return self.minuslike2()
@@ -84,6 +102,13 @@ q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
 T = toyProtocol([q0,q1])
+T2 = toyProtocol([q])
 FT = T.flatten(seed=3)
+FT2 = T2.flatten(seed=3)
 FT.sim(nReps=10)
 print FT.like()
+import kulleib
+LG = kulleib.likegrid1(T,q0)
+XR = numpy.arange(0.1,300.1,1)
+LG.setRange(XR)
+LG.replot(XTrue=15.,seed=10,nReps=100)

@@ -3,25 +3,25 @@ import math
 import copy
 import pint
 
-u = pint.UnitRegistry()
+u = pint.UnitRegistry()  # Need to import u in every module that uses units
 
-def v(x):
+def v(x):   # Returns value (possibly with units) of a parameter or expression
     try:
         return x.evaluate()
-    except:
+    except:  # e.g. if x is a float return x
         return x
 
-def m(x):
-    y = v(x)        
+def m(x):   # Returns magnitude (with units stripped).  Use cautiously.
+    y = v(x)  # get value of parameter or expression first
     try:
         return y._magnitude
-    except:
+    except:  # e.g. if y does not contain units
         return y
 
-def mu(x,finalUnit):
-    y = v(x)
-    z = y.to(getattr(u,finalUnit))
-    return m(z)
+def mu(x,finalUnit):  # Returns magnitude (with units stripped) but converts to a specific unit first.
+    y = v(x)  # get value
+    z = y.to(getattr(u,finalUnit))  # convert to unit
+    return m(z) # return magnitude
     
 def setUnit(x,units):
     return x._magnitude * getattr(u,units)

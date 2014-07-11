@@ -65,6 +65,7 @@ class flatStepProtocol(object):
         self.states2levels(newPatch)
         self.makeB() # NO-NOISE only.
         self.makeMeanSTD()
+        # Don't clearData(); might want to change Model and use old data         
     def states2levels(self,newPatch):
         self.levelMap = []
         self.levelNum = []
