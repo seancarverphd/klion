@@ -1,7 +1,7 @@
 import numpy
 
 class kull(object):
-    def __init__(self,trueParent,altParent,truePS,altPS):
+    def __init__(self,trueParent,altParent):
         self.P = trueParent.flatten()
         self.setNM(10,100)
     def setNM(self,N,M):

@@ -1,13 +1,27 @@
 import numpy
 import random
 import time
+import parameter
+
+preferred = parameter.preferredUnits()
+preferred.time = 'ms'
+preferred.freq = 'kHz'
 
 class toyProtocol(object):
-    def __init__(self, q, seed=None):
+    def __init__(self,q):
+        self.q = q
+        self.preferred = preferred
+    def flatten(self,seed=None):
+        parent = self  # for readability
+        FT = flatToyProtocol(parent,seed)
+        return FT
+    
+class flatToyProtocol(object):
+    def __init__(self, parent, seed=None):
         self.R = random.Random()
         self.seed = seed
         self.clearData()
-        self.changeModel(q)
+        self.changeModel(parent)
     def clearData(self):
         self.nReps = None
         if self.seed == None:
@@ -19,14 +33,17 @@ class toyProtocol(object):
     def reseed(self,seed):
         self.seed = seed
         self.clearData()  # Reseeds random number generator
-    def changeModel(self,q):
-        if len(q) == 1:
+    def changeModel(self,parent):
+        if len(parent.q) == 1:
             self.toy2 = True
-            self.q = q[0]
-        elif len(q) == 2:
+            self.q = parameter.mu(parent.q[0],parent.preferred.freq)
+            self.q0 = None
+            self.q1 = None
+        elif len(parent.q) == 2:
             self.toy2 = False
-            self.q0 = q[0]
-            self.q1 = q[1]
+            self.q = None
+            self.q0 = parameter.mu(parent.q[0],parent.preferred.freq)
+            self.q1 = parameter.mu(parent.q[1],parent.preferred.freq)
         else:
             assert(False) # Length of q should be 1 or 2
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
@@ -62,7 +79,11 @@ class toyProtocol(object):
         return -self.minuslike3()
     def like(self):
         return -self.minuslike()
-    
-T = toyProtocol([.5,.25])
-T.sim(nReps=10)
-print T.like()
+
+q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
+q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
+q = parameter.Parameter("q",1./6.,"kHz",log=True)
+T = toyProtocol([q0,q1])
+FT = T.flatten(seed=3)
+FT.sim(nReps=10)
+print FT.like()
