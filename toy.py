@@ -45,6 +45,7 @@ class toyProtocol(object):
             self.mll -= numpy.log(self.q) - self.q*self.taus[n]
         return self.mll
     def minuslike3(self):
+        # q1 must be different from q0 otherwise get 0/0
         self.mll = 0.
         for n in range(self.nReps):
             self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
