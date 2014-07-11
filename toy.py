@@ -47,10 +47,13 @@ class flatToyProtocol(object):
             self.q1 = parameter.mu(parent.q[1],parent.preferred.freq)
         else:
             assert(False) # Length of q should be 1 or 2
+        self.changedSinceLastSim = True ### ADD TO ENGINE!!!
         # Don't clearData(); might want to change Model and use old data 
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.clearData()  # Reseeds random number generator
+        elif self.changedSinceLastSim:
+            self.clearData()
         numNewReps = nReps - len(self.taus)
         for n in range(numNewReps):  
             if self.toy2:
@@ -58,6 +61,7 @@ class flatToyProtocol(object):
             else:
                 self.taus.append(self.R.expovariate(self.q1)+self.R.expovariate(self.q0))
         self.nReps = nReps
+        self.changedSinceLastSim = False
     def minuslike2(self): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
         self.mll = 0.
         for n in range(self.nReps):
