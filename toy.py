@@ -92,8 +92,8 @@ class flatToyProtocol(object):
         for x in X:
             Y.append(self.pdf(x))
         plt.plot(X,Y)
-        plt.show()
         plt.hist(self.taus,50,normed=1)
+        plt.show()
     def like(self):
         return -self.minuslike()
 
@@ -177,13 +177,31 @@ FT3 = T3.flatten(seed=3)
 FT2 = T2.flatten(seed=3)
 XRange = numpy.arange(0.1,30.1,1)
 YRange = numpy.arange(0.11,30.11,1)  # Different values so rate constants remain unequal
+
+#One dimensional likelihood plot with toy2 model
+#plt.figure()
+#LF2 = likefun1(T2,q)
+#LF2.setRange(XRange)
+#LF2.replot(XTrue=15.,seed=10,nReps=100)
+
+#One-dimensional likelihood plot with toy3 modle
+#plt.figure()
+#LF3 = likefun1(T3,q0)
+#LF3.setRange(XRange)
+#LF3.replot(XTrue=15,seed=11,nReps=1000)
+#LF = likefun(T3,[q0,q1])
+#LF.sim((1.,2.),nReps=1000,seed=0,log=True)
+
+#Histogram and PDFs
 plt.figure()
-LF2 = likefun1(T2,q)
-LF2.setRange(XRange)
-LF2.replot(XTrue=15.,seed=10,nReps=100)
+FT3.sim(nReps=1000,clear=True)
+FT3.pdfplot()
 plt.figure()
-LF3 = likefun1(T3,q0)
-LF3.setRange(XRange)
-LF3.replot(XTrue=15,seed=11,nReps=1000)
-LF = likefun(T3,[q0,q1])
-LF.sim((1.,2.),nReps=1000,seed=0,log=True)
+FT2.sim(nReps=1000,clear=True)
+FT2.pdfplot()
+plt.figure()
+q0.assign(2.)
+q1.assign(2.)
+FTE = T3.flatten(seed=4)
+FTE.sim(nReps=1000,clear=True)
+FTE.pdfplot()
