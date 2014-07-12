@@ -3,6 +3,7 @@ import random
 import time
 import parameter
 import matplotlib.pylab as plt
+import scipy.optimize as opt
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
@@ -62,21 +63,24 @@ class flatToyProtocol(object):
                 self.taus.append(self.R.expovariate(self.q1)+self.R.expovariate(self.q0))
         self.nReps = nReps
         self.changedSinceLastSim = False
-    def minuslike2(self): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
+    def minuslike(self): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
         self.mll = 0.
-        for n in range(self.nReps):
-            self.mll -= numpy.log(self.q) - self.q*self.taus[n]
-        return self.mll
-    def minuslike3(self): # Still need to implement MC Sampling
-        # q1 must be different from q0 otherwise get 0/0
-        self.mll = 0.
-        for n in range(self.nReps):
-            self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
-            self.mll -= numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0))
+        if self.toy2:
+            for n in range(self.nReps):
+                self.mll -= (numpy.log(self.q) - self.q*self.taus[n])
+        elif self.q0 == self.q1:
+            for n in range(self.nReps):
+                self.mll -= numpy.log(self.q1) + numpy.log(self.q0) - self.q0*self.taus[n] + numpy.log(self.taus[n])
+        else:
+            for n in range(self.nReps):
+                self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
+                self.mll -= numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0))
         return self.mll
     def pdf(self,tau): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
         if self.toy2:
             return numpy.exp(numpy.log(self.q) - self.q*tau)
+        elif self.q0 == self.q1:
+            return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*tau + numpy.log(tau))
         else:
             return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*tau)-numpy.exp(-self.q1*tau))/(self.q1-self.q0)))
     def pdfplot(self):
@@ -90,29 +94,96 @@ class flatToyProtocol(object):
         plt.plot(X,Y)
         plt.show()
         plt.hist(self.taus,50,normed=1)
-    def minuslike(self):
-        if self.toy2:
-            return self.minuslike2()
-        else:
-            return self.minuslike3()
-    def like2(self):
-        return -self.minuslike2()
-    def like3(self):
-        return -self.minuslike3()
     def like(self):
         return -self.minuslike()
+
+class likefun(object):
+    def __init__(self,parent,paramTuple):
+        self.parent = parent
+        self.paramTuple = paramTuple
+        self.F = self.parent.flatten()
+    def set(self,valueTuple):
+        for i,P in enumerate(self.paramTuple):
+            P.assign(valueTuple[i])
+        self.F.changeModel(self.parent)
+    def setLog(self,valueTuple):
+        for i,P in enumerate(self.paramTuple):
+            P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
+        self.F.changeModel(self.parent)
+    def sim(self,XTrue,nReps=100,seed=None,log=True):
+        self.XTrue = XTrue
+        if log==True:
+            self.setLog(XTrue)
+        else:
+            self.set(XTrue)
+        self.F.reseed(seed)
+        self.F.sim(nReps,clear=True)  # clear=True should now be redundant, but kept here for readability
+    def like(self,x,log=True):
+        if log==True:
+            self.setLog(x)
+        else:
+            self.set(x)
+        return self.F.like()
+    def minuslike(self,x):
+        self.setLog(x)
+        #if x[0] < 0. or x[1]<0:
+        #    print "x is negative"
+        #print "x[0], q[0]", x[0], q0.value
+        #print "x[1], q[1]", x[1], q1.value
+        return self.F.minuslike()
+    
+class likefun1(object):   # One dimensional likelihood grid
+    def __init__(self,parent,XParam,seed=None):
+        self.parent = parent
+        self.XParam = XParam
+        self.F = self.parent.flatten(seed=seed)
+    def setRange(self,XRange):
+        self.XRange = XRange
+    def set(self,X):
+        self.XParam.assign(X)
+        self.F.changeModel(self.parent)
+    def sim(self,XTrue=15,nReps=100,seed=None):
+        self.XTrue = XTrue
+        self.set(XTrue)
+        self.F.reseed(seed)
+        self.F.sim(nReps,clear=True)   # clear=True should now be redundant, but kept here for readability
+    def compute(self):
+        self.llikes = []
+        for x in self.XRange:
+            self.set(x)
+            self.llikes.append(self.F.like())
+    def plot(self):
+        plt.plot(self.XRange,self.llikes)
+        plt.show()
+    def addVLines(self):
+        pass
+    def replot(self,XTrue=15,nReps=100,seed=None):
+        self.sim(XTrue=XTrue,nReps=nReps,seed=seed)
+        self.compute()
+        self.plot()
+
+class likefun2(object):   # Two dimensional likelihood grid
+    def __init__(self,parent,XParam,YParam):
+        self.parent = parent
+        self.XParam = XParam
+        self.YParam = YParam
 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
-T = toyProtocol([q0,q1])
+T3 = toyProtocol([q0,q1])
 T2 = toyProtocol([q])
-FT = T.flatten(seed=3)
+FT3 = T3.flatten(seed=3)
 FT2 = T2.flatten(seed=3)
-FT.sim(nReps=10)
-print FT.like()
-import kulleib
-LG = kulleib.likegrid1(T,q0)
-XR = numpy.arange(0.1,300.1,1)
-LG.setRange(XR)
-LG.replot(XTrue=15.,seed=10,nReps=100)
+XRange = numpy.arange(0.1,30.1,1)
+YRange = numpy.arange(0.11,30.11,1)  # Different values so rate constants remain unequal
+plt.figure()
+LF2 = likefun1(T2,q)
+LF2.setRange(XRange)
+LF2.replot(XTrue=15.,seed=10,nReps=100)
+plt.figure()
+LF3 = likefun1(T3,q0)
+LF3.setRange(XRange)
+LF3.replot(XTrue=15,seed=11,nReps=1000)
+LF = likefun(T3,[q0,q1])
+LF.sim((1.,2.),nReps=1000,seed=0,log=True)
