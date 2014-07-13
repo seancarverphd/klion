@@ -51,20 +51,24 @@ class Parameter(object):
             default = value
         self.setDefault(default)
         self.integrity()
+    def assignADmappedValue(self):
+        try:
+            self.ADmappedValue = self.mappedValue.evaluate()  
+        except:
+            self.ADmappedValue = m(self.mappedValue) # in case it doesn't have an evaluate method
     def onAD(self):
         self.useAD = True
-        if self.remapped:
-            try:
-                self.mappedValue.onAD()
-            except:
-                pass
+        try:
+            self.mappedValue.onAD()   # if it is a parameter or expression turn onAD() otherwise pass
+        except:
+            pass
+        self.assignADmappedValue()
     def offAD(self):
         self.useAD = False
-        if self.remapped:
-            try:
-                self.mappedValue.onAD()
-            except:
-                pass
+        try:
+            self.mappedValue.offAD()
+        except:
+            pass
     def remap(self, mappedValue):
         self.remapped = True
         self.mappedValue = mappedValue
@@ -73,6 +77,7 @@ class Parameter(object):
                 self.mappedValue.onAD()
             except:
                 pass
+            self.assignADmappedValue()
         else:
             try:
                 self.mappedValue.offAD()
@@ -107,7 +112,10 @@ class Parameter(object):
             try:
                 return self.mappedValue.evaluate()
             except: # in case mappedValue is a number with or without units
-                return self.mappedValue
+                if self.useAD:
+                    return self.ADmappedValue
+                else:
+                    return self.mappedValue
         if self.useAD:
             return self.ADvalue
         return self.value  #only if above if's fail
