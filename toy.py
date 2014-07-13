@@ -76,6 +76,8 @@ class flatToyProtocol(object):
                 self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
                 self.mll -= numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0))
         return self.mll
+    def like(self):
+        return -self.minuslike()
     def pdf(self,tau): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
         if self.toy2:
             return numpy.exp(numpy.log(self.q) - self.q*tau)
@@ -94,8 +96,6 @@ class flatToyProtocol(object):
         plt.plot(X,Y)
         plt.hist(self.taus,50,normed=1)
         plt.show()
-    def like(self):
-        return -self.minuslike()
 
 class likefun(object):
     def __init__(self,parent,paramTuple):
@@ -118,19 +118,19 @@ class likefun(object):
             self.set(XTrue)
         self.F.reseed(seed)
         self.F.sim(nReps,clear=True)  # clear=True should now be redundant, but kept here for readability
+    def minuslike(self,x):
+        self.setLog(x)
+            #if x[0] < 0. or x[1]<0:
+            #    print "x is negative"
+            #print "x[0], q[0]", x[0], q0.value
+            #print "x[1], q[1]", x[1], q1.value
+        return self.F.minuslike()
     def like(self,x,log=True):
         if log==True:
             self.setLog(x)
         else:
             self.set(x)
         return self.F.like()
-    def minuslike(self,x):
-        self.setLog(x)
-        #if x[0] < 0. or x[1]<0:
-        #    print "x is negative"
-        #print "x[0], q[0]", x[0], q0.value
-        #print "x[1], q[1]", x[1], q1.value
-        return self.F.minuslike()
     
 class likefun1(object):   # One dimensional likelihood grid
     def __init__(self,parent,XParam,seed=None):
@@ -189,8 +189,8 @@ YRange = numpy.arange(0.11,30.11,1)  # Different values so rate constants remain
 #LF3 = likefun1(T3,q0)
 #LF3.setRange(XRange)
 #LF3.replot(XTrue=15,seed=11,nReps=1000)
-#LF = likefun(T3,[q0,q1])
-#LF.sim((1.,2.),nReps=1000,seed=0,log=True)
+LF = likefun(T3,[q0,q1])
+LF.sim((1.,2.),nReps=1000,seed=0,log=True)
 
 #Histogram and PDFs
 plt.figure()
