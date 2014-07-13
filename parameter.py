@@ -2,6 +2,7 @@ import numpy
 import math
 import copy
 import pint
+import ad
 
 u = pint.UnitRegistry()  # Need to import u in every module that uses units
 
@@ -50,9 +51,33 @@ class Parameter(object):
             default = value
         self.setDefault(default)
         self.integrity()
+    def onAD(self):
+        self.useAD = True
+        if self.remapped:
+            try:
+                self.mappedValue.onAD()
+            except:
+                pass
+    def offAD(self):
+        self.useAD = False
+        if self.remapped:
+            try:
+                self.mappedValue.onAD()
+            except:
+                pass
     def remap(self, mappedValue):
         self.remapped = True
         self.mappedValue = mappedValue
+        if self.useAD:
+            try:
+                self.mappedValue.onAD()
+            except:
+                pass
+        else:
+            try:
+                self.mappedValue.offAD()
+            except:
+                pass
     def unmap(self):
         self.remapped = False
         self.mappedValue = None
@@ -83,20 +108,24 @@ class Parameter(object):
                 return self.mappedValue.evaluate()
             except: # in case mappedValue is a number with or without units
                 return self.mappedValue
-        else:
-            return self.value
+        if self.useAD:
+            return self.ADvalue
+        return self.value  #only if above if's fail
     def assign(self,value,units=None):
         if not units==None:
             self.setUnits(units)
         self.value._magnitude = value
+        self.ADvalue = ad.adnumber(value,self.name)
         self.checkValue()  # a weak version of integrity()
     def assignLog(self,logValue,units=None):
         if not units==None:
             self.setUnits(units)
         if self.useLog:
-            self.value._magnitude = math.exp(logValue)
+            self.value._magnitude = numpy.exp(logValue)
+            self.ADvalue = ad.adnumber(numpy.exp(logValue),self.name)
         else:
             self.value._magnitude = logValue
+            self.ADvalue = ad.adnumber(logValue,self.name)
         self.checkValue() # a weak version of integrity()
     def setDefault(self, default):
         self.default._magnitude = default
@@ -229,6 +258,24 @@ class Space(object):
             self.pDict.update(i.getParameters())
             self.eDict.update(i.getExpressions())
         self.integrity()
+    def onAD(self):
+        for P in self.pDict.itervalues():
+            P.onAD()
+        # I think the next two lines are unneeded
+        for E in self.pDict.itervalues():
+            E.onAD()
+    def offAD(self):
+        for P in self.pDict.itervalues():
+            P.offAD()
+        # I think the next two lines are unneeded
+        for E in self.pDict.itervalues():
+            E.offAD()
+    def unmap(self):
+        for P in self.pDict.itervalues():
+            P.unmap()
+        # I think the next two lines are unneeded
+        for E in self.pDict.itervalues():
+            E.unmap()
     def __repr__(self):
         if not any(self.pDict):
             s = 'Empty Space'
@@ -320,7 +367,13 @@ class Expression(object):
         # the following command checks integrity & defines 
         #     self.value (frozen numeric value of of expression), and
         #     self.frozen (frozen params that created the value)
-        self.thaw()  
+        self.thaw()
+    def onAD(self):
+        self.PS.onAD()
+    def offAD(self):
+        self.PS.offAD()
+    def unmap(self):
+        self.PS.unmap()
     def __float__(self):
         if not self.frozen:
             self.evaluate()
