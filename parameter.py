@@ -20,9 +20,13 @@ def m(x):   # Returns magnitude (with units stripped).  Use cautiously.
 
 def mu(x,finalUnit):  # Returns magnitude (with units stripped) but converts to a specific unit first.
     y = v(x)  # get value
-    z = y.to(getattr(u,finalUnit))  # convert to unit
-    return m(z) # return magnitude
-    
+    try:
+        z = y.to(getattr(u,finalUnit))  # convert to unit
+    except:   # might be an AD number
+        return y  # return AD number
+    return m(z) # return magnitude of z
+
+
 def setUnit(x,units):
     return x._magnitude * getattr(u,units)
 
@@ -31,6 +35,7 @@ class Parameter(object):
         self.name = name
         # must define values so that setting routines work
         self.useLog = False
+        self.useAD = False
         self.value = 1. * u.dimensionless
         self.default = 1. * u.dimensionless
         self.remapped = False
