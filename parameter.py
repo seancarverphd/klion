@@ -364,14 +364,17 @@ class Expression(object):
         self.name = name
         self.expr = expr
         self.PS = Space(items)
+        self.useAD = False
         # the following command checks integrity & defines 
         #     self.value (frozen numeric value of of expression), and
         #     self.frozen (frozen params that created the value)
         self.thaw()
     def onAD(self):
         self.PS.onAD()
+        self.useAD = True
     def offAD(self):
         self.PS.offAD()
+        self.useAD = False
     def unmap(self):
         self.PS.unmap()
     def __float__(self):
@@ -401,14 +404,26 @@ class Expression(object):
             self.PS = P
         self.integrity()
     def evaluate(self):
-        methods = {"exp":__import__('math').exp,
-                            "log":__import__('math').log,
-                            "sin":__import__('math').sin,
-                            "cos":__import__('math').cos,
-                            "tan":__import__('math').tan,
-                            "log10":__import__('math').log10,
-                            "pi":__import__('math').pi,
-                            "e":__import__('math').e,
+        if self.useAD:
+            methods = {"exp":__import__('ad.admath',fromlist=['admath']).exp,
+                            "log":__import__('ad.admath',fromlist=['admath']).log,
+                            "sin":__import__('ad.admath',fromlist=['admath']).sin,
+                            "cos":__import__('ad.admath',fromlist=['admath']).cos,
+                            "tan":__import__('ad.admath',fromlist=['admath']).tan,
+                            "log10":__import__('ad.admath',fromlist=['admath']).log10,
+                            "pi":__import__('ad.admath',fromlist=['admath']).pi,
+                            "e":__import__('ad.admath',fromlist=['admath']).e,
+                            "u":__import__('parameter').u,
+                            "v":__import__('parameter').v}
+        else:
+            methods = {"exp":__import__('numpy').exp,
+                            "log":__import__('numpy').log,
+                            "sin":__import__('numpy').sin,
+                            "cos":__import__('numpy').cos,
+                            "tan":__import__('numpy').tan,
+                            "log10":__import__('numpy').log10,
+                            "pi":__import__('numpy').pi,
+                            "e":__import__('numpy').e,
                             "u":__import__('parameter').u,
                             "v":__import__('parameter').v}
         self.lastP = {}
