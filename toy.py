@@ -97,6 +97,12 @@ class flatToyProtocol(object):
         plt.hist(self.taus,50,normed=1)
         plt.show()
 
+def toy3mlike4opt(q,taus):
+    for tau in taus:
+        self.mll -= ad.admath.log(q[1]) + ad.admath.log(q[0])
+        self.mll -= ad.admath.log((ad.admath.exp(-q[0]*tau)-ad.admath.exp(-q[1]*tau))/(q[1]-self.q[0] ))
+    return self.mll
+
 class likefun(object):
     def __init__(self,parent,paramTuple):
         self.parent = parent
