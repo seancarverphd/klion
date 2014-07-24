@@ -98,6 +98,9 @@ class flatToyProtocol(object):
                     Qs.append(numpy.log(self.taus[n]))    
                 else:
                     Qs.append(numpy.log((1-numpy.exp(-(self.q1-self.q0)*self.taus[n]))/(self.q1-self.q0)))
+                    if numpy.isinf(Qs[-1]):
+                        print "q1", self.q1, "q0", self.q0
+                        
             Qbar = numpy.mean(Qs)
             return numpy.log(self.q1) + numpy.log(self.q0) - self.q0*numpy.mean(self.taus[0:self.nReps]) + Qbar
     def Eflogg(self,taus):

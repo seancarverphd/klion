@@ -13,7 +13,7 @@ class kull(object):
         self.altParent = altParent
         self.TrueMod = trueParent.flatten()
         self.AltMod = altParent.flatten()
-        self.qRange = numpy.arange(1,10,2)
+        self.qRange = numpy.arange(.1,10,1)
         self.nReps = 10000
     def compute(self):
         num = len(self.qRange)
