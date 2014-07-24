@@ -85,6 +85,24 @@ class flatToyProtocol(object):
             return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*tau + numpy.log(tau))
         else:
             return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*tau)-numpy.exp(-self.q1*tau))/(self.q1-self.q0)))
+    def mle(self):
+        assert(self.toy2)  # Not yet implemented for toy 3
+        return 1./numpy.mean(self.taus[0:self.nReps])
+    def Eflogf(self):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
+        if self.toy2:
+            return numpy.log(self.q) - self.q*numpy.mean(self.taus[0:self.nReps])
+        else:  # toy 3
+            Qs = []
+            for n in range(self.nReps):
+                if self.q1 == self.q0:
+                    Qs.append(numpy.log(self.taus[n]))    
+                else:
+                    Qs.append(numpy.log((1-numpy.exp(-(self.q1-self.q0)*self.taus[n]))/(self.q1-self.q0)))
+            Qbar = numpy.mean(Qs)
+            return numpy.log(self.q1) + numpy.log(self.q0) - self.q0*numpy.mean(self.taus[0:self.nReps]) + Qbar
+    def Eflogg(self,taus):
+        assert(self.toy2)
+        return numpy.log(self.q) - self.q*numpy.mean(taus)  # taus passed as parameter: not self.taus!
     def pdfplot(self):
         assert(len(self.taus)>99)
         m = min(self.taus)
@@ -100,7 +118,7 @@ class flatToyProtocol(object):
 def toy3mlike4opt(q,taus):
     for tau in taus:
         self.mll -= ad.admath.log(q[1]) + ad.admath.log(q[0])
-        self.mll -= ad.admath.log((ad.admath.exp(-q[0]*tau)-ad.admath.exp(-q[1]*tau))/(q[1]-self.q[0] ))
+        self.mll -= ad.admath.log((ad.admath.exp(-q[0]*tau)-ad.admath.exp(-q[1]*tau))/(q[1]-q[0]))
     return self.mll
 
 class likefun(object):
