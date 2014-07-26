@@ -13,9 +13,9 @@ class kull(object):
         self.altParent = altParent
         self.TrueMod = trueParent.flatten()
         self.AltMod = altParent.flatten()
-        self.qRange = numpy.arange(.1,10,.5)
+        self.qRange = numpy.arange(.1,10,.1)
         #self.qRange = numpy.arange(1,10,2)
-        self.nReps = 10000
+        self.nReps = 100000
     def compute(self):
         num = len(self.qRange)
         self.KL = numpy.zeros((num,num))
@@ -28,13 +28,15 @@ class kull(object):
                 EfTrue = self.TrueMod.Eflogf()
                 mEfAlt = numpy.log(numpy.e*numpy.mean(self.TrueMod.taus))  # Simple because toy is simple
                 self.KL[i,j] = EfTrue + mEfAlt
-
+                print i, j, "up to", len(self.qRange)
+    def plot(self):
+       pass 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
 T3 = toy.toyProtocol([q0,q1])
 T2 = toy.toyProtocol([q])
 K = kull(T3,T2,q0,q1,q)
-K.compute()
-print K.KL
+# K.compute()
+# print K.KL
   
