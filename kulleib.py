@@ -3,6 +3,34 @@ import matplotlib
 import matplotlib.pylab as plt
 import parameter
 import toy
+import cPickle as pickle
+
+def Ksave(K,fname):
+    f = open(fname,'wb')
+    pickle.dump(K.qRange,f)
+    pickle.dump(K.KL,f)
+    f.close()
+    
+def Kload(fname):
+    f = open(fname,'rb')
+    qRange = pickle.load(f)
+    KL = pickle.load(f)
+    f.close()
+    K = Kshell(qRange,KL)
+    return K
+
+class Kshell(object):
+    def __init__(self,qRange,KL):
+        self.qRange = qRange
+        self.KL = KL
+    def plot(self):
+        cs = plt.pcolor(self.qRange,self.qRange,self.KL)
+        cb = plt.colorbar(cs)
+        plt.title('Three-State Model with Irreversible Transitions')
+        plt.xlabel('First Rate Constant (kHz)')
+        plt.ylabel('Second Rate Constant (kHz)')
+        cb.set_label('Kullback-Leibler Divergence to 2-State Alternative\nEach Pixel: Monte-Carlo Integral with 10^5 Samples')
+        plt.show()
 
 class kull(object):
     def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
@@ -29,8 +57,12 @@ class kull(object):
                 mEfAlt = numpy.log(numpy.e*numpy.mean(self.TrueMod.taus))  # Simple because toy is simple
                 self.KL[i,j] = EfTrue + mEfAlt
                 print i, j, "up to", len(self.qRange)
+    def save(self,fname):
+        f = open(fname,'wb')
+        K = pickle.dump(self,f)
+        f.close()
     def plot(self):
-       pass 
+        pass 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
