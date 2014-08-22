@@ -72,9 +72,10 @@ class Nalpha(object):
         self.altModel = altParent.flatten()
         #self.qRange = numpy.arange(.1,10,.1) # use for plotting
         self.qRange = numpy.arange(1,10,2) # use for testing
-        self.nReps = 100
-        self.MCSampSize = 100
-        self.alpha = 0.95
+        self.MCSampSize = 1000
+        self.numWrongTarget = 50
+        self.numRightTarget = self.MCSampSize - self.NumWrongTarget # 1000-50==950
+        self.alpha = self.numWrongTarget/self.MCSampSize # 50/1000 == 0.05
     def compute(self):
         num = len(self.qRange)
         self.NA = numpy.zeros((num,num))
@@ -82,8 +83,19 @@ class Nalpha(object):
             for j,q_0 in enumerate(self.qRange):
                 self.q0.assign(q_0)
                 self.q1.assign(q_1)
+                # Only do trueModel once per nRep step
+                self.nReps = max_nReps
+                # nReps set adaptively to achieve alpha 
                 self.trueModel.changeModel(self.trueParent)
                 self.trueModel.sim4aic(self.nReps,self.MCSampSize)
+                # binary search
+                while (not numRight==self.numRightTarget) and (nRep <= max_nReps and nReps >= 1):
+                    # self.altModel.sim4aic(self.nReps,self.MCSampSize)
+                    if numRight < self.numRightTarget:
+                        nReps = int(floor(nReps*1.33))
+                    elif numRight > self.numRightTarget:
+                        nReps = int(floor(nReps/2))
+                    # More to come ...
                 # More to come ...
     def save(self,fname):
         NAsave(self,fname)
