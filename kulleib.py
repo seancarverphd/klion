@@ -27,11 +27,11 @@ class Kshell(object):  # better name: Kskeleton
     def plot(self):
         cs = plt.pcolor(self.qRange,self.qRange,self.KL)
         cb = plt.colorbar(cs)
-        plt.title('Three-State Model with Irreversible Transitions')
+        plt.title("Minimum $D_{KL}$ As True Model's Parameters Vary")
         plt.xlabel('First Rate Constant (kHz)')
         plt.ylabel('Second Rate Constant (kHz)')
         # Should save nReps and derive '10^5' from nReps=100000
-        cb.set_label('Kullback-Leibler Divergence to 2-State Alternative\nEach Pixel: Monte-Carlo Integral with 10^5 Samples')
+        cb.set_label('$D_{KL}$ to Closest 2-State Alternative\nBased on $10^5$ Monte Carlo Samples')
         plt.show()
 
 class kull(object):
