@@ -69,8 +69,8 @@ class aichist(object):
         self.q = q
         self.trueParent = trueParent
         self.altParent = altParent
-        self.TrueMod = trueParent.flatten()
-        self.AltMod = altParent.flatten()
+        self.TrueMod = trueParent.flatten(seed=554)
+        self.AltMod = altParent.flatten(seed=555)
         self.nReps = 100000
     def compute(self):
         self.AIC = numpy.zeros(self.nReps)
@@ -86,9 +86,16 @@ class aichist(object):
         ax.add_patch(accept)
         plt.hist(H.AIC.T,1000,normed=True,color='black')
         plt.axis([-3,1,0,12])
-        plt.title('Histogram of AIC values, \n Comparing 3-state true model to 2-state alternative')
-        plt.xlabel('AIC')
+        plt.title('Histogram of AIC Differences')
+        plt.xlabel('AIC Difference')
         plt.ylabel('Density')  
+        mAIC = numpy.mean(H.AIC)
+        plt.arrow(mAIC,3.5,0,-2.1, fc="k", ec="k", head_width=0.05, head_length=0.1)
+        plt.text(mAIC-.1,3.75,"$2 D_{KL}$")
+        plt.text(-2.5,11.4,"Alternative Incorrectly Selected")
+        plt.text(.1,11.4,"True Selected")
+        # props = dict(boxstyle='round',facecolor='wheat',alpha=0.5)
+        # ax.text(-2.2,5,"Comparing 3-state true model:\n     $C_1$ --> $C_0$ --> $O$; $q_1$ = 1/4, $q_0$ = 1/2\n\nTo 2-state alternative:\n     $C$ --> $O$; $q$ = 1/6",bbox=props)
         plt.show()
     def save(self,fname):
         with open(fname,'w') as csvfile:
