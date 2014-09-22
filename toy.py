@@ -88,6 +88,14 @@ class flatToyProtocol(object):
     def mle(self):
         assert(self.toy2)  # Not yet implemented for toy 3
         return 1./numpy.mean(self.taus[0:self.nReps])
+    def logf(self,data=None):
+        if data == None:
+            data = self.taus[0:self.nReps]
+        data = numpy.matrix(data)
+        if self.toy2:
+            return(numpy.log(self.q) - self.q*data)
+        else:
+            return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
     def Eflogf(self):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
         if self.toy2:
             return numpy.log(self.q) - self.q*numpy.mean(self.taus[0:self.nReps])
