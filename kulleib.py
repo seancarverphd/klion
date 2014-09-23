@@ -20,6 +20,18 @@ def Kload(fname):
     K = Kshell(qRange,KL)
     return K
 
+def Psave(P,fname):
+    f = open(fname,'wb')
+    pickle.dump(P.prop,f)
+    f.close
+    
+def Pload(fname):
+    f = open(fname,'rb')
+    prop = pickle.load(f)
+    f.close()
+    P = Pshell(prop)
+    return P
+
 class Kshell(object):  # better name: Kskeleton
     def __init__(self,qRange,KL):
         self.qRange = qRange
@@ -34,6 +46,13 @@ class Kshell(object):  # better name: Kskeleton
         cb.set_label('$D_{KL}$ to Closest 2-State Alternative\nBased on $10^5$ Monte Carlo Samples')
         plt.show()
 
+class Pshell(object):
+    def __init__(self,prop):
+        self.prop = prop
+    def plot(self):
+        plt.plot(range(1,51),self.prop,'*')
+        plt.show()
+    
 class kull(object):
     def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
         self.q0 = q0
@@ -75,9 +94,10 @@ class aichist(object):
     def compute(self):
         self.AIC = numpy.zeros(self.nReps)
         self.TrueMod.sim(self.nReps,clear=True)
-        fTrue = self.TrueMod.logf()
-        gAlt = self.AltMod.logf(self.TrueMod.taus[0:self.nReps])
-        self.AIC = 2.*(fTrue - gAlt)
+        #fTrue = self.TrueMod.logf()
+        #gAlt = self.AltMod.logf(self.TrueMod.taus[0:self.nReps])
+        #self.AIC = 2.*(fTrue - gAlt)
+        self.AIC = self.TrueMod.aic(self.AltMod)
     def plot(self):
         ax = plt.gca()
         reject = matplotlib.patches.Rectangle((-12,0),12,12,color='red',alpha=.3)
@@ -100,13 +120,34 @@ class aichist(object):
         # props = dict(boxstyle='round',facecolor='wheat',alpha=0.5)
         # ax.text(-2.2,5,"Comparing 3-state true model:\n     $C_1$ --> $C_0$ --> $O$; $q_1$ = 1/4, $q_0$ = 1/2\n\nTo 2-state alternative:\n     $C$ --> $O$; $q$ = 1/6",bbox=props)
         plt.show()
-    def save(self,fname):
+    def save(self,fname):  # For excel or StatCrunch
         with open(fname,'w') as csvfile:
             writ = csv.writer(csvfile, delimiter='\n',quotechar='|',quoting=csv.QUOTE_MINIMAL)
             writ.writerow(numpy.array(self.AIC)[0].tolist())
             #for a in numpy.array(self.AIC)[0].tolist():
             #    writ.writerow(a)
 
+class PNplot(object):
+    def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
+        self.q0 = q0
+        self.q1 = q1
+        self.q = q
+        self.trueParent = trueParent
+        self.altParent = altParent
+        self.M = 100000
+        self.initseed = 111
+        self.rangePlot = 50
+        self.AIC = []
+        self.prop = []
+    def compute(self):
+        for N in range(self.rangePlot):
+            self.TrueMod = self.trueParent.flatten(seed=self.initseed+2*N)
+            self.AltMod = self.altParent.flatten(seed=self.initseed+2*N+1)
+            self.AIC.append(self.TrueMod.aicN(self.AltMod,self.M,N+1))
+            self.prop.append(numpy.sum(self.AIC[-1]>0)/float(self.M))
+    def save(self,fname):
+        Psave(self,fname)
+        
 class Nalpha(object):
     def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
         self.q0 = q0
@@ -154,16 +195,28 @@ T2 = toy.toyProtocol([q])
 H = aichist(T3,T2,q0,q1,q)
 H.compute()
 # print H.AIC
+
 K = kull(T3,T2,q0,q1,q)
 # Uncomment next three lines to generate 'largeKLDataSet.p' (untested); ToDo: Change code to save (& print in plot) nReps, and test
 # K.compute()
 # K.save('largeKLDataSet.p')
 # print K.KL
 
+P = PNplot(T3,T2,q0,q1,q)
+# Uncomment next three lines to generate 'largePropDataSet' (untested);
+# P.compute()
+# P.save('largePNDataSet.p')
+
 # TO PRINT FIGURE 1
 plt.figure(1)
 KP = Kload('largeKLDataSet.p')  # This file not in repository; uncomment three lines above to generate; (needs testing)
 KP.plot()
 
+# TO PRINT FIGURE 2
 plt.figure(2)
 H.plot()
+
+# TO PRINT FIGURE 3
+plt.figure(3)
+PN = Pload('largePNDataSet.p')
+PN.plot()

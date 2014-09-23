@@ -96,6 +96,14 @@ class flatToyProtocol(object):
             return(numpy.log(self.q) - self.q*data)
         else:
             return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
+    def aic(self,alt):  # self is true model
+        data = self.taus[0:self.nReps]
+        return 2*(self.logf(data) - alt.logf(data))
+    def aicN(self,alt,N,M):  # add N of them, return M
+        self.sim(nReps=N*M)
+        aicNM = self.aic(alt)
+        R = numpy.reshape(aicNM,(M,N))
+        return R.sum(axis=0)
     def Eflogf(self):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
         if self.toy2:
             return numpy.log(self.q) - self.q*numpy.mean(self.taus[0:self.nReps])
