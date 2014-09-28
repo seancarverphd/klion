@@ -5,6 +5,7 @@ import parameter
 import toy
 import cPickle as pickle
 import csv
+import scipy.stats as stats
 
 def Ksave(K,fname):
     f = open(fname,'wb')
@@ -50,7 +51,16 @@ class Pshell(object):
     def __init__(self,prop):
         self.prop = prop
     def plot(self):
-        plt.plot(range(1,51),self.prop,'*')
+        ax = plt.gca()
+        reject = matplotlib.patches.Rectangle((0,75),50,20,color='red',alpha=.3)
+        accept = matplotlib.patches.Rectangle((0,95),50,5,color='green',alpha=.3)
+        ax.add_patch(reject)
+        ax.add_patch(accept)
+        plt.plot(range(1,51),numpy.array(self.prop)*100,'*')
+        plt.xlabel("Number of Independent Repetitions of Experiment (N)")
+        plt.ylabel("P(True Model Selected), ($P_N$, Percent)")
+        plt.text(.5,99,"Selection Correct Sufficiently Often")
+        plt.text(.5,94,"Selection Correct Insufficiently Often")
         plt.show()
     
 class kull(object):
@@ -139,12 +149,23 @@ class PNplot(object):
         self.rangePlot = 50
         self.AIC = []
         self.prop = []
+        self.mn = None
+        self.sd = None
     def compute(self):
         for N in range(self.rangePlot):
             self.TrueMod = self.trueParent.flatten(seed=self.initseed+2*N)
             self.AltMod = self.altParent.flatten(seed=self.initseed+2*N+1)
             self.AIC.append(self.TrueMod.aicN(self.AltMod,self.M,N+1))
             self.prop.append(numpy.sum(self.AIC[-1]>0)/float(self.M))
+    def theoretical(self):
+        self.TrueMod = self.trueParent.flatten()
+        self.AltMod = self.altParent.flatten()
+        self.TrueMod.sim(nReps=self.M)
+        (self.mn,self.sd) = self.TrueMod.a_mn_sd(self.AltMod)
+        self.nRange = range(1,self.rangePlot)
+        self.PNtheo = [] 
+        for n in self.nRange:
+            self.PNtheo.append(stats.norm.cdf(numpy.sqrt(n)*self.mn/self.sd))
     def save(self,fname):
         Psave(self,fname)
         

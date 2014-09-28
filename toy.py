@@ -99,6 +99,11 @@ class flatToyProtocol(object):
     def aic(self,alt):  # self is true model
         data = self.taus[0:self.nReps]
         return 2*(self.logf(data) - alt.logf(data))
+    def a_mn_sd(self,alt):  # self is true model
+        aics = self.aic(alt)
+        mn = numpy.mean(aics)
+        sd = numpy.std(aics)
+        return (mn,sd)
     def aicN(self,alt,N,M):  # add N of them, return M
         self.sim(nReps=N*M)
         aicNM = self.aic(alt)
