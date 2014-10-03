@@ -146,16 +146,16 @@ class PNplot(object):
         self.altParent = altParent
         self.M = 100000
         self.initseed = 111
-        self.rangePlot = 50
+        self.rangePlot = 51
         self.AIC = []
         self.prop = []
         self.mn = None
         self.sd = None
     def compute(self):
-        for N in range(self.rangePlot):
+        for N in range(1,self.rangePlot):
             self.TrueMod = self.trueParent.flatten(seed=self.initseed+2*N)
             self.AltMod = self.altParent.flatten(seed=self.initseed+2*N+1)
-            self.AIC.append(self.TrueMod.aicN(self.AltMod,self.M,N+1))
+            self.AIC.append(self.TrueMod.aicN(self.AltMod,self.M,N))
             self.prop.append(numpy.sum(self.AIC[-1]>0)/float(self.M))
     def theoretical(self):
         self.TrueMod = self.trueParent.flatten()
@@ -241,3 +241,8 @@ H.plot()
 plt.figure(3)
 PN = Pload('largePNDataSet.p')
 PN.plot()
+P.theoretical()
+v = plt.axis()
+plt.plot(range(1,51),numpy.array(P.PNtheo)*100)
+plt.axis(v)
+plt.show()
