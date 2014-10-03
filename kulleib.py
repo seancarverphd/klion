@@ -91,6 +91,45 @@ class kull(object):
     def save(self,fname):
         Ksave(self,fname)
 
+class FBplot(object):
+    def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
+        self.q0 = q0
+        self.q1 = q1
+        self.q = q
+        self.trueParent = trueParent
+        self.altParent = altParent
+        self.TrueMod = trueParent.flatten(50) # setting seed
+        self.AltMod = altParent.flatten(51) # setting seed
+        self.nReps = 100000
+    def compute(self):
+        self.TrueMod.sim(self.nReps)
+        self.aa = self.TrueMod.aic(self.AltMod)
+        self.caa = numpy.cumsum(self.aa)
+        self.abar = []
+        self.amabar2 = []
+        for n,ca in enumerate(self.caa.tolist()[0]):
+            self.abar.append(ca/(n+1))  # don't want to divide by 0
+            self.amabar2.append((self.aa[0,n]-self.abar[n])**2)
+        self.cam = numpy.cumsum(self.amabar2)
+        self.vm = []
+        for m,ca in enumerate(self.cam.tolist()):
+            self.vm.append(ca/((m+.0001)**2))  # don't want to divide by 0 except dividing by m-1
+    def plot(self):
+        n = range(1,len(self.abar)+1)  # don't want to take log of 0
+        n2 = range(2,len(self.abar)+1)
+        plt.plot(numpy.log10(n),numpy.array(self.abar)/2.)
+        self.arraylow = numpy.array(self.abar-numpy.sqrt(self.vm))
+        self.arrayhigh = numpy.array(self.abar+numpy.sqrt(self.vm))
+        self.arraylow[0] = -100
+        self.arrayhigh[0] = 100
+        plt.fill_between(numpy.array(numpy.log10(n2)),self.arraylow[1:]/2.,self.arrayhigh[1:]/2.,color='red',alpha=.5)
+        ax = plt.gca()
+        ax.set_axis_bgcolor('wheat')
+        plt.axis([0,5,-.1,.35])
+        plt.title("Estimating $D_{KL}$")
+        plt.ylabel("$D_{KL}$ Estimate +/- One Standard Error")
+        plt.xlabel("Log10 Size of Monte Carlo Sample")
+        
 class aichist(object):
     def __init__(self,trueParent,altParent,q0=None,q1=None,q=None):
         self.q0 = q0
@@ -147,6 +186,7 @@ class PNplot(object):
         self.M = 100000
         self.initseed = 111
         self.rangePlot = 51
+        self.alpha = 95
         self.AIC = []
         self.prop = []
         self.mn = None
@@ -166,6 +206,16 @@ class PNplot(object):
         self.PNtheo = [] 
         for n in self.nRange:
             self.PNtheo.append(stats.norm.cdf(numpy.sqrt(n)*self.mn/self.sd))
+    def theo2(self,PN):
+        self.TrueMod = self.trueParent.flatten()
+        self.AltMod = self.altParent.flatten()
+        self.PN100 = numpy.array(self.PNtheo)*100
+        self.Nfirst = 1+min(numpy.where(self.PN100-self.alpha>0)[0])  # add 1 cause index starts at 1
+        self.PNfirst = PN.prop[self.Nfirst-1]
+        self.rcv = stats.norm.ppf(self.PNfirst)/numpy.sqrt(self.Nfirst)
+        self.PNtheo2 = []
+        for n in self.nRange:
+            self.PNtheo2.append(stats.norm.cdf(numpy.sqrt(n)*self.rcv))
     def save(self,fname):
         Psave(self,fname)
         
@@ -228,6 +278,8 @@ P = PNplot(T3,T2,q0,q1,q)
 # P.compute()
 # P.save('largePNDataSet.p')
 
+FB = FBplot(T3,T2,q0,q1,q)
+
 # TO PRINT FIGURE 1
 plt.figure(1)
 KP = Kload('largeKLDataSet.p')  # This file not in repository; uncomment three lines above to generate; (needs testing)
@@ -243,6 +295,14 @@ PN = Pload('largePNDataSet.p')
 PN.plot()
 P.theoretical()
 v = plt.axis()
-plt.plot(range(1,51),numpy.array(P.PNtheo)*100)
+plt.plot(range(1,51),numpy.array(P.PNtheo)*100,'r',alpha=.6)
 plt.axis(v)
+plt.show()
+P.theo2(PN)
+plt.plot(range(1,51),numpy.array(P.PNtheo2)*100,'r',alpha=.5)
+
+# TO PRINT FIGURE 4
+plt.figure(4)
+FB.compute()
+FB.plot()
 plt.show()
