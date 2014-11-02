@@ -40,7 +40,7 @@ class Kshell(object):  # better name: Kskeleton
     def plot(self):
         cs = plt.pcolor(self.qRange,self.qRange,self.KL)
         cb = plt.colorbar(cs)
-        plt.title("Minimum $D_{KL}$ As True Model's Parameters Vary")
+        plt.title("$D_{KL}$ As True Model's Parameters Vary")
         plt.xlabel('First Rate Constant (kHz)')
         plt.ylabel('Second Rate Constant (kHz)')
         # Should save nReps and derive '10^5' from nReps=100000
@@ -160,7 +160,7 @@ class aichist(object):
         plt.ylabel('Density')  
         mAIC = numpy.mean(H.AIC)
         plt.arrow(mAIC,3.5,0,-2.1, fc="k", ec="k", head_width=0.05, head_length=0.1)
-        plt.text(mAIC-.1,3.75,"$2 D_{KL}$")
+        plt.text(mAIC-.1,3.75,"Mean \n= $2 D_{KL}$")
         plt.text(-2.5,11.4,"Alternative Incorrectly Selected")
         percenttrue = (numpy.sum(H.AIC>0)*100)/numpy.size(H.AIC)
         plt.text(-1.75,11,str(100-percenttrue)+'%')
