@@ -50,7 +50,7 @@ class Kshell(object):  # better name: Kskeleton
 class Pshell(object):
     def __init__(self,prop):
         self.prop = prop
-    def plot(self):
+    def plot(self,P):
         ax = plt.gca()
         reject = matplotlib.patches.Rectangle((0,75),50,20,color='red',alpha=.3)
         accept = matplotlib.patches.Rectangle((0,95),50,5,color='green',alpha=.3)
@@ -61,6 +61,23 @@ class Pshell(object):
         plt.ylabel("P(True Model Selected), ($P_N$, Percent)")
         plt.text(.5,99,"Selection Correct Sufficiently Often")
         plt.text(.5,94,"Selection Correct Insufficiently Often")
+        P.theoretical()
+        v = plt.axis()
+        plt.plot(range(1,51),numpy.array(P.PNtheo)*100,'b')
+        plt.axis(v)
+        P.theo2(PN)
+        plt.plot(range(1,51),numpy.array(P.PNtheo2)*100,'b--')
+        plt.legend(("Monte Carlo estimate (considered exact)", "Central Limit Theorem (CLT) estimate", "Adjusted CLT estimate"),loc=4)
+        N0 = numpy.where(numpy.array(P.PNtheo) >= 0.95)[0][0] + 1
+        N1 = numpy.where(numpy.array(P.PNtheo2) >= 0.95)[0][0] + 1
+        Ns = numpy.where(numpy.array(self.prop) >= 0.95)[0][0] + 1
+        plt.arrow(N0,87.6,0,4.5, fc="k", ec="k", head_width=0.5, head_length=0.7)
+        #plt.arrow(N1,89.1,0,5, fc="k", ec="k", head_width=0.5, head_length=0.7)
+        plt.arrow(N1,87.6,0,6, fc="k", ec="k", head_width=0.5, head_length=0.7)
+        plt.arrow(Ns,89.1,0,4.5, fc="k", ec="k", head_width=0.5, head_length=0.7)
+        plt.text(N0-.6,86.7,"$N_0$")
+        plt.text(N1-.6,86.7,"$N_1$")
+        plt.text(Ns-.6,88.3,"$N^*$")
         plt.show()
     
 class kull(object):
@@ -292,14 +309,7 @@ H.plot()
 # TO PRINT FIGURE 3
 plt.figure(3)
 PN = Pload('largePNDataSet.p')
-PN.plot()
-P.theoretical()
-v = plt.axis()
-plt.plot(range(1,51),numpy.array(P.PNtheo)*100,'r',alpha=.6)
-plt.axis(v)
-plt.show()
-P.theo2(PN)
-plt.plot(range(1,51),numpy.array(P.PNtheo2)*100,'r',alpha=.5)
+PN.plot(P)
 
 # TO PRINT FIGURE 4
 plt.figure(4)
