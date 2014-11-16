@@ -6,6 +6,8 @@ import toy
 import cPickle as pickle
 import csv
 import scipy.stats as stats
+import copy
+from mpl_toolkits.mplot3d import Axes3D
 
 def Ksave(K,fname):
     f = open(fname,'wb')
@@ -309,15 +311,37 @@ def jointDensity(fig,F,Trange):
     ax = fig.gca(projection='3d')
     T1 = copy.deepcopy(Trange)
     T2 = copy.deepcopy(Trange)
-    X,Y = meshgrid(T1,T2)
+    X,Y = numpy.meshgrid(T1,T2)
     p = []
     for tau in Trange:
         p.append(F.pdf(tau))
     pmat= numpy.matrix(p)
     pp = pmat.T*pmat
     PXP = numpy.array(pp)
-    ax.plot_surface(T1,T2,PXP)
+    ax.plot_surface(X,Y,PXP)
+    plt.show()
     
+def diffDensity(fig,F2,F3,Trange):
+    T1 = copy.deepcopy(Trange)
+    T2 = copy.deepcopy(Trange)
+    X,Y = numpy.meshgrid(T1,T2)
+    p2 = []
+    p3 = []
+    for tau in Trange:
+        p2.append(F2.pdf(tau))
+        p3.append(F3.pdf(tau))
+    p2mat = numpy.matrix(p2)
+    p3mat = numpy.matrix(p3)
+    pp2 = p2mat.T*p2mat
+    pp3 = p3mat.T*p3mat
+    PXP = numpy.array(numpy.log(pp3) - numpy.log(pp2))
+    norm = plt.cm.colors.Normalize(vmin=-2.0,vmax=PXP.max())
+    levels = numpy.arange(-2.0,.1,.1)
+    cmap = plt.cm.PRGn
+    cset = plt.contourf(X,Y,PXP,cmap=plt.cm.get_cmap(cmap,len(levels)-1))
+    colorbar(cset)
+    plt.show()
+
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
@@ -367,6 +391,12 @@ F3 = T3.flatten()
 Trange = numpy.arange(0.,20.,.01)
 pdfCompare(F2,F3,Trange)
 
-fig = plt.figure(6)
-jointDensity(fig, F2, Trange)
+fig6 = plt.figure(6)
+TRange2 = numpy.arange(0,20,.1)
+jointDensity(fig6, F2, TRange2)
 
+fig7 = plt.figure(7)
+jointDensity(fig7,F3,TRange2)
+
+fig8 = plt.figure(8)
+diffDensity(fig8,F2,F3,TRange2)
