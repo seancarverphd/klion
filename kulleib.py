@@ -298,6 +298,8 @@ def pdfCompare(F2,F3,Trange):
     ax.add_patch(accept)
     ax.add_patch(reject2)
     ax.add_patch
+    plt.text(3.,.14,"3-State Model Selected Correctly")
+    plt.text(14.,.14,"Incorrect Selection")
     plt.xlabel("Channel Opening Time (ms)")
     plt.ylabel("Probability Density")
     plt.legend(('Probability Density Function (PDF) 3-State True Model', 'PDF 2-State Alternative (no adjustable parameters)'),loc=2)
