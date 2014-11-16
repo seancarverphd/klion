@@ -275,6 +275,34 @@ class Nalpha(object):
     def save(self,fname):
         NAsave(self,fname)
         
+def pdfCompare(F2,F3,Trange):
+    PDF2 = []
+    PDF3 = []
+    for tau in Trange:
+        PDF2.append(F2.pdf(tau))
+        PDF3.append(F3.pdf(tau))
+    correct = numpy.where(numpy.array(PDF3)>numpy.array(PDF2))
+    lo = min(correct[0])
+    hi = max(correct[0])
+    lo_tau = Trange[lo]
+    hi_tau = Trange[hi]
+    plt.hold('off')
+    plt.plot(numpy.array(Trange),numpy.array(PDF3),'b-')
+    plt.hold('on')
+    plt.plot(numpy.array(Trange),numpy.array(PDF2),'b--')
+    reject1 = matplotlib.patches.Rectangle((0.,0.),lo_tau,.18,color='red',alpha=.3)
+    accept = matplotlib.patches.Rectangle((lo_tau,0.),hi_tau-lo_tau,.18,color='green',alpha=.3)
+    reject2 = matplotlib.patches.Rectangle((hi_tau,0.),20.-hi_tau,.18,color='red',alpha=.3)
+    ax = plt.gca()
+    ax.add_patch(reject1)
+    ax.add_patch(accept)
+    ax.add_patch(reject2)
+    ax.add_patch
+    plt.xlabel("Channel Opening Time (ms)")
+    plt.ylabel("Probability Density")
+    plt.legend(('Probability Density Function (PDF) 3-State True Model', 'PDF 2-State Alternative (no adjustable parameters)'),loc=2)
+    plt.show()
+    
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
 q = parameter.Parameter("q",1./6.,"kHz",log=True)
@@ -316,3 +344,10 @@ plt.figure(4)
 FB.compute()
 FB.plot()
 plt.show()
+
+# TO PRINT FIGURE 5
+plt.figure(5)
+F2 = T2.flatten()
+F3 = T3.flatten()
+Trange = numpy.arange(0.,20.,.01)
+pdfCompare(F2,F3,Trange)

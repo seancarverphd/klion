@@ -79,10 +79,14 @@ class flatToyProtocol(object):
     def like(self):
         return -self.minuslike()
     def pdf(self,tau): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
-        if self.toy2:
+        if tau < 0.:
+            return 0.
+        elif self.toy2:
             return numpy.exp(numpy.log(self.q) - self.q*tau)
         elif self.q0 == self.q1:
             return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*tau + numpy.log(tau))
+        elif tau == 0.:
+            return 0.
         else:
             return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*tau)-numpy.exp(-self.q1*tau))/(self.q1-self.q0)))
     def mle(self):
