@@ -304,10 +304,10 @@ def pdfCompare(F2,F3,Trange):
     plt.text(14.,.14,"Incorrect Selection")
     plt.xlabel("Channel Opening Time (ms)")
     plt.ylabel("Probability Density")
-    plt.legend(('Probability Density Function (PDF) 3-State True Model', 'PDF 2-State Alternative (no adjustable parameters)'),loc=2)
+    plt.legend(('Probability Density Function (PDF), $f(\\tau)$, 3-State True Model', 'PDF, $g(\\tau)$, 2-State Alternative (no adjustable parameters)'),loc=2)
     plt.show()
 
-def jointDensity(fig,F,Trange):
+def jointDensity(fig,F,Trange,ti):
     ax = fig.gca(projection='3d')
     T1 = copy.deepcopy(Trange)
     T2 = copy.deepcopy(Trange)
@@ -319,6 +319,10 @@ def jointDensity(fig,F,Trange):
     pp = pmat.T*pmat
     PXP = numpy.array(pp)
     ax.plot_surface(X,Y,PXP)
+    plt.xlabel('First Opening Time\n$\\tau_1$')
+    plt.ylabel('Second Opening Time\n$\\tau_2$')
+    ax.set_zlabel('Joint Density')
+    plt.title(ti)
     plt.show()
     
 def diffDensity(fig,F2,F3,Trange):
@@ -346,6 +350,9 @@ def diffDensity(fig,F2,F3,Trange):
     cs2 = plt.contour(X,Y,PXP,levels=levels,colors='k',alpha=.2)
     plt.clabel(cs2, levels[91:],fontsize=9, inline=1)
     # plt.colorbar(cset)
+    plt.xlabel("First Opening Time $\\tau_1$")
+    plt.ylabel("Second Opening Time $\\tau_2$")
+    plt.title("Test Statistic as a Function of Data")
     plt.show()
 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
@@ -399,10 +406,13 @@ pdfCompare(F2,F3,Trange)
 
 fig6 = plt.figure(6)
 TRange2 = numpy.arange(0,20,.1)
-jointDensity(fig6, F2, TRange2)
+ti = 'Joint Probability Density Function $g(\\tau_1)\\times g(\\tau_2)$ \n Two Independent Observations of 2-State (Alternative) Model'
+jointDensity(fig6,F2,TRange2,ti)
 
 fig7 = plt.figure(7)
-jointDensity(fig7,F3,TRange2)
+ti = 'Joint Probability Density Function $f(\\tau_1)\\times f(\\tau_2)$ \n Two Independent Observations of 3-State (True) Model'
+jointDensity(fig7,F3,TRange2,ti)
 
 fig8 = plt.figure(8)
-diffDensity(fig8,F2,F3,TRange2)
+TRange3 = numpy.arange(0,20.1,.1)
+diffDensity(fig8,F2,F3,TRange3)
