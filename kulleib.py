@@ -304,6 +304,19 @@ def pdfCompare(F2,F3,Trange):
     plt.ylabel("Probability Density")
     plt.legend(('Probability Density Function (PDF) 3-State True Model', 'PDF 2-State Alternative (no adjustable parameters)'),loc=2)
     plt.show()
+
+def jointDensity(fig,F,Trange):
+    ax = fig.gca(projection='3d')
+    T1 = copy.deepcopy(Trange)
+    T2 = copy.deepcopy(Trange)
+    X,Y = meshgrid(T1,T2)
+    p = []
+    for tau in Trange:
+        p.append(F.pdf(tau))
+    pmat= numpy.matrix(p)
+    pp = pmat.T*pmat
+    PXP = numpy.array(pp)
+    ax.plot_surface(T1,T2,PXP)
     
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
 q1 = parameter.Parameter("q1",0.25,"kHz",log=True)
@@ -353,3 +366,7 @@ F2 = T2.flatten()
 F3 = T3.flatten()
 Trange = numpy.arange(0.,20.,.01)
 pdfCompare(F2,F3,Trange)
+
+fig = plt.figure(6)
+jointDensity(fig, F2, Trange)
+
