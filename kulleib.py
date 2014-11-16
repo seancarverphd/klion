@@ -335,11 +335,13 @@ def diffDensity(fig,F2,F3,Trange):
     pp2 = p2mat.T*p2mat
     pp3 = p3mat.T*p3mat
     PXP = numpy.array(numpy.log(pp3) - numpy.log(pp2))
-    norm = plt.cm.colors.Normalize(vmin=-2.0,vmax=PXP.max())
+    #norm = plt.cm.colors.Normalize(vmin=-0.8,vmax=0.8)
     levels = numpy.arange(-2.0,.1,.1)
-    cmap = plt.cm.PRGn
-    cset = plt.contourf(X,Y,PXP,cmap=plt.cm.get_cmap(cmap,len(levels)-1))
-    colorbar(cset)
+    cmap = plt.cm.get_cmap("PiYG")
+    cmap.set_under(color='red',alpha=0.3)
+    cmap.set_over(color='red',alpha=0.3)
+    cset = plt.contourf(X,Y,PXP,levels=numpy.array([-10.0,0,.8]),colors=('r','g'),alpha=.3) #plt.cm.get_cmap(cmap,2))
+    plt.colorbar(cset)
     plt.show()
 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
