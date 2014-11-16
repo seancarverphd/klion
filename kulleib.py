@@ -341,7 +341,11 @@ def diffDensity(fig,F2,F3,Trange):
     cmap.set_under(color='red',alpha=0.3)
     cmap.set_over(color='red',alpha=0.3)
     cset = plt.contourf(X,Y,PXP,levels=numpy.array([-10.0,0,.8]),colors=('r','g'),alpha=.3) #plt.cm.get_cmap(cmap,2))
-    plt.colorbar(cset)
+    matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
+    levels = numpy.arange(-10,.8,.1)
+    cs2 = plt.contour(X,Y,PXP,levels=levels,colors='k',alpha=.2)
+    plt.clabel(cs2, levels[91:],fontsize=9, inline=1)
+    # plt.colorbar(cset)
     plt.show()
 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
