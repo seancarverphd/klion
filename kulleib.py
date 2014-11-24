@@ -352,7 +352,7 @@ def diffDensity(fig,F2,F3,Trange):
     # plt.colorbar(cset)
     plt.xlabel("First Opening Time $\\tau_1$")
     plt.ylabel("Second Opening Time $\\tau_2$")
-    plt.title("Test Statistic as a Function of Data")
+    plt.title("Test Statistic Comparing Models as a Function of Two Observations")
     plt.show()
 
 q0 = parameter.Parameter("q0",0.5,"kHz",log=True)
