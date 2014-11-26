@@ -111,17 +111,17 @@ class flatToyProtocol(object):
         L = self.likelihoods(data)
         return sum(L)
     def pdf(self,datum):
-        # return numpy.exp(self.likelihoods([datum]))
-        if datum < 0.:
-            return 0.
-        elif self.toy2:
-            return numpy.exp(numpy.log(self.q) - self.q*datum)
-        elif self.q0 == self.q1:
-            return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
-        elif datum == 0.:  # toy3
-            return 0.
-        else:
-            return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
+        return numpy.exp(self.likelihoods([datum])[0])
+        #if datum < 0.:
+        #    return 0.
+        #elif self.toy2:
+        #    return numpy.exp(numpy.log(self.q) - self.q*datum)
+        #elif self.q0 == self.q1:
+        #    return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
+        #elif datum == 0.:  # toy3
+        #    return 0.
+        #else:
+        #    return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
     def mle(self):
         assert(self.toy2)  # Not yet implemented for toy 3
         return 1./numpy.mean(self.data[0:self.nReps])
