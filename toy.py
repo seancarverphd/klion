@@ -22,20 +22,29 @@ class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.R = random.Random()
         self.seed = seed
-        self.clearData()
+        self.clearData()  # Reseeds random number generator
         self.changeModel(parent)
     def clearData(self):
         self.nReps = None
+        self.setSeed()
+        self.data = []
+        self.likes = []
+        self.changedSinceLastSim = False
+    def setSeed(self):
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
         else:
             self.usedSeed = self.seed  # can be changed with self.reseed()
         self.R.seed(self.usedSeed)  # For simulating Markov Chain
-        self.taus = []
+        self.changedSinceLastSim = True
     def reseed(self,seed):
         self.seed = seed
         self.clearData()  # Reseeds random number generator
     def changeModel(self,parent):
+        self.parseParams(parent)
+        self.changedSinceLastSim = True ### ADD TO ENGINE!!!
+        # Don't clearData(); might want to change Model and use old data 
+    def parseParams(self,parent):  # For subclassing replace this code
         if len(parent.q) == 1:
             self.toy2 = True
             self.q = parameter.mu(parent.q[0],parent.preferred.freq)
@@ -48,60 +57,84 @@ class flatToyProtocol(object):
             self.q1 = parameter.mu(parent.q[1],parent.preferred.freq)
         else:
             assert(False) # Length of q should be 1 or 2
-        self.changedSinceLastSim = True ### ADD TO ENGINE!!!
-        # Don't clearData(); might want to change Model and use old data 
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.clearData()  # Reseeds random number generator
         elif self.changedSinceLastSim:
             self.clearData()
-        numNewReps = nReps - len(self.taus)
+        numNewReps = nReps - len(self.data)
         for n in range(numNewReps):  
-            if self.toy2:
-                self.taus.append(self.R.expovariate(self.q))
-            else:
-                self.taus.append(self.R.expovariate(self.q1)+self.R.expovariate(self.q0))
+            self.data.append(self.simulateOnce(self.R)) # Don't want to use self.R elsewhere
         self.nReps = nReps
         self.changedSinceLastSim = False
-    def minuslike(self): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
-        self.mll = 0.
+    def simulateOnce(self,RNG=None):  #Subclassing, replace: Don't pass self.R if you want to avoid changing its state
+        R = self.getRandom(RNG)
         if self.toy2:
-            for n in range(self.nReps):
-                self.mll -= (numpy.log(self.q) - self.q*self.taus[n])
-        elif self.q0 == self.q1:
-            for n in range(self.nReps):
-                self.mll -= numpy.log(self.q1) + numpy.log(self.q0) - self.q0*self.taus[n] + numpy.log(self.taus[n])
+            return (R.expovariate(self.q))
         else:
-            for n in range(self.nReps):
-                self.mll -= numpy.log(self.q1) + numpy.log(self.q0)
-                self.mll -= numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0))
-        return self.mll
-    def like(self):
-        return -self.minuslike()
-    def pdf(self,tau): # Still need to implement MC Sampling maybe: whichReps = range(self.nReps) for default; Not before AD
-        if tau < 0.:
+            return (R.expovariate(self.q1)+R.expovariate(self.q0))
+    def getRandom(self,RNG=None):  #RNG == None creates new Random Number Generator and sets seed to time
+        if RNG == None:
+            R = random.Random()
+            R.seed(long(time.time()*256))
+        else:
+            R = RNG
+        return R
+    def likelihoods(self,data=None):
+        if data == None:
+            data = self.data[len(self.likes):self.nReps]
+            likes = self.likes
+        else:
+            likes = []
+        for datum in data:
+            likes.append(self.likeOnce(datum))
+        return likes
+    def likeOnce(self,datum):  # Subclassing, replace
+        if datum < 0.:
+            return -numpy.infty
+        elif self.toy2:
+            return (numpy.log(self.q) - self.q*datum)
+        elif self.q0 == self.q1:
+            return (numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
+        elif datum == 0.:  # already know its toy3
+            return -numpy.infty
+        else:
+            return (numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
+        #if self.toy2:
+        #    return(numpy.log(self.q) - self.q*datum)
+        #else:
+        #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
+    def minuslike(self,data=None):
+        L = self.likelihoods(data)
+        return -sum(L)       
+    def like(self,data=None):
+        L = self.likelihoods(data)
+        return sum(L)
+    def pdf(self,datum):
+        # return numpy.exp(self.likelihoods([datum]))
+        if datum < 0.:
             return 0.
         elif self.toy2:
-            return numpy.exp(numpy.log(self.q) - self.q*tau)
+            return numpy.exp(numpy.log(self.q) - self.q*datum)
         elif self.q0 == self.q1:
-            return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*tau + numpy.log(tau))
-        elif tau == 0.:
+            return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
+        elif datum == 0.:  # toy3
             return 0.
         else:
-            return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*tau)-numpy.exp(-self.q1*tau))/(self.q1-self.q0)))
+            return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
     def mle(self):
         assert(self.toy2)  # Not yet implemented for toy 3
-        return 1./numpy.mean(self.taus[0:self.nReps])
+        return 1./numpy.mean(self.data[0:self.nReps])
     def logf(self,data=None):
         if data == None:
-            data = self.taus[0:self.nReps]
+            data = self.data[0:self.nReps]
         data = numpy.matrix(data)
         if self.toy2:
             return(numpy.log(self.q) - self.q*data)
         else:
             return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
     def aic(self,alt):  # self is true model
-        data = self.taus[0:self.nReps]
+        data = self.data[0:self.nReps]
         return 2*(self.logf(data) - alt.logf(data))
     def a_mn_sd(self,alt):  # self is true model
         aics = self.aic(alt)
@@ -115,38 +148,38 @@ class flatToyProtocol(object):
         return R.sum(axis=0)
     def Eflogf(self):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
         if self.toy2:
-            return numpy.log(self.q) - self.q*numpy.mean(self.taus[0:self.nReps])
+            return numpy.log(self.q) - self.q*numpy.mean(self.data[0:self.nReps])
         else:  # toy 3
             Qs = []
             for n in range(self.nReps):
                 if self.q1 == self.q0:
-                    Qs.append(-self.q0*self.taus[n] + numpy.log(self.taus[n]))    
+                    Qs.append(-self.q0*self.data[n] + numpy.log(self.data[n]))    
                 else:
-                    Qs.append(numpy.log((numpy.exp(-self.q0*self.taus[n])-numpy.exp(-self.q1*self.taus[n]))/(self.q1-self.q0)))
+                    Qs.append(numpy.log((numpy.exp(-self.q0*self.data[n])-numpy.exp(-self.q1*self.data[n]))/(self.q1-self.q0)))
                     if numpy.isinf(Qs[-1]):
                         print "q1", self.q1, "q0", self.q0
                         
             Qbar = numpy.mean(Qs)
             return numpy.log(self.q1) + numpy.log(self.q0) + Qbar
-    def Eflogg(self,taus):
+    def Eflogg(self,data):
         assert(self.toy2)
-        return numpy.log(self.q) - self.q*numpy.mean(taus)  # taus passed as parameter: not self.taus!
+        return numpy.log(self.q) - self.q*numpy.mean(data)  # data passed as parameter: not self.data!
     def pdfplot(self):
-        assert(len(self.taus)>99)
-        m = min(self.taus)
-        M = max(self.taus)
+        assert(len(self.data)>99)
+        m = min(self.data)
+        M = max(self.data)
         X = numpy.arange(m,M,(M-m)/100)
         Y = []
         for x in X:
             Y.append(self.pdf(x))
         plt.plot(X,Y)
-        plt.hist(self.taus,50,normed=1)
+        plt.hist(self.data,50,normed=1)
         plt.show()
 
-def toy3mlike4opt(q,taus):
-    for tau in taus:
+def toy3mlike4opt(q,data):
+    for datum in data:
         self.mll -= ad.admath.log(q[1]) + ad.admath.log(q[0])
-        self.mll -= ad.admath.log((ad.admath.exp(-q[0]*tau)-ad.admath.exp(-q[1]*tau))/(q[1]-q[0]))
+        self.mll -= ad.admath.log((ad.admath.exp(-q[0]*datum)-ad.admath.exp(-q[1]*datum))/(q[1]-q[0]))
     return self.mll
 
 class likefun(object):
