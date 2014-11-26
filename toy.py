@@ -136,6 +136,19 @@ class flatToyProtocol(object):
         #    return(numpy.log(self.q) - self.q*data)
         #else:
         #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
+    def lr(self,alt):  # likelihood ratio; self is true model
+        data = self.data[0:self.nReps]
+        return (self.logf(data) - alt.logf(data))
+    def lr_mn_sd(self,alt):  # self is true model
+        lrs = self.lr(alt)
+        mn = numpy.mean(lrs)
+        sd = numpy.std(lrs)
+        return (mn,sd)
+    def lrN(self,alt,N,M):  # add N of them, return M
+        self.sim(nReps=N*M)
+        lrNM = self.lr(alt)
+        L = numpy.reshape(lrNM,(M,N))
+        return L.sum(axis=0)
     def aic(self,alt):  # self is true model
         data = self.data[0:self.nReps]
         return 2*(self.logf(data) - alt.logf(data))
@@ -147,37 +160,39 @@ class flatToyProtocol(object):
     def aicN(self,alt,N,M):  # add N of them, return M
         self.sim(nReps=N*M)
         aicNM = self.aic(alt)
-        R = numpy.reshape(aicNM,(M,N))
-        return R.sum(axis=0)
-    def Eflogf(self):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
-        if self.toy2:
-            return numpy.log(self.q) - self.q*numpy.mean(self.data[0:self.nReps])
-        else:  # toy 3
-            Qs = []
-            for n in range(self.nReps):
-                if self.q1 == self.q0:
-                    Qs.append(-self.q0*self.data[n] + numpy.log(self.data[n]))    
-                else:
-                    Qs.append(numpy.log((numpy.exp(-self.q0*self.data[n])-numpy.exp(-self.q1*self.data[n]))/(self.q1-self.q0)))
-                    if numpy.isinf(Qs[-1]):
-                        print "q1", self.q1, "q0", self.q0
-                        
-            Qbar = numpy.mean(Qs)
-            return numpy.log(self.q1) + numpy.log(self.q0) + Qbar
-    def Eflogg(self,data):
-        assert(self.toy2)
-        return numpy.log(self.q) - self.q*numpy.mean(data)  # data passed as parameter: not self.data!
-    def pdfplot(self):
-        assert(len(self.data)>99)
-        m = min(self.data)
-        M = max(self.data)
-        X = numpy.arange(m,M,(M-m)/100)
-        Y = []
-        for x in X:
-            Y.append(self.pdf(x))
-        plt.plot(X,Y)
-        plt.hist(self.data,50,normed=1)
-        plt.show()
+        A = numpy.reshape(aicNM,(M,N))
+        return A.sum(axis=0)
+    def Eflogf(self, data=None):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
+        return(self.logf(data).mean())
+        #if self.toy2:
+        #    return numpy.log(self.q) - self.q*numpy.mean(self.data[0:self.nReps])
+        #else:  # toy 3
+        #    Qs = []
+        #    for n in range(self.nReps):
+        #        if self.q1 == self.q0:
+        #            Qs.append(-self.q0*self.data[n] + numpy.log(self.data[n]))    
+        #        else:
+        #            Qs.append(numpy.log((numpy.exp(-self.q0*self.data[n])-numpy.exp(-self.q1*self.data[n]))/(self.q1-self.q0)))
+        #            if numpy.isinf(Qs[-1]):
+        #                print "q1", self.q1, "q0", self.q0
+        #                
+        #    Qbar = numpy.mean(Qs)
+        #    return numpy.log(self.q1) + numpy.log(self.q0) + Qbar
+    def Eflogg(self,data):  # Must pass data, don't use self.data
+        return self.Eflogf(data)
+        # assert(self.toy2)
+        # return numpy.log(self.q) - self.q*numpy.mean(data)  # data passed as parameter: not self.data!
+    #def pdfplot(self):
+    #    assert(len(self.data)>99)
+    #    m = min(self.data)
+    #    M = max(self.data)
+    #    X = numpy.arange(m,M,(M-m)/100)
+    #    Y = []
+    #    for x in X:
+    #        Y.append(self.pdf(x))
+    #    plt.plot(X,Y)
+    #    plt.hist(self.data,50,normed=1)
+    #    plt.show()
 
 def toy3mlike4opt(q,data):
     for datum in data:
