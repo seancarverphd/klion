@@ -84,11 +84,13 @@ class flatToyProtocol(object):
         if data == None:
             data = self.data[len(self.likes):self.nReps]
             likes = self.likes
+            nLast = self.nReps
         else:
             likes = []
+            nLast = len(data)
         for datum in data:
             likes.append(self.likeOnce(datum))
-        return likes
+        return likes[0:nLast]
     def likeOnce(self,datum):  # Subclassing, replace
         if datum < 0.:
             return -numpy.infty
@@ -126,13 +128,14 @@ class flatToyProtocol(object):
         assert(self.toy2)  # Not yet implemented for toy 3
         return 1./numpy.mean(self.data[0:self.nReps])
     def logf(self,data=None):
-        if data == None:
-            data = self.data[0:self.nReps]
-        data = numpy.matrix(data)
-        if self.toy2:
-            return(numpy.log(self.q) - self.q*data)
-        else:
-            return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
+        return numpy.matrix(self.likelihoods(data))
+        #if data == None:
+        #    data = self.data[0:self.nReps]
+        #data = numpy.matrix(data)
+        #if self.toy2:
+        #    return(numpy.log(self.q) - self.q*data)
+        #else:
+        #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
     def aic(self,alt):  # self is true model
         data = self.data[0:self.nReps]
         return 2*(self.logf(data) - alt.logf(data))
