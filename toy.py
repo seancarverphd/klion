@@ -99,15 +99,21 @@ class flatToyProtocol(object):
         else:
             R = RNG
         return R
-    def likelihoods(self,data=None):
-        if data == None:
-            data = self.data[len(self.likes):self.nReps]   # Start new likes new nReps; earlier ones already computed
-            likes = self.likes  # Append any new likes to self.likes
+    def likelihoods(self,passedData=None,passedLikes=None):
+        if passedData == None:   # Data not passed, so ignore passed Likes (presumably not passed/None)
+            data = self.data    # Use cached data
+            likes = self.likes  # Append any new likes to cached self.likes
             nLast = self.nReps  # Used to restrict return value to length self.nReps in case nReps is greater than len(likes)
-        else:
-            likes = []   # If passing data, don't restrict data, and append new likes to empty list
-            nLast = len(data)  # Stop at end of data, don't restrict
-        for datum in data:
+        elif passedLikes==None:  # Data passed, but not Likes
+            data = passedData
+            likes = []
+            nLast = len(data) # Go to end of data, don't restrict
+        else:  # both Data and Likes have been passed
+            data = passedData
+            likes = passedLikes
+            nLast = len(data)  # Go to end of data, don't restrict
+        nFirst = len(likes)
+        for datum in data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
         return likes[0:nLast]  # Restrict what you return to stopping point
     def likeOnce(self,datum):  # Overload when subclassing
