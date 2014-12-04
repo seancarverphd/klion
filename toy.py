@@ -119,10 +119,6 @@ class flatToyProtocol(object):
             return (numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
         else:
             return (numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
-        #if self.toy2:
-        #    return(numpy.log(self.q) - self.q*datum)
-        #else:
-        #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
     def datumIntegrity(self,datum):
         if not (isinstance(datum,float) or isinstance(datum,int)):
             return False
@@ -140,28 +136,11 @@ class flatToyProtocol(object):
         return sum(L)
     def pdf(self,datum):
         return numpy.exp(self.likelihoods([datum])[0])
-        #if datum < 0.:
-        #    return 0.
-        #elif self.toy2:
-        #    return numpy.exp(numpy.log(self.q) - self.q*datum)
-        #elif self.q0 == self.q1:
-        #    return numpy.exp(numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
-        #elif datum == 0.:  # toy3
-        #    return 0.
-        #else:
-        #    return numpy.exp(numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
     def mle(self):
         assert(self.toy2)  # Not yet implemented for toy 3
         return 1./numpy.mean(self.data[0:self.nReps])
     def logf(self,data=None):
         return numpy.matrix(self.likelihoods(data))
-        #if data == None:
-        #    data = self.data[0:self.nReps]
-        #data = numpy.matrix(data)
-        #if self.toy2:
-        #    return(numpy.log(self.q) - self.q*data)
-        #else:
-        #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*data)-numpy.exp(-self.q1*data))/(self.q1-self.q0)))
     def lr(self,alt):  # likelihood ratio; self is true model
         data = self.data[0:self.nReps]
         return (self.logf(data) - alt.logf(data))
