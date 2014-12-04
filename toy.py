@@ -20,17 +20,22 @@ class toyProtocol(object):
     
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
+        self.reveal(False)  # To save hidden states, call self.reveal(True)
+        self.initRNG(seed)  # Calls restart()
+        self.changeProtocol(parent)
+        self.changeModel(parent)
+    def initRNG(self,seed): # Maybe overloaded if using a different RNG, eg rpy2
         self.R = random.Random()
         self.seed = seed
-        self.clearData()  # Reseeds random number generator
-        self.changeModel(parent)
-    def clearData(self):
+        self.restart()
+    def restart(self):
+        self.setSeed()   # Restart with self.seed or if self.seed==None, deal new seed from clock
         self.nReps = None
-        self.setSeed()
-        self.data = []
-        self.likes = []
+        self.data = []   # Data used for fitting model. (Each datum may be a tuple)
+        self.states = [] # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
         self.changedSinceLastSim = False
-    def setSeed(self):
+    def setSeed(self):   # Reinitialize with same self.seed or if self.seed==None, deal new seed from clock
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
         else:
@@ -39,11 +44,13 @@ class flatToyProtocol(object):
         self.changedSinceLastSim = True
     def reseed(self,seed):
         self.seed = seed
-        self.clearData()  # Reseeds random number generator
+        self.restart()  # Calls setSeed()
+    def changeProtocol(self,parent):
+        pass  # For this class, protocol always remains same: measure time of single event
     def changeModel(self,parent):
         self.parseParams(parent)
         self.changedSinceLastSim = True ### ADD TO ENGINE!!!
-        # Don't clearData(); might want to change Model and use old data 
+        # Don't restart(); might want to change Model and use old data 
     def parseParams(self,parent):  # For subclassing replace this code
         if len(parent.q) == 1:
             self.toy2 = True
@@ -59,22 +66,34 @@ class flatToyProtocol(object):
             assert(False) # Length of q should be 1 or 2
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
-            self.clearData()  # Reseeds random number generator
+            self.restart()  # Reseeds random number generator
         elif self.changedSinceLastSim:
-            self.clearData()
-        numNewReps = nReps - len(self.data)
+            self.restart()
+        numNewReps = nReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
         for n in range(numNewReps):  
-            self.data.append(self.simulateOnce(self.R)) # Don't want to use self.R elsewhere
-        self.nReps = nReps
+            self.data.append(self.simulateOnce(self.simRNG())) # Don't want to use self.R elsewhere
+            if self.revealFlag:
+                self.states.append(self.recentState)
+        self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
-    def simulateOnce(self,RNG=None):  #Subclassing, replace: Don't pass self.R if you want to avoid changing its state
-        R = self.getRandom(RNG)
+    def reveal(self, flag=None):
+        if flag==True:
+            self.revealFlag = True
+            self.restart()  # Restart because you need to rerun to save hidden states
+        elif flag==False:
+            self.revealFlag = False
+        return(self.revealFlag)
+    def simulateOnce(self,RNG=None):  # Overload
+        R = self.getRandom(RNG)  # Pass RNG=self.simRNG() to change state of self.R; pass None for a new RNG  
         if self.toy2:
-            return (R.expovariate(self.q))
-        else:
-            return (R.expovariate(self.q1)+R.expovariate(self.q0))
-    def getRandom(self,RNG=None):  #RNG == None creates new Random Number Generator and sets seed to time
-        if RNG == None:
+            self.recentState = (R.expovariate(self.q))  # Though not Markovian, we can save the hidden transition times
+        else:            
+            self.recentState = (R.expovariate(self.q1), R.expovariate(self.q0))
+        return sum(self.recentState)
+    def simRNG(self):   # Overload if changing RNG, eg with rpy2
+        return self.R
+    def getRandom(self,RNG=None):  # Overload if changing RNG eg with rpy2
+        if RNG == None:   # RNG == None creates new Random Number Generator and sets seed by time
             R = random.Random()
             R.seed(long(time.time()*256))
         else:
@@ -82,16 +101,16 @@ class flatToyProtocol(object):
         return R
     def likelihoods(self,data=None):
         if data == None:
-            data = self.data[len(self.likes):self.nReps]
-            likes = self.likes
-            nLast = self.nReps
+            data = self.data[len(self.likes):self.nReps]   # Start new likes new nReps; earlier ones already computed
+            likes = self.likes  # Append any new likes to self.likes
+            nLast = self.nReps  # Used to restrict return value to length self.nReps in case nReps is greater than len(likes)
         else:
-            likes = []
-            nLast = len(data)
+            likes = []   # If passing data, don't restrict data, and append new likes to empty list
+            nLast = len(data)  # Stop at end of data, don't restrict
         for datum in data:
             likes.append(self.likeOnce(datum))
-        return likes[0:nLast]
-    def likeOnce(self,datum):  # Subclassing, replace
+        return likes[0:nLast]  # Restrict what you return to stopping point
+    def likeOnce(self,datum):  # Overload when subclassing
         if datum < 0.:
             return -numpy.infty
         elif self.toy2:
