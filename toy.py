@@ -111,20 +111,27 @@ class flatToyProtocol(object):
             likes.append(self.likeOnce(datum))
         return likes[0:nLast]  # Restrict what you return to stopping point
     def likeOnce(self,datum):  # Overload when subclassing
-        if datum < 0.:
+        if not self.datumIntegrity(datum):
             return -numpy.infty
         elif self.toy2:
             return (numpy.log(self.q) - self.q*datum)
         elif self.q0 == self.q1:
             return (numpy.log(self.q1) + numpy.log(self.q0) - self.q0*datum + numpy.log(datum))
-        elif datum == 0.:  # already know its toy3
-            return -numpy.infty
         else:
             return (numpy.log(self.q1)+numpy.log(self.q0)+numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
         #if self.toy2:
         #    return(numpy.log(self.q) - self.q*datum)
         #else:
         #    return(numpy.log(self.q1) + numpy.log(self.q0) + numpy.log((numpy.exp(-self.q0*datum)-numpy.exp(-self.q1*datum))/(self.q1-self.q0)))
+    def datumIntegrity(self,datum):
+        if not (isinstance(datum,float) or isinstance(datum,int)):
+            return False
+        elif datum < 0.:
+            return False
+        elif (not self.toy2) and datum == 0:
+            return False
+        else:
+            return True
     def minuslike(self,data=None):
         L = self.likelihoods(data)
         return -sum(L)       
