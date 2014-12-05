@@ -17,13 +17,28 @@ class toyProtocol(object):
         parent = self  # for readability
         FT = flatToyProtocol(parent,seed)
         return FT
+    def getExperiment(self):  # For subclassing replace this code
+        if len(self.q) == 1:
+            toy2 = True
+            q = parameter.mu(self.q[0],self.preferred.freq)
+            q0 = None
+            q1 = None
+        elif len(self.q) == 2:
+            toy2 = False
+            q = None
+            q0 = parameter.mu(self.q[0],self.preferred.freq)
+            q1 = parameter.mu(self.q[1],self.preferred.freq)
+        else:
+            assert(False) # Length of q should be 1 or 2
+        return (toy2,q,q0,q1)
     
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.reveal(False)  # To save hidden states, call self.reveal(True)
         self.initRNG(seed)  # Calls restart()
-        self.changeProtocol(parent)
-        self.changeModel(parent)
+        self.experiment = parent.getExperiment()
+        self.changeProtocol()
+        self.changeModel()
     def initRNG(self,seed): # Maybe overloaded if using a different RNG, eg rpy2
         self.R = random.Random()
         self.seed = seed
@@ -45,25 +60,16 @@ class flatToyProtocol(object):
     def reseed(self,seed):
         self.seed = seed
         self.restart()  # Calls setSeed()
-    def changeProtocol(self,parent):
+    def changeProtocol(self,experiment=None):
         pass  # For this class, protocol always remains same: measure time of single event
-    def changeModel(self,parent):
-        self.parseParams(parent)
+    def changeModel(self,experiment=None):
+        if not experiment==None:
+            self.experiment = experiment
+        self.unpack(self.experiment)
         self.changedSinceLastSim = True ### ADD TO ENGINE!!!
         # Don't restart(); might want to change Model and use old data 
-    def parseParams(self,parent):  # For subclassing replace this code
-        if len(parent.q) == 1:
-            self.toy2 = True
-            self.q = parameter.mu(parent.q[0],parent.preferred.freq)
-            self.q0 = None
-            self.q1 = None
-        elif len(parent.q) == 2:
-            self.toy2 = False
-            self.q = None
-            self.q0 = parameter.mu(parent.q[0],parent.preferred.freq)
-            self.q1 = parameter.mu(parent.q[1],parent.preferred.freq)
-        else:
-            assert(False) # Length of q should be 1 or 2
+    def unpack(self,experiment):  # For subclassing replace this code
+        self.toy2, self.q, self.q0, self.q1 = experiment
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.restart()  # Reseeds random number generator
@@ -219,11 +225,15 @@ class likefun(object):
     def set(self,valueTuple):
         for i,P in enumerate(self.paramTuple):
             P.assign(valueTuple[i])
-        self.F.changeModel(self.parent)
+        Ex = self.parent.getExperiment()
+        self.F.changeModel(Ex)
+        #self.F.changeModel(self.parent)
     def setLog(self,valueTuple):
         for i,P in enumerate(self.paramTuple):
             P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
-        self.F.changeModel(self.parent)
+        Ex = self.parent.getExperiment()
+        self.F.changeModel(Ex)
+        #self.F.changeModel(self.parent)
     def sim(self,XTrue,nReps=100,seed=None,log=True):
         self.XTrue = XTrue
         if log==True:
@@ -255,7 +265,8 @@ class likefun1(object):   # One dimensional likelihood grid
         self.XRange = XRange
     def set(self,X):
         self.XParam.assign(X)
-        self.F.changeModel(self.parent)
+        Ex = self.parent.getExperiment()
+        self.F.changeModel(Ex)
     def sim(self,XTrue=15,nReps=100,seed=None):
         self.XTrue = XTrue
         self.set(XTrue)
