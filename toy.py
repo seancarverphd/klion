@@ -31,7 +31,23 @@ class toyProtocol(object):
         else:
             assert(False) # Length of q should be 1 or 2
         return (toy2,q,q0,q1)
-    
+
+class RNG(object):
+    def __init__(self,seed=None):
+        self.R = random.Random()
+        self.setSeed(seed)
+    def setSeed(self,seed=None):
+        self.seed = seed  # self.seed might be None; self.usedSeed is not None
+        if self.seed == None:
+            self.usedSeed = long(time.time()*256)
+        else:
+            self.usedSeed = self.seed  # can be changed with self.reseed()
+        self.reset()
+    def reset(self):
+        self.R.seed(self.usedSeed)
+    def expovariate(self,q):
+        return R.expovariate(q)
+
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.reveal(False)  # To save hidden states, call self.reveal(True)
