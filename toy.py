@@ -35,31 +35,31 @@ class toyProtocol(object):
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.reveal(False)  # To save hidden states, call self.reveal(True)
-        self.initRNG(seed)  # Calls restart()
+        self.initRNG(seed)  # Afterwards, must call restart()
+        self.restart()
         self.experiment = parent.getExperiment()
         self.changeProtocol()
         self.changeModel()
     def initRNG(self,seed): # Maybe overloaded if using a different RNG, eg rpy2
         self.R = random.Random()
+        self.setSeed(seed)
+    def setSeed(self,seed=None):   # Must call restart() Sets self.seed and self.usedSeed from seed; if None (or not passed), usedSeed set by clock
         self.seed = seed
-        self.restart()
-    def restart(self):
-        self.setSeed()   # Restart with self.seed or if self.seed==None, deal new seed from clock
-        self.nReps = None
-        self.data = []   # Data used for fitting model. (Each datum may be a tuple)
-        self.states = [] # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
-        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
-        self.changedSinceLastSim = False
-    def setSeed(self):   # Reinitialize with same self.seed or if self.seed==None, deal new seed from clock
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
         else:
             self.usedSeed = self.seed  # can be changed with self.reseed()
-        self.R.seed(self.usedSeed)  # For simulating Markov Chain
-        self.changedSinceLastSim = True
-    def reseed(self,seed):
-        self.seed = seed
-        self.restart()  # Calls setSeed()
+    def reseed(self,seed=None):
+        self.setSeed(seed)
+        self.restart()
+    def resetRNG(self):  # Resets RNG to same seed as used before
+        self.R.seed(self.usedSeed)
+    def restart(self):   # Clears data and resets RNG with same seed
+        self.resetRNG()
+        self.data = []   # Data used for fitting model. (Each datum may be a tuple)
+        self.states = [] # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
+        self.changedSinceLastSim = False
     def changeProtocol(self,experiment=None):
         pass  # For this class, protocol always remains same: measure time of single event
     def changeModel(self,experiment=None):
