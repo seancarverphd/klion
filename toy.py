@@ -37,41 +37,32 @@ class RNG(object):
         self.R = random.Random()
         self.setSeed(seed)
     def setSeed(self,seed=None):
-        self.seed = seed  # self.seed might be None; self.usedSeed is not None
+        self.seed = seed  # self.seed might be None.  This indicates clock seed---stored in self.usedSeed (not None)
         if self.seed == None:
             self.usedSeed = long(time.time()*256)
         else:
             self.usedSeed = self.seed  # can be changed with self.reseed()
         self.reset()
-    def reset(self):
+    def reset(self):  # Resets RNG to same seed as used before
         self.R.seed(self.usedSeed)
     def expovariate(self,q):
-        return R.expovariate(q)
+        return self.R.expovariate(q)
 
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.reveal(False)  # To save hidden states, call self.reveal(True)
-        self.initRNG(seed)  # Afterwards, must call restart()
+        self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.restart()
         self.experiment = parent.getExperiment()
         self.changeProtocol()
         self.changeModel()
-    def initRNG(self,seed): # Maybe overloaded if using a different RNG, eg rpy2
-        self.R = random.Random()
-        self.setSeed(seed)
-    def setSeed(self,seed=None):   # Must call restart() Sets self.seed and self.usedSeed from seed; if None (or not passed), usedSeed set by clock
-        self.seed = seed
-        if self.seed == None:
-            self.usedSeed = long(time.time()*256)
-        else:
-            self.usedSeed = self.seed  # can be changed with self.reseed()
+    def initRNG(self,seed=None): # Maybe overloaded if using a different RNG, eg rpy2
+        return RNG(seed)
     def reseed(self,seed=None):
-        self.setSeed(seed)
+        self.R.setSeed(seed)
         self.restart()
-    def resetRNG(self):  # Resets RNG to same seed as used before
-        self.R.seed(self.usedSeed)
     def restart(self):   # Clears data and resets RNG with same seed
-        self.resetRNG()
+        self.R.reset()
         self.data = []   # Data used for fitting model. (Each datum may be a tuple)
         self.states = [] # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
@@ -88,7 +79,7 @@ class flatToyProtocol(object):
         self.toy2, self.q, self.q0, self.q1 = experiment
     def sim(self,nReps=1,clear=False): # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
-            self.restart()  # Reseeds random number generator
+            self.restart()  # Resets random number generator
         elif self.changedSinceLastSim:
             self.restart()
         numNewReps = nReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
