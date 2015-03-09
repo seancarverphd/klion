@@ -1,8 +1,8 @@
 import numpy
 import matplotlib
 import matplotlib.pylab as plt
-import parameter
-import toy
+import kli.parameter as parameter
+import kli.toy as toy
 import cPickle as pickle
 import csv
 import scipy.stats as stats
