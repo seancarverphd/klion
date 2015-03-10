@@ -29,7 +29,7 @@ def Kload(fname):
 def Psave(P, fname):
     f = open(fname, 'wb')
     pickle.dump(P.prop, f)
-    f.close
+    f.close()
 
 
 def Pload(fname):
