@@ -10,9 +10,9 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import engine
 
-#default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
-default_dt = parameter.Parameter("dt",0.01,"ms",log=True)
-default_tstop = parameter.Parameter("tstop",20.,"ms",log=True)
+# default_dt = parameter.Parameter("dt",0.05,"ms",log=True)
+default_dt = parameter.Parameter("dt", 0.01, "ms", log=True)
+default_tstop = parameter.Parameter("tstop", 20., "ms", log=True)
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
@@ -20,11 +20,13 @@ preferred.voltage = 'mV'
 preferred.conductance = 'pS'
 preferred.current = "fA"
 
+
 def equilQ(Q):
-    (V,D) = np.linalg.eig(Q.T)   # eigenspace
+    (V, D) = np.linalg.eig(Q.T)  # eigenspace
     imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
-    eigvect0 = D[:,imin]  # corresponding eigenvector
-    return eigvect0.T/sum(eigvect0) # normalize and return (fixes sign)
+    eigvect0 = D[:, imin]  # corresponding eigenvector
+    return eigvect0.T / sum(eigvect0)  # normalize and return (fixes sign)
+
 
 class StepProtocol(object):
     def __init__(self, patch, voltages, voltageStepDurations):
@@ -33,13 +35,16 @@ class StepProtocol(object):
         self.voltageStepDurations = voltageStepDurations
         self.setSampleInterval(default_dt)
         self.preferred = preferred
-    def setSampleInterval(self,dt):
-        assert(parameter.v(dt)>0*u.milliseconds)  # dt > 0 regardless of units
+
+    def setSampleInterval(self, dt):
+        assert (parameter.v(dt) > 0 * u.milliseconds)  # dt > 0 regardless of units
         self.dt = dt
-    def flatten(self,seed=None):
-        parent = self # for readablility of pass to engine command
-        FS = engine.flatStepProtocol(parent,seed)
+
+    def flatten(self, seed=None):
+        parent = self  # for readablility of pass to engine command
+        FS = engine.flatStepProtocol(parent, seed)
         return FS
+
 
 class singleChannelPatch(object):
     def __init__(self, ch):
@@ -47,28 +52,33 @@ class singleChannelPatch(object):
         self.Mean = self.ch.makeMean()
         self.Std = self.ch.makeStd()
         self.noise(False)
-    def noise(self,toggle):
+
+    def noise(self, toggle):
         self.hasNoise = toggle
-        if self.hasNoise==False:
+        if self.hasNoise == False:
             self.ch.makeLevelMap()
             self.uniqueLevels = set(self.ch.uniqueLevels)
         else:
-            assert(False)  # Take this out after implementing noise
-    def getQ(self,volts):
+            assert (False)  # Take this out after implementing noise
+
+    def getQ(self, volts):
         channel.VOLTAGE.remap(volts)
         return self.ch.makeQ()
-    def getA(self,volts,dt):
+
+    def getA(self, volts, dt):
         Q = self.getQ(volts)
-        A = scipy.linalg.expm(dt*Q)
+        A = scipy.linalg.expm(dt * Q)
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
-        assert(np.amin(np.sum(A,axis=1))>1.-tol)
-        assert(np.amax(np.sum(A,axis=1))<1.+tol)
+        assert (np.amin(np.sum(A, axis=1)) > 1. - tol)
+        assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
         return A
-    def equilibrium(self,volts):
+
+    def equilibrium(self, volts):
         return equilQ(self.getQ(volts))
+
     # Select is now also defined in engine.flatStepProtocol
-    def select(self,R,mat,row=0):  # select from matrix[row,:]
+    def select(self, R, mat, row=0):  # select from matrix[row,:]
         p = R.random()
         rowsum = 0
         # cols should add to 1
@@ -76,4 +86,4 @@ class singleChannelPatch(object):
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
                 return col
-        assert(False) # Should never reach this point
+        assert (False)  # Should never reach this point
