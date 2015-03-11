@@ -19,10 +19,10 @@ class TestFlatToyProtocol(TestCase):
         self.F3.sim(10)
 
     def test_like2(self):
-        self.assertEqual(self.F2.like(),-30.619490619218585)
+        self.assertEqual(self.F2.like(), -30.619490619218585)
 
     def test_like3(self):
-        self.assertEqual(self.F3.like(),-27.500748311455272)
+        self.assertEqual(self.F3.like(), -27.500748311455272)
 
 
 if __name__ == '__main__':
