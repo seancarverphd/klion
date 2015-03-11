@@ -117,7 +117,7 @@ class flatToyProtocol(object):
     def simulateOnce(self, RNG=None):  # Overload
         R = self.getRandom(RNG)  # Pass RNG=self.simRNG() to change state of self.R; pass None for a new RNG  
         if self.toy2:
-            self.recentState = (R.expovariate(self.q))  # Though not Markovian, we can save the hidden transition times
+            self.recentState = (R.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
         else:
             self.recentState = (R.expovariate(self.q1), R.expovariate(self.q0))
         return sum(self.recentState)
@@ -184,7 +184,7 @@ class flatToyProtocol(object):
         return numpy.exp(self.likelihoods([datum])[0])
 
     def mle(self):
-        assert (self.toy2)  # Not yet implemented for toy 3
+        assert self.toy2  # Not yet implemented for toy 3
         return 1. / numpy.mean(self.data[0:self.nReps])
 
     def logf(self, data=None):
@@ -192,13 +192,13 @@ class flatToyProtocol(object):
 
     def lr(self, alt):  # likelihood ratio; self is true model
         data = self.data[0:self.nReps]
-        return (self.logf(data) - alt.logf(data))
+        return self.logf(data) - alt.logf(data)
 
     def lr_mn_sd(self, alt):  # self is true model
         lrs = self.lr(alt)
         mn = numpy.mean(lrs)
         sd = numpy.std(lrs)
-        return (mn, sd)
+        return mn, sd
 
     def lrN(self, alt, N, M):  # add N of them, return M
         self.sim(nReps=N * M)
