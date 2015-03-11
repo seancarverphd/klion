@@ -262,7 +262,7 @@ k2 = parameter.Parameter("k2", 0.036, "1/mV", log=False)
 V0 = parameter.Parameter("V0", -65., "mV", log=False)
 V1 = parameter.Parameter("V1", 20., "mV", log=False)
 V2 = parameter.Parameter("V2", -80., "mV", log=False)
-# The parameter VOLTAGE is set by voltag-clamp in patch.py
+# The parameter VOLTAGE is set by voltage-clamp in patch.py
 VOLTAGE = parameter.Parameter("VOLTAGE", -65., "mV", log=False)
 OFFSET = parameter.Parameter("OFFSET", 65., "mV", log=False)
 VOLTAGE.remap(V0)

@@ -87,7 +87,7 @@ class singleChannelPatch(object):
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
                 return col
-        assert (False)  # Should never reach this point
+        assert False  # Should never reach this point
 
 
 khhPatch = singleChannelPatch(channel.khh)
