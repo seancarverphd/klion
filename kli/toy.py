@@ -37,25 +37,20 @@ class toyProtocol(object):
         return (toy2, q, q0, q1)
 
 
-class RNG(object):
+class SaveSeedRNG(random.Random):
     def __init__(self, seed=None):
-        self.R = random.Random()
+        super(SaveSeedRNG,self).__init__()
         self.setSeed(seed)
 
     def setSeed(self, seed=None):
-        self.seed = seed  # self.seed might be None.  This indicates clock seed---stored in self.usedSeed (not None)
-        if self.seed == None:
+        if seed is None:
             self.usedSeed = long(time.time() * 256)
         else:
-            self.usedSeed = self.seed  # can be changed with self.reseed()
+            self.usedSeed = seed  # can be changed with self.reseed()
         self.reset()
 
     def reset(self):  # Resets RNG to same seed as used before
-        self.R.seed(self.usedSeed)
-
-    def expovariate(self, q):
-        return self.R.expovariate(q)
-
+        self.seed(self.usedSeed)
 
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
@@ -67,7 +62,7 @@ class flatToyProtocol(object):
         self.changeModel()
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
-        return RNG(seed)
+        return SaveSeedRNG(seed)
 
     def reseed(self, seed=None):
         self.R.setSeed(seed)
@@ -100,7 +95,7 @@ class flatToyProtocol(object):
             self.restart()
         numNewReps = nReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
         for n in range(numNewReps):
-            self.data.append(self.simulateOnce(self.simRNG()))  # Don't want to use self.R elsewhere
+            self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.revealFlag:
                 self.states.append(self.recentState)
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
@@ -115,23 +110,13 @@ class flatToyProtocol(object):
         return (self.revealFlag)
 
     def simulateOnce(self, RNG=None):  # Overload
-        R = self.getRandom(RNG)  # Pass RNG=self.simRNG() to change state of self.R; pass None for a new RNG  
+        if RNG is None:
+            RNG = self.initRNG(None)
         if self.toy2:
-            self.recentState = (R.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
+            self.recentState = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
         else:
-            self.recentState = (R.expovariate(self.q1), R.expovariate(self.q0))
+            self.recentState = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
         return sum(self.recentState)
-
-    def simRNG(self):  # Overload if changing RNG, eg with rpy2
-        return self.R
-
-    def getRandom(self, RNG=None):  # Overload if changing RNG eg with rpy2
-        if RNG == None:  # RNG == None creates new Random Number Generator and sets seed by time
-            R = random.Random()
-            R.seed(long(time.time() * 256))
-        else:
-            R = RNG
-        return R
 
     def likelihoods(self, passedData=None, passedLikes=None):
         if passedData == None:  # Data not passed, so ignore passed Likes (presumably not passed/None)
@@ -243,7 +228,8 @@ class flatToyProtocol(object):
         return self.Eflogf(data)
         # assert(self.toy2)
         # return numpy.log(self.q) - self.q*numpy.mean(data)  # data passed as parameter: not self.data!
-        # def pdfplot(self):
+
+    # def pdfplot(self):
         #    assert(len(self.data)>99)
         #    m = min(self.data)
         #    M = max(self.data)
