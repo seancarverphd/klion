@@ -484,8 +484,8 @@ class Expression(object):
                        "log10": __import__('ad.admath', fromlist=['admath']).log10,
                        "pi": __import__('ad.admath', fromlist=['admath']).pi,
                        "e": __import__('ad.admath', fromlist=['admath']).e,
-                       "u": __import__('parameter').u,
-                       "v": __import__('parameter').v}
+                       "u": __import__('kli.parameter').u,
+                       "v": __import__('kli.parameter').v}
         else:
             methods = {"exp": __import__('numpy').exp,
                        "log": __import__('numpy').log,
@@ -495,8 +495,8 @@ class Expression(object):
                        "log10": __import__('numpy').log10,
                        "pi": __import__('numpy').pi,
                        "e": __import__('numpy').e,
-                       "u": __import__('parameter').u,
-                       "v": __import__('parameter').v}
+                       "u": __import__('kli.parameter').u,
+                       "v": __import__('kli.parameter').v}
         self.lastP = {}
         self.lastE = {}
         for key, v in self.PS.pDict.iteritems():

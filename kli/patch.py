@@ -21,7 +21,8 @@ preferred.conductance = 'pS'
 preferred.current = "fA"
 
 
-def equilQ(Q):
+def equilQ(Qunits):
+    Q = parameter.m(Qunits)
     (V, D) = np.linalg.eig(Q.T)  # eigenspace
     imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
     eigvect0 = D[:, imin]  # corresponding eigenvector
@@ -87,3 +88,10 @@ class singleChannelPatch(object):
             if p < rowsum:
                 return col
         assert (False)  # Should never reach this point
+
+
+khhPatch = singleChannelPatch(channel.khh)
+SP = StepProtocol(khhPatch, [-65*u.mV, -20*u.mV], [np.inf, 10*u.ms])
+FS = SP.flatten(5)
+FS.sim(10)
+testedlike = FS.like()
