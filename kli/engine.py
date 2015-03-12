@@ -31,9 +31,6 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.nsamples.append(None)
             else:
                 self.nsamples.append(int(durationValue / self.dt))
-        # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
-        self.levels = copy.copy(parent.thePatch.uniqueLevels)  # This is a set, deepcopy fails in assert below (change)
-        self.levelList = list(self.levels)
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory()  # Only needed for plotting
         self.restart()
 
@@ -41,7 +38,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         newPatch = parent.thePatch
         assert not newPatch.hasNoise  # Later will implement NOISE
         self.hasNoise = newPatch.hasNoise
-        assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
+        # Need to verify levels don't change when new model
+        # assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.nextDistrib = []
         initDistrib = newPatch.ch.weightedDistrib()
         if initDistrib == None:  # No initial distribution because all weights 0, use equilibrium distribution
@@ -63,19 +61,18 @@ class flatStepProtocol(toy.flatToyProtocol):
         # ??? Don't restart(); might want to change Model and use old data
 
     def states2levels(self, newPatch):
-        self.levelMap = []
+        # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
+        self.nodes = [n for n in newPatch.ch.nodes]
+        self.levels = {n.level for n in newPatch.ch.nodes}  # This is a set, deepcopy fails in assert below (change)
+        self.levelList = list(self.levels)
+        self.levelMap = [n.level for n in newPatch.ch.nodes]
+        self.nStates = len(self.levelMap)  # changes
+        # Next block of code is a kluge.
         self.levelNum = []
-        self.nodes = []
-        self.means = []
         for n in newPatch.ch.nodes:
-            self.nodes.append(n)  # saved for output
             for u in range(len(self.levelList)):
                 if n.level is self.levelList[u]:
-                    self.levelMap.append(self.levelList[u])
                     self.levelNum.append(u)
-                    continue
-        self.nStates = len(self.levelMap)  # changes
-        assert (self.nStates == len(newPatch.ch.nodes))  # make sure 1 level appended per node
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
@@ -200,7 +197,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
                  return col
-        assert (False)  # Should never reach this point
+        assert False  # Should never reach this point
 
     def makeB(self):  # Only good for no-noise
         self.B = []
