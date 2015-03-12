@@ -9,12 +9,29 @@ import toy
 
 class flatStepProtocol(object):
     def __init__(self, parent, seed=None):
-        # Nothing below changes until indicated
-        self.R = toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
-        # self.RG = random.Random()  # for simulation of conductance, currently separate from state
-        self.seed = seed  # can be changed with self.reseed()
+        self.reveal(False)
+        self.R = self.initRNG(seed)
+        self.restart()
         self.changeProtocol(parent)  # calls self.clearData()
         self.changeModel(parent.thePatch)
+
+    def reveal(self, flag=None):
+        if flag == True:
+            self.revealFlag = True
+            self.restart()  # Restart because you need to rerun to save hidden states
+        elif flag == False:
+            self.revealFlag = False
+        return (self.revealFlag)
+
+    def restart(self):  # Clears data and resets RNG with same seed
+        self.R.reset()
+        self.data = []  # Data used for fitting model. (Each datum may be a tuple)
+        self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple)
+        self.changedSinceLastSim = False
+
+    def initRNG(self, seed):
+        return toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
 
     def changeProtocol(self, parent):
         self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
