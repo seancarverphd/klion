@@ -66,15 +66,15 @@ class MultipleRNGs(object):
 
     def setSeedAndOffset(self, seed=None, offset=1000000):
         for i in range(len(self.RNGs)):
-            RNGs[i].setSeedAndOffset(seed,offset*i)
+            self.RNGs[i].setSeedAndOffset(seed,offset*i)
 
     def setSeed(self, seed=None):
         for i in range(len(self.RNGs)):
-            RNGs[i].setSeed(seed)
+            self.RNGs[i].setSeed(seed)
 
     def reset(self):
         for i in range(len(self.RNGs)):
-            RNGs[i].reset()
+            self.RNGs[i].reset()
 
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):

@@ -5,13 +5,13 @@ import time
 import copy
 import parameter
 import pandas
-
+import toy
 
 class flatStepProtocol(object):
     def __init__(self, parent, seed=None):
         # Nothing below changes until indicated
-        self.R = random.Random()  # for simulation of states
-        self.RG = random.Random()  # for simulation of conductance, currently separate from state
+        self.R = toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
+        # self.RG = random.Random()  # for simulation of conductance, currently separate from state
         self.seed = seed  # can be changed with self.reseed()
         self.changeProtocol(parent)  # calls self.clearData()
         self.changeModel(parent.thePatch)
@@ -38,13 +38,14 @@ class flatStepProtocol(object):
         self.clearData()
 
     def clearData(self):
-        self.nReps = None
-        if self.seed == None:
-            self.usedSeed = long(time.time() * 256)
-        else:
-            self.usedSeed = self.seed  # can be changed with self.reseed()
-        self.R.seed(self.usedSeed)  # For simulating Markov Chain
-        self.RG.seed(self.usedSeed + 1)  # For simulating White Noise in Conductance, presently separate
+        self.R.reset()
+        # self.nReps = None
+        # if self.seed == None:
+        #     self.usedSeed = long(time.time() * 256)
+        # else:
+        #     self.usedSeed = self.seed  # can be changed with self.reseed()
+        # self.R.seed(self.usedSeed)  # For simulating Markov Chain
+        # self.RG.seed(self.usedSeed + 1)  # For simulating White Noise in Conductance, presently separate
         self.simStates = []
         self.simDataL = []
         self.simDataGM = []  # conductance, simulated separately.
@@ -174,7 +175,7 @@ class flatStepProtocol(object):
         for n in range(nReps - len(self.simDataGM)):  # simStates is a list of trajectories one for each rep.
             newG = []
             for state in self.simStates[n]:
-                newG.append(self.RG.normalvariate(self.meansM[state], self.stdsM[state]))
+                newG.append(self.R.RNGs[1].normalvariate(self.meansM[state], self.stdsM[state]))
             self.simDataGM.append(newG)
 
     def dataFrame(self, rep=0, downsample=0):
@@ -206,7 +207,7 @@ class flatStepProtocol(object):
 
     def select(self, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
-        p = self.R.random()
+        p = self.R.RNGs[0].random()
         rowsum = 0
         # cols should add to 1
         for col in range(mat.shape[1]):  # iterate over columns of mat
