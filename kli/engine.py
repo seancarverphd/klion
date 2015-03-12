@@ -17,8 +17,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple)
-        self.simStates = []
-        self.simDataL = []
+        # self.simStates = []
+        # self.simDataL = []
         self.simDataGM = []  # conductance, simulated separately.
         self.changedSinceLastSim = False
 
@@ -116,12 +116,8 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
         hasVoltTraj = True
 
-    def nextInit(self, nextInitNum):  # initializes state based on stored equilibrium distributions
-        return self.select(self.nextDistrib[nextInitNum])
-
-    # def reseed(self, seed):
-    #     self.seed = seed
-    #     self.clearData()  # Reseeds random number generator
+    def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
+        return self.select(RNG, self.nextDistrib[nextInitNum])
 
     def appendTrajectory(self, state, simS, simL):
         simS.append(state)
@@ -135,27 +131,47 @@ class flatStepProtocol(toy.flatToyProtocol):
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
 
-    def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
-        if clear:
-            self.restart()
-            # self.clearData()  # reseeds random number generator
-        numNewReps = nReps - len(self.simDataL)
-        for n in range(numNewReps):
-            simS = []
-            simL = []
-            nextInitNum = 0
-            for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
-                if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-                    state = self.nextInit(nextInitNum)  # Next: append state and level to simS and simL
-                    self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-                    nextInitNum += 1
-                    continue
-                for j in range(ns):  # Next i (could follow intializatation or another voltage step without init) 
-                    state = self.select(self.A[i], state)
-                    self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-            self.simStates.append(simS)
-            self.simDataL.append(simL)
-        self.nReps = nReps
+    # def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+    #     if clear:
+    #         self.restart()
+    #         # self.clearData()  # reseeds random number generator
+    #     numNewReps = nReps - len(self.simDataL)
+    #     for n in range(numNewReps):
+    #         simS = []
+    #         simL = []
+    #         nextInitNum = 0
+    #         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
+    #             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
+    #                 state = self.nextInit(nextInitNum)  # Next: append state and level to simS and simL
+    #                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
+    #                 nextInitNum += 1
+    #                 continue
+    #             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
+    #                 state = self.select(self.A[i], state)
+    #                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
+    #         self.simStates.append(simS)
+    #         self.simDataL.append(simL)
+    #     self.nReps = nReps
+
+    def simulateOnce(self, RNG=None):
+        if RNG is None:
+            RNG = self.initRNG(None)
+        simS = []
+        simL = []
+        nextInitNum = 0
+        for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
+            if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
+                state = self.nextInit(RNG.RNGs[0], nextInitNum)  # Next: append state and level to simS and simL
+                self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
+                nextInitNum += 1
+                continue
+            for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
+                state = self.select(RNG.RNGs[0], self.A[i], state)
+                self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
+        self.recentState = simS
+        # self.simStates.append(simS)
+        # self.simDataL.append(simL)
+        return simL
 
     def resim(self, nReps=1):  # Now redundant because can pass clear flag to sim()
         # self.clearData()  # reseeds random number generator
@@ -176,9 +192,9 @@ class flatStepProtocol(toy.flatToyProtocol):
             self.restart()
             # self.clearData()
         self.sim(nReps)  # Generates state trajectories, if needed
-        for n in range(nReps - len(self.simDataGM)):  # simStates is a list of trajectories one for each rep.
+        for n in range(nReps - len(self.simDataGM)):
             newG = []
-            for state in self.simStates[n]:
+            for state in self.states[n]:
                 newG.append(self.R.RNGs[1].normalvariate(self.meansM[state], self.stdsM[state]))
             self.simDataGM.append(newG)
 
@@ -190,12 +206,12 @@ class flatStepProtocol(toy.flatToyProtocol):
         DFDataG = []  # G is standard letter for conductance
         DFDataV = []
         counter = 0  # The counter is for downsampling
-        for i, s in enumerate(self.simStates[rep]):
+        for i, s in enumerate(self.states[rep]):
             if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:  # Grab a data point
                 counter = 0
-                DFNodes.append(self.states[s])  # self.states are Node classes; s (in self.simStates) is an integer
+                DFNodes.append(self.nodes[s])  # self.nodes are Node classes; s (in self.states) is an integer
                 DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
                 DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
                 if hasG:
@@ -209,9 +225,9 @@ class flatStepProtocol(toy.flatToyProtocol):
         dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV, GLabel: DFDataG}
         return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel, GLabel]))
 
-    def select(self, mat, row=0):  # select from matrix[row,:]
+    def select(self, RNG, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
-        p = self.R.RNGs[0].random()
+        p = RNG.random()
         rowsum = 0
         # cols should add to 1
         for col in range(mat.shape[1]):  # iterate over columns of mat
@@ -243,11 +259,11 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def update(self, distrib, k, n):
         new = distrib * self.B[
-            self.simDataL[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
+            self.data[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
         return self.normalize(new)
 
     def predictupdate(self, distrib, k, iv, n):
-        new = distrib * self.AB[self.simDataL[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
+        new = distrib * self.AB[self.data[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
         return self.normalize(new)
 
     def minuslike(self):  # returns minus the log-likelihood
