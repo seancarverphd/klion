@@ -29,7 +29,8 @@ class Level(object):
         return '%s\n  Mean %s\n  Std %s' % (self.name, repr(self.mean), repr(self.std))
 
     def __str__(self):
-        return '%s\n  Mean %s\n  Std %s' % (self.name, str(self.mean), str(self.std))
+        #return '%s\n  Mean %s\n  Std %s' % (self.name, str(self.mean), str(self.std))
+        return '%s' % (self.name,)
 
     def integrity(self):
         self.reparameterize()
