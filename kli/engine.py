@@ -7,31 +7,20 @@ import parameter
 import pandas
 import toy
 
-class flatStepProtocol(toy.flatToyProtocol):
-    # def __init__(self, parent, seed=None):
-    #     self.reveal(False)
-    #     self.R = self.initRNG(seed)
-    #     self.restart()
-    #     self.changeProtocol(parent)  # calls self.clearData()
-    #     self.changeModel(parent)
 
-    def reveal(self, flag=None):
-        if flag == True:
-            self.revealFlag = True
-            self.restart()  # Restart because you need to rerun to save hidden states
-        elif flag == False:
-            self.revealFlag = False
-        return (self.revealFlag)
+class flatStepProtocol(toy.flatToyProtocol):
+    def initRNG(self, seed):
+        return toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
 
     def restart(self):  # Clears data and resets RNG with same seed
         self.R.reset()
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple)
+        self.simStates = []
+        self.simDataL = []
+        self.simDataGM = []  # conductance, simulated separately.
         self.changedSinceLastSim = False
-
-    def initRNG(self, seed):
-        return toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
 
     def changeProtocol(self, parent):
         self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
@@ -52,20 +41,13 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.levels = copy.copy(parent.thePatch.uniqueLevels)  # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory()  # Only needed for plotting
-        self.clearData()
+        self.restart()
 
-    def clearData(self):
-        self.R.reset()
-        # self.nReps = None
-        # if self.seed == None:
-        #     self.usedSeed = long(time.time() * 256)
-        # else:
-        #     self.usedSeed = self.seed  # can be changed with self.reseed()
-        # self.R.seed(self.usedSeed)  # For simulating Markov Chain
-        # self.RG.seed(self.usedSeed + 1)  # For simulating White Noise in Conductance, presently separate
-        self.simStates = []
-        self.simDataL = []
-        self.simDataGM = []  # conductance, simulated separately.
+    # def clearData(self):
+    #     self.R.reset()
+    #     self.simStates = []
+    #     self.simDataL = []
+    #     self.simDataGM = []  # conductance, simulated separately.
 
     def changeModel(self, parent):
         newPatch = parent.thePatch
@@ -88,7 +70,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.states2levels(newPatch)
         self.makeB()  # NO-NOISE only.
         self.makeMeanSTD()
-        # Don't clearData(); might want to change Model and use old data         
+        self.changedSinceLastSim = True
+        # ??? Don't restart(); might want to change Model and use old data
 
     def states2levels(self, newPatch):
         self.levelMap = []
@@ -136,9 +119,9 @@ class flatStepProtocol(toy.flatToyProtocol):
     def nextInit(self, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(self.nextDistrib[nextInitNum])
 
-    def reseed(self, seed):
-        self.seed = seed
-        self.clearData()  # Reseeds random number generator
+    # def reseed(self, seed):
+    #     self.seed = seed
+    #     self.clearData()  # Reseeds random number generator
 
     def appendTrajectory(self, state, simS, simL):
         simS.append(state)
@@ -154,7 +137,8 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
-            self.clearData()  # reseeds random number generator
+            self.restart()
+            # self.clearData()  # reseeds random number generator
         numNewReps = nReps - len(self.simDataL)
         for n in range(numNewReps):
             simS = []
@@ -174,7 +158,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.nReps = nReps
 
     def resim(self, nReps=1):  # Now redundant because can pass clear flag to sim()
-        self.clearData()  # reseeds random number generator
+        # self.clearData()  # reseeds random number generator
+        self.restart()
         self.sim(nReps)
 
     def makeMeanSTD(self):
@@ -188,7 +173,8 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def simG(self, nReps=1, clear=False):
         if clear:
-            self.clearData()
+            self.restart()
+            # self.clearData()
         self.sim(nReps)  # Generates state trajectories, if needed
         for n in range(nReps - len(self.simDataGM)):  # simStates is a list of trajectories one for each rep.
             newG = []

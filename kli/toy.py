@@ -104,7 +104,7 @@ class flatToyProtocol(object):
     def changeModel(self, parent):
         self.experiment = parent.getExperiment()
         self.toy2, self.q, self.q0, self.q1 = self.experiment
-        self.changedSinceLastSim = True  ### ADD TO ENGINE!!!
+        self.changedSinceLastSim = True
         # ??? Don't restart(); might want to change Model and use old data
 
     def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
