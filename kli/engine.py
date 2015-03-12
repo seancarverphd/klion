@@ -13,7 +13,7 @@ class flatStepProtocol(object):
         self.R = self.initRNG(seed)
         self.restart()
         self.changeProtocol(parent)  # calls self.clearData()
-        self.changeModel(parent.thePatch)
+        self.changeModel(parent)
 
     def reveal(self, flag=None):
         if flag == True:
@@ -67,7 +67,8 @@ class flatStepProtocol(object):
         self.simDataL = []
         self.simDataGM = []  # conductance, simulated separately.
 
-    def changeModel(self, newPatch):
+    def changeModel(self, parent):
+        newPatch = parent.thePatch
         assert (newPatch.hasNoise == False)  # Later will implement NOISE
         assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.nextDistrib = []
