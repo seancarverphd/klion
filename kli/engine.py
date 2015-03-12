@@ -13,14 +13,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         return toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
 
     def restart(self):  # Clears data and resets RNG with same seed
-        self.R.reset()
-        self.data = []  # Data used for fitting model. (Each datum may be a tuple)
-        self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
-        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple)
-        # self.simStates = []
-        # self.simDataL = []
+        super(flatStepProtocol, self).restart()
         self.simDataGM = []  # conductance, simulated separately.
-        self.changedSinceLastSim = False
 
     def changeProtocol(self, parent):
         self.dt = copy.copy(parameter.v(parent.dt))  # copy here and below may be redundant
@@ -42,12 +36,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.levelList = list(self.levels)
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory()  # Only needed for plotting
         self.restart()
-
-    # def clearData(self):
-    #     self.R.reset()
-    #     self.simStates = []
-    #     self.simDataL = []
-    #     self.simDataGM = []  # conductance, simulated separately.
 
     def changeModel(self, parent):
         newPatch = parent.thePatch
@@ -131,28 +119,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         # IF SAVING VOLTAGE:
         # self.simDataV.append(volts)
 
-    # def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
-    #     if clear:
-    #         self.restart()
-    #         # self.clearData()  # reseeds random number generator
-    #     numNewReps = nReps - len(self.simDataL)
-    #     for n in range(numNewReps):
-    #         simS = []
-    #         simL = []
-    #         nextInitNum = 0
-    #         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
-    #             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-    #                 state = self.nextInit(nextInitNum)  # Next: append state and level to simS and simL
-    #                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-    #                 nextInitNum += 1
-    #                 continue
-    #             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
-    #                 state = self.select(self.A[i], state)
-    #                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-    #         self.simStates.append(simS)
-    #         self.simDataL.append(simL)
-    #     self.nReps = nReps
-
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
@@ -172,11 +138,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         # self.simStates.append(simS)
         # self.simDataL.append(simL)
         return simL
-
-    def resim(self, nReps=1):  # Now redundant because can pass clear flag to sim()
-        # self.clearData()  # reseeds random number generator
-        self.restart()
-        self.sim(nReps)
 
     def makeMeanSTD(self):
         self.stdsM = []
@@ -261,15 +222,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         new = distrib * self.B[datum[k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
         return self.normalize(new)
 
-    # def update(self, distrib, k, n):
-    #     new = distrib * self.B[
-    #         self.data[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
-    #     return self.normalize(new)
-
-    # def predictupdate(self, distrib, k, iv, n):
-    #     new = distrib * self.AB[self.data[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
-    #     return self.normalize(new)
-
     def predictupdate(self, datum, distrib, k, iv):
         new = distrib * self.AB[datum[k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
         return self.normalize(new)
@@ -291,38 +243,3 @@ class flatStepProtocol(toy.flatToyProtocol):
                 mll += math.log(ck)
             k0 += ns
         return -mll
-
-    # def minuslike(self):  # returns minus the log-likelihood
-    #     for n in range(self.nReps):
-    #         self.mll = 0.
-    #         nextInitNum = 0
-    #         k0 = 0
-    #         for iv, ns in enumerate(
-    #                 self.nsamples):  # one nsample for each voltage step, equal number of samples in step
-    #             if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-    #                 (alphak, ck) = self.update(self.nextDistrib[nextInitNum], 0, n)  # don't pass in alphak
-    #                 self.mll += math.log(ck)
-    #                 nextInitNum += 1
-    #                 k0 += 1
-    #                 continue
-    #             for k in range(k0,
-    #                            k0 + ns):  # Next i (could follow intializatation or another voltage step without init)
-    #                 (alphak, ck) = self.predictupdate(alphak, k, iv, n)  # pass in and return alphak
-    #                 self.mll += math.log(ck)
-    #             k0 += ns
-    #     return self.mll
-        # if reps == None:
-        #    reps = range(self.nReps)
-        #self.mll = 0.
-        #for n in reps:
-        #    (alphak,ck) = self.update(self.initDistrib,0,n)
-        #    self.mll += math.log(ck)
-        #    k0 = 1   # Offset
-        #    for iv in range(len(self.voltages)):
-        #        for k in range(k0,k0+self.nsamples[iv]):
-        #            (alphak,ck) = self.predictupdate(alphak,k,iv,n)
-        #            self.mll += math.log(ck)
-        #        k0 += self.nsamples[iv]
-
-    # def like(self):  # returns the log-likelihood
-    #     return -self.minuslike()
