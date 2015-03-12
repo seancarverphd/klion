@@ -78,7 +78,7 @@ class MultipleRNGs(object):
 
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
-        self.reveal(False)  # To save hidden states, call self.reveal(True)
+        self.debug(False)  # To save hidden states, call sellf.debug(True)
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.restart()
         self.changeProtocol(parent)
@@ -115,7 +115,7 @@ class flatToyProtocol(object):
         numNewReps = nReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
-            if self.revealFlag:
+            if self.debugFlag:
                 self.states.append(self.recentState)
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
@@ -123,13 +123,13 @@ class flatToyProtocol(object):
     def resim(self, nReps=1):
         self.sim(nReps,clear=True)
 
-    def reveal(self, flag=None):
+    def debug(self, flag=None):
         if flag == True:
-            self.revealFlag = True
+            self.debugFlag = True
             self.restart()  # Restart because you need to rerun to save hidden states
         elif flag == False:
-            self.revealFlag = False
-        return (self.revealFlag)
+            self.debugFlag = False
+        return self.debugFlag
 
     def simulateOnce(self, RNG=None):  # Overload
         if RNG is None:
