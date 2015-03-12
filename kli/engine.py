@@ -7,13 +7,13 @@ import parameter
 import pandas
 import toy
 
-class flatStepProtocol(object):
-    def __init__(self, parent, seed=None):
-        self.reveal(False)
-        self.R = self.initRNG(seed)
-        self.restart()
-        self.changeProtocol(parent)  # calls self.clearData()
-        self.changeModel(parent)
+class flatStepProtocol(toy.flatToyProtocol):
+    # def __init__(self, parent, seed=None):
+    #     self.reveal(False)
+    #     self.R = self.initRNG(seed)
+    #     self.restart()
+    #     self.changeProtocol(parent)  # calls self.clearData()
+    #     self.changeModel(parent)
 
     def reveal(self, flag=None):
         if flag == True:
