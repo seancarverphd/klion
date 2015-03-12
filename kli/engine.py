@@ -76,34 +76,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.nStates = len(self.levelMap)  # changes
         assert (self.nStates == len(newPatch.ch.nodes))  # make sure 1 level appended per node
 
-    def voltageTrajectory(self):
-        # The voltageTrajectory only depends on the Protocol not model.
-        if self.hasVoltTraj:  # changeProtocol sets this to False
-            return
-        self.voltagesM = []  # Strip units off voltages
-        for v in self.voltages:
-            self.voltagesM.append(parameter.mu(v, self.preferred.voltage))
-        self.simDataVM = []
-        self.simDataTM = []
-        dtValue = parameter.v(self.dt)
-        dtValueM = parameter.mu(self.dt, self.preferred.time)  # without units
-        # self.simDataV.append(self.voltages[0])
-        for i, ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
-            if ns == None:
-                timeM = 0  # no units, M is for magnitude (no units)
-                self.simDataTM.append(numpy.nan)
-                self.simDataVM.append(self.voltagesM[i])
-                continue
-            elif i == 0:  # not ns==None and i==0
-                timeM = 0  # no units
-                self.simDataTM.append(timeM)
-                self.simDataVM.append(numpy.nan)
-            for j in range(ns):
-                timeM += dtValueM
-                self.simDataTM.append(timeM)
-                self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
-        self.hasVoltTraj = True
-
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
 
@@ -159,7 +131,35 @@ class flatStepProtocol(toy.flatToyProtocol):
                 newG.append(self.R.RNGs[1].normalvariate(self.meansM[node], self.stdsM[node]))
             self.simDataGM.append(newG)
 
-    def dataFrame(self, rep=0, downsample=0):
+    def voltageTrajectory(self):
+        # The voltageTrajectory only depends on the Protocol not model.
+        if self.hasVoltTraj:  # changeProtocol sets this to False
+            return
+        self.voltagesM = []  # Strip units off voltages
+        for v in self.voltages:
+            self.voltagesM.append(parameter.mu(v, self.preferred.voltage))
+        self.simDataVM = []
+        self.simDataTM = []
+        dtValue = parameter.v(self.dt)
+        dtValueM = parameter.mu(self.dt, self.preferred.time)  # without units
+        # self.simDataV.append(self.voltages[0])
+        for i, ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
+            if ns == None:
+                timeM = 0  # no units, M is for magnitude (no units)
+                self.simDataTM.append(numpy.nan)
+                self.simDataVM.append(self.voltagesM[i])
+                continue
+            elif i == 0:  # not ns==None and i==0
+                timeM = 0  # no units
+                self.simDataTM.append(timeM)
+                self.simDataVM.append(numpy.nan)
+            for j in range(ns):
+                timeM += dtValueM
+                self.simDataTM.append(timeM)
+                self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
+        self.hasVoltTraj = True
+
+    def simDataFrame(self, rep=0, downsample=0):
         self.voltageTrajectory()
         hasG = (rep < len(self.simDataGM))
         DFNodes = []
