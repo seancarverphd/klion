@@ -67,12 +67,10 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.levelList = list(self.levels)
         self.levelMap = [n.level for n in newPatch.ch.nodes]
         self.nStates = len(self.levelMap)  # changes
-        # Next block of code is a kluge.
-        self.levelNum = []
-        for n in newPatch.ch.nodes:
-            for u in range(len(self.levelList)):
-                if n.level is self.levelList[u]:
-                    self.levelNum.append(u)
+        self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelList)}
+        self.levelNum = [self.level2levelNum[str(n.level)] for n in newPatch.ch.nodes]
+        # Next thing not used yet.
+        self.node2level = {str(n): n.level for n in newPatch.ch.nodes}
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])

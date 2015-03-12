@@ -54,7 +54,7 @@ class Node(object):
         return 'Node %s: %s \n  Weight for initial distribution: %s' % (self.name, repr(self.level), self.weight)
 
     def __str__(self):
-        return 'Node %s: %s' % (self.name, self.level.name)
+        return '%s' % (self.name,)
 
     def integrity(self):
         assert (isinstance(self.name, basestring))
