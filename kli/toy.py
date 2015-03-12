@@ -141,25 +141,20 @@ class flatToyProtocol(object):
             self.recentState = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
         return sum(self.recentState)
 
-    def likelihoods(self, passedData=None, passedLikes=None):
-        if passedData is None:  # Data not passed, so ignore passed Likes (presumably not passed/None)
+    def likelihoods(self, passedData=None):
+        if passedData is None:  # Data not passed
             data = self.data  # Use cached data
             likes = self.likes # Append any new likes to cached self.likes
             likeInfo = self.likeInfo
-            nLast = self.nReps  # Restricts return value to length self.nReps in case nReps is greater than len(likes)
-        elif passedLikes is None:  # Data passed, but not Likes
+            nFirst = len(likes)
+            nLast = self.nReps  # Restricts return to self.nReps
+        else:  # Data passed
             data = passedData
             likes = []
             self.temporaryLikeInfo = []
             likeInfo = self.temporaryLikeInfo
+            nFirst = 0
             nLast = len(data)  # Go to end of data, don't restrict
-        else:  # both Data and Likes have been passed
-            data = passedData
-            likes = passedLikes
-            self.temporaryLikeInfo = []
-            likeInfo = self.temporaryLikeInfo
-            nLast = len(data)  # Go to end of data, don't restrict
-        nFirst = len(likes)
         for datum in data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
             if self.debugFlag:
