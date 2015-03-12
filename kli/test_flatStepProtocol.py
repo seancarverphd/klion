@@ -66,6 +66,7 @@ class TestFlatStepProtocol(TestCase):
         self.khhPatch = kli.patch.singleChannelPatch(self.khh)
         self.SP = kli.patch.StepProtocol(self.khhPatch, [-65*u.mV, -20*u.mV], [np.inf, 10*u.ms])
         self.FS = self.SP.flatten(5)
+        self.FS.sim(10)
 
     def test_patch_like(self):
         self.assertEquals(kli.patch.FS.like(),-26.748642946985434)
@@ -74,7 +75,6 @@ class TestFlatStepProtocol(TestCase):
         self.assertEquals(self.FS.like(),-0.0517332103313697)
 
     def test_same_construction(self):
-        self.FS.sim(10)
         self.assertEquals(self.FS.nReps, 10)
         self.assertEqual(kli.patch.FS.like(), self.FS.like())
 

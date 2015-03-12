@@ -39,27 +39,50 @@ class toyProtocol(object):
 
 class SaveSeedRNG(random.Random):
     def __init__(self, seed=None):
-        super(SaveSeedRNG,self).__init__()
+        super(SaveSeedRNG, self).__init__()
+        self.setSeedAndOffset(seed,0)
+        self.setSeed(seed)
+
+    def setSeedAndOffset(self, seed=None, offset=0):
+        self.seedOffset = offset
         self.setSeed(seed)
 
     def setSeed(self, seed=None):
         if seed is None:
-            self.usedSeed = long(time.time() * 256)
+            self.usedSeed = long(time.time() * 256) + self.seedOffset
         else:
-            self.usedSeed = seed  # can be changed with self.reseed()
+            self.usedSeed = seed + self.seedOffset  # can be changed with self.reseed()
         self.reset()
 
     def reset(self):  # Resets RNG to same seed as used before
         self.seed(self.usedSeed)
+
+class MultipleRNGs(object):
+    def __init__(self, numRNGs, seed=None, offset=1000000):
+        self.RNGs = []  # Not yet implemented, if numRNGs is a list make it RNGs, set seeds and offsets
+        for i in range(numRNGs):
+            self.RNGs.append(SaveSeedRNG())
+            self.RNGs[-1].setSeedAndOffset(seed,offset*i)
+
+    def setSeedAndOffset(self, seed=None, offset=1000000):
+        for i in range(len(self.RNGs)):
+            RNGs[i].setSeedAndOffset(seed,offset*i)
+
+    def setSeed(self, seed=None):
+        for i in range(len(self.RNGs)):
+            RNGs[i].setSeed(seed)
+
+    def reset(self):
+        for i in range(len(self.RNGs)):
+            RNGs[i].reset()
 
 class flatToyProtocol(object):
     def __init__(self, parent, seed=None):
         self.reveal(False)  # To save hidden states, call self.reveal(True)
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.restart()
-        self.experiment = parent.getExperiment()
-        self.changeProtocol()
-        self.changeModel()
+        self.changeProtocol(parent)
+        self.changeModel(parent)
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveSeedRNG(seed)
@@ -75,18 +98,14 @@ class flatToyProtocol(object):
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
         self.changedSinceLastSim = False
 
-    def changeProtocol(self, experiment=None):
+    def changeProtocol(self, parent=None):
         pass  # For this class, protocol always remains same: measure time of single event
 
-    def changeModel(self, experiment=None):
-        if not experiment == None:
-            self.experiment = experiment
-        self.unpack(self.experiment)
+    def changeModel(self, parent):
+        self.experiment = parent.getExperiment()
+        self.toy2, self.q, self.q0, self.q1 = self.experiment
         self.changedSinceLastSim = True  ### ADD TO ENGINE!!!
-        # Don't restart(); might want to change Model and use old data 
-
-    def unpack(self, experiment):  # For subclassing replace this code
-        self.toy2, self.q, self.q0, self.q1 = experiment
+        # ??? Don't restart(); might want to change Model and use old data
 
     def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
@@ -259,15 +278,15 @@ class likefun(object):
     def set(self, valueTuple):
         for i, P in enumerate(self.paramTuple):
             P.assign(valueTuple[i])
-        Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        # Ex = self.parent.getExperiment()
+        self.F.changeModel(self.parent)
         # self.F.changeModel(self.parent)
 
     def setLog(self, valueTuple):
         for i, P in enumerate(self.paramTuple):
             P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
-        Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        # Ex = self.parent.getExperiment()
+        self.F.changeModel(self.parent)
         # self.F.changeModel(self.parent)
 
     def sim(self, XTrue, nReps=100, seed=None, log=True):
@@ -306,8 +325,8 @@ class likefun1(object):  # One dimensional likelihood grid
 
     def set(self, X):
         self.XParam.assign(X)
-        Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        # Ex = self.parent.getExperiment()
+        self.F.changeModel(self.parent)
 
     def sim(self, XTrue=15, nReps=100, seed=None):
         self.XTrue = XTrue
