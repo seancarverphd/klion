@@ -39,7 +39,8 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def changeModel(self, parent):
         newPatch = parent.thePatch
-        assert (newPatch.hasNoise == False)  # Later will implement NOISE
+        assert not newPatch.hasNoise  # Later will implement NOISE
+        self.hasNoise = newPatch.hasNoise
         assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.nextDistrib = []
         initDistrib = newPatch.ch.weightedDistrib()
@@ -182,9 +183,13 @@ class flatStepProtocol(toy.flatToyProtocol):
             counter += 1
         TLabel = 'T_' + self.preferred.time
         VLabel = 'V_' + self.preferred.voltage
-        GLabel = 'G_' + self.preferred.conductance
-        dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV, GLabel: DFDataG}
-        return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel, GLabel]))
+        if self.hasNoise:
+            GLabel = 'G_' + self.preferred.conductance
+            dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV, GLabel: DFDataG}
+            return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel, GLabel]))
+        else:
+            dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
+            return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
 
     def select(self, RNG, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
@@ -194,7 +199,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         for col in range(mat.shape[1]):  # iterate over columns of mat
             rowsum += mat[row, col]  # row constant passed into select
             if p < rowsum:
-                return col
+                 return col
         assert (False)  # Should never reach this point
 
     def makeB(self):  # Only good for no-noise
@@ -230,16 +235,22 @@ class flatStepProtocol(toy.flatToyProtocol):
         mll = 0.
         nextInitNum = 0
         k0 = 0
+        if self.debugFlag:
+            self.recentLikeInfo = []
         for iv, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
                 (alphak, ck) = self.update(datum, self.nextDistrib[nextInitNum], 0)  # don't pass in alphak
                 mll += math.log(ck)
                 nextInitNum += 1
                 k0 += 1
+                if self.debugFlag:
+                    self.recentLikeInfo.append((alphak, mll))
                 continue
             for k in range(k0,
                            k0 + ns):  # Next i (could follow intializatation or another voltage step without init)
                 (alphak, ck) = self.predictupdate(datum, alphak, k, iv)  # pass in and return alphak
                 mll += math.log(ck)
+                if self.debugFlag:
+                    self.recentLikeInfo.append((alphak, mll))
             k0 += ns
         return -mll

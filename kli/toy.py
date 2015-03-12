@@ -96,6 +96,7 @@ class flatToyProtocol(object):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
+        self.likeInfo = []
         self.changedSinceLastSim = False
 
     def changeProtocol(self, parent=None):
@@ -141,33 +142,40 @@ class flatToyProtocol(object):
         return sum(self.recentState)
 
     def likelihoods(self, passedData=None, passedLikes=None):
-        if passedData == None:  # Data not passed, so ignore passed Likes (presumably not passed/None)
+        if passedData is None:  # Data not passed, so ignore passed Likes (presumably not passed/None)
             data = self.data  # Use cached data
-            likes = self.likes  # Append any new likes to cached self.likes
+            likes = self.likes # Append any new likes to cached self.likes
+            likeInfo = self.likeInfo
             nLast = self.nReps  # Restricts return value to length self.nReps in case nReps is greater than len(likes)
-        elif passedLikes == None:  # Data passed, but not Likes
+        elif passedLikes is None:  # Data passed, but not Likes
             data = passedData
             likes = []
+            self.temporaryLikeInfo = []
+            likeInfo = self.temporaryLikeInfo
             nLast = len(data)  # Go to end of data, don't restrict
         else:  # both Data and Likes have been passed
             data = passedData
             likes = passedLikes
+            self.temporaryLikeInfo = []
+            likeInfo = self.temporaryLikeInfo
             nLast = len(data)  # Go to end of data, don't restrict
         nFirst = len(likes)
         for datum in data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
+            if self.debugFlag:
+                likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
 
     def likeOnce(self, datum):  # Overload when subclassing
         if not self.datumIntegrity(datum):
             return -numpy.infty
         elif self.toy2:
-            return (numpy.log(self.q) - self.q * datum)
+            return numpy.log(self.q) - self.q * datum
         elif self.q0 == self.q1:
-            return (numpy.log(self.q1) + numpy.log(self.q0) - self.q0 * datum + numpy.log(datum))
+            return numpy.log(self.q1) + numpy.log(self.q0) - self.q0 * datum + numpy.log(datum)
         else:
-            return (numpy.log(self.q1) + numpy.log(self.q0) + numpy.log(
-                (numpy.exp(-self.q0 * datum) - numpy.exp(-self.q1 * datum)) / (self.q1 - self.q0)))
+            return numpy.log(self.q1) + numpy.log(self.q0) + numpy.log(
+                (numpy.exp(-self.q0 * datum) - numpy.exp(-self.q1 * datum)) / (self.q1 - self.q0))
 
     def datumIntegrity(self, datum):
         if not (isinstance(datum, float) or isinstance(datum, int)):
