@@ -64,10 +64,10 @@ class flatStepProtocol(toy.flatToyProtocol):
     def states2levels(self, newPatch):
         self.levelMap = []
         self.levelNum = []
-        self.states = []
+        self.nodes = []
         self.means = []
         for n in newPatch.ch.nodes:
-            self.states.append(n)  # saved for output
+            self.nodes.append(n)  # saved for output
             for u in range(len(self.levelList)):
                 if n.level is self.levelList[u]:
                     self.levelMap.append(self.levelList[u])
@@ -102,7 +102,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                 timeM += dtValueM
                 self.simDataTM.append(timeM)
                 self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
-        hasVoltTraj = True
+        self.hasVoltTraj = True
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
@@ -142,7 +142,7 @@ class flatStepProtocol(toy.flatToyProtocol):
     def makeMeanSTD(self):
         self.stdsM = []
         self.meansM = []
-        for s in self.states:
+        for s in self.nodes:
             newMean = parameter.v(s.level.mean)
             newSTD = parameter.v(s.level.std)
             self.meansM.append(parameter.mu(newMean, self.preferred.conductance))
@@ -155,8 +155,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.sim(nReps)  # Generates state trajectories, if needed
         for n in range(nReps - len(self.simDataGM)):
             newG = []
-            for state in self.states[n]:
-                newG.append(self.R.RNGs[1].normalvariate(self.meansM[state], self.stdsM[state]))
+            for node in self.nodes[n]:
+                newG.append(self.R.RNGs[1].normalvariate(self.meansM[node], self.stdsM[node]))
             self.simDataGM.append(newG)
 
     def dataFrame(self, rep=0, downsample=0):
