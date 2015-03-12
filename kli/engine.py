@@ -257,34 +257,60 @@ class flatStepProtocol(toy.flatToyProtocol):
         c = 1 / new.sum()
         return (c * new, c)
 
-    def update(self, distrib, k, n):
-        new = distrib * self.B[
-            self.data[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
+    def update(self, datum, distrib, k):
+        new = distrib * self.B[datum[k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
         return self.normalize(new)
 
-    def predictupdate(self, distrib, k, iv, n):
-        new = distrib * self.AB[self.data[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
+    # def update(self, distrib, k, n):
+    #     new = distrib * self.B[
+    #         self.data[n][k]]  # n is traj num, k is sample num; B doesn't depend directly on voltage
+    #     return self.normalize(new)
+
+    # def predictupdate(self, distrib, k, iv, n):
+    #     new = distrib * self.AB[self.data[n][k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
+    #     return self.normalize(new)
+
+    def predictupdate(self, datum, distrib, k, iv):
+        new = distrib * self.AB[datum[k]][iv]  # [[traj num][level num]][voltage num];  A depends on voltage
         return self.normalize(new)
 
-    def minuslike(self):  # returns minus the log-likelihood
-        for n in range(self.nReps):
-            self.mll = 0.
-            nextInitNum = 0
-            k0 = 0
-            for iv, ns in enumerate(
-                    self.nsamples):  # one nsample for each voltage step, equal number of samples in step
-                if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-                    (alphak, ck) = self.update(self.nextDistrib[nextInitNum], 0, n)  # don't pass in alphak
-                    self.mll += math.log(ck)
-                    nextInitNum += 1
-                    k0 += 1
-                    continue
-                for k in range(k0,
-                               k0 + ns):  # Next i (could follow intializatation or another voltage step without init)
-                    (alphak, ck) = self.predictupdate(alphak, k, iv, n)  # pass in and return alphak
-                    self.mll += math.log(ck)
-                k0 += ns
-        return self.mll
+    def likeOnce(self, datum):
+        mll = 0.
+        nextInitNum = 0
+        k0 = 0
+        for iv, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
+            if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
+                (alphak, ck) = self.update(datum, self.nextDistrib[nextInitNum], 0)  # don't pass in alphak
+                mll += math.log(ck)
+                nextInitNum += 1
+                k0 += 1
+                continue
+            for k in range(k0,
+                           k0 + ns):  # Next i (could follow intializatation or another voltage step without init)
+                (alphak, ck) = self.predictupdate(datum, alphak, k, iv)  # pass in and return alphak
+                mll += math.log(ck)
+            k0 += ns
+        return -mll
+
+    # def minuslike(self):  # returns minus the log-likelihood
+    #     for n in range(self.nReps):
+    #         self.mll = 0.
+    #         nextInitNum = 0
+    #         k0 = 0
+    #         for iv, ns in enumerate(
+    #                 self.nsamples):  # one nsample for each voltage step, equal number of samples in step
+    #             if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
+    #                 (alphak, ck) = self.update(self.nextDistrib[nextInitNum], 0, n)  # don't pass in alphak
+    #                 self.mll += math.log(ck)
+    #                 nextInitNum += 1
+    #                 k0 += 1
+    #                 continue
+    #             for k in range(k0,
+    #                            k0 + ns):  # Next i (could follow intializatation or another voltage step without init)
+    #                 (alphak, ck) = self.predictupdate(alphak, k, iv, n)  # pass in and return alphak
+    #                 self.mll += math.log(ck)
+    #             k0 += ns
+    #     return self.mll
         # if reps == None:
         #    reps = range(self.nReps)
         #self.mll = 0.
@@ -298,5 +324,5 @@ class flatStepProtocol(toy.flatToyProtocol):
         #            self.mll += math.log(ck)
         #        k0 += self.nsamples[iv]
 
-    def like(self):  # returns the log-likelihood
-        return -self.minuslike()
+    # def like(self):  # returns the log-likelihood
+    #     return -self.minuslike()
