@@ -120,7 +120,7 @@ class flatToyProtocol(object):
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
 
-    def resim(self, nReps=1):  # Now redundant because can pass clear flag to sim()
+    def resim(self, nReps=1):
         self.sim(nReps,clear=True)
 
     def reveal(self, flag=None):
