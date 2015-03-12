@@ -128,6 +128,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             self.simDataGM.append(newG)
 
     def voltageTrajectory(self):
+        """Compute the trajectory of the holding voltage as a function of time"""
         # The voltageTrajectory only depends on the Protocol not model.
         if self.hasVoltTraj:  # changeProtocol sets this to False
             return
@@ -155,8 +156,23 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
         self.hasVoltTraj = True
 
+    def likeDataFrame(self,rep=0, downsample=0):
+        counter = 0
+        PC0 = []
+        PC1 = []
+        POpen = []
+        Lmll = []
+        for i, sample in enumerate(self.data[rep]):
+            PC0.append(self.likeInfo[rep][i][0][0,0])
+            PC1.append(self.likeInfo[rep][i][0][0,1])
+            POpen.append(self.likeInfo[rep][i][0][0,2])
+            Lmll.append(self.likeInfo[rep][i][1])
+        likeDict = {'PC0': PC0, 'PC1': PC1, 'POpen': POpen, 'Lmll': Lmll}
+        return pandas.DataFrame(likeDict)
+
     def simDataFrame(self, rep=0, downsample=0):
         self.voltageTrajectory()
+        # Might or might not use hasG = self.hasNoise on next line
         hasG = (rep < len(self.simDataGM))
         DFNodes = []
         DFDataT = []
