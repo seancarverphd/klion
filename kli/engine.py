@@ -54,23 +54,25 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.A = []
         for v in self.voltages:
             self.A.append(newPatch.getA(v, self.dt))  # when change, getA() called with same v's, value can change
-        self.states2levels(newPatch)
+        self.parseNodesAndLevels(newPatch)
         self.makeB()  # NO-NOISE only.
-        self.makeMeanSTD()
         self.changedSinceLastSim = True
         # ??? Don't restart(); might want to change Model and use old data
 
-    def states2levels(self, newPatch):
-        # levels: for NO-NOISE only: makes sense only for single channels or small ensembles
-        self.nodes = [n for n in newPatch.ch.nodes]
+    def parseNodesAndLevels(self, newPatch):
+        self.nodeNames = [str(n) for n in newPatch.ch.nodes]
         self.levels = {n.level for n in newPatch.ch.nodes}  # This is a set, deepcopy fails in assert below (change)
         self.levelList = list(self.levels)
+        self.levelNames = [str(lev) for lev in self.levelList]
         self.levelMap = [n.level for n in newPatch.ch.nodes]
         self.nStates = len(self.levelMap)  # changes
         self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelList)}
         self.levelNum = [self.level2levelNum[str(n.level)] for n in newPatch.ch.nodes]
-        # Next thing not used yet.
         self.node2level = {str(n): n.level for n in newPatch.ch.nodes}
+        self.means = [parameter.mu(n.level.mean,
+                                   self.preferred.conductance) for n in newPatch.ch.nodes]
+        self.stds = [parameter.mu(n.level.std,
+                                  self.preferred.conductance) for n in newPatch.ch.nodes]
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
@@ -107,25 +109,17 @@ class flatStepProtocol(toy.flatToyProtocol):
         # self.simDataL.append(simL)
         return simL
 
-    def makeMeanSTD(self):
-        self.stdsM = []
-        self.meansM = []
-        for s in self.nodes:
-            newMean = parameter.v(s.level.mean)
-            newSTD = parameter.v(s.level.std)
-            self.meansM.append(parameter.mu(newMean, self.preferred.conductance))
-            self.stdsM.append(parameter.mu(newSTD, self.preferred.conductance))
-
-    def simG(self, nReps=1, clear=False):
-        if clear:
-            self.restart()
-            # self.clearData()
-        self.sim(nReps)  # Generates state trajectories, if needed
-        for n in range(nReps - len(self.simDataGM)):
-            newG = []
-            for node in self.nodes[n]:
-                newG.append(self.R.RNGs[1].normalvariate(self.meansM[node], self.stdsM[node]))
-            self.simDataGM.append(newG)
+    # I THINK THERE IS A MISTAKE IN THE CODE BELOW AND BESIDES I AM NOT USING IT
+    # def simG(self, nReps=1, clear=False):
+    #     if clear:
+    #         self.restart()
+    #         # self.clearData()
+    #     self.sim(nReps)  # Generates state trajectories, if needed
+    #     for n in range(nReps - len(self.simDataGM)):
+    #         newG = []
+    #         for node in self.nodes[n]:
+    #             newG.append(self.R.RNGs[1].normalvariate(self.means[node], self.stds[node]))
+    #         self.simDataGM.append(newG)
 
     def voltageTrajectory(self):
         """Compute the trajectory of the holding voltage as a function of time"""
@@ -157,7 +151,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.hasVoltTraj = True
 
     def likeDataFrame(self,rep=0, downsample=0):
-        counter = 0
         PC0 = []
         PC1 = []
         POpen = []
@@ -184,13 +177,13 @@ class flatStepProtocol(toy.flatToyProtocol):
                 counter = downsample
             if counter >= downsample:  # Grab a data point
                 counter = 0
-                DFNodes.append(self.nodes[s])  # self.nodes are Node classes; s (in self.states) is an integer
+                DFNodes.append(self.nodeNames[s])  # s is an integer
                 DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
                 DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
                 if hasG:
                     DFDataG.append(self.simDataGM[rep][i])
                 else:
-                    DFDataG.append(self.meansM[s])
+                    DFDataG.append(self.means[s])
             counter += 1
         TLabel = 'T_' + self.preferred.time
         VLabel = 'V_' + self.preferred.voltage
