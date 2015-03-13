@@ -61,12 +61,10 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def parseNodesAndLevels(self, newPatch):
         self.nodeNames = [str(n) for n in newPatch.ch.nodes]
-        self.levels = {n.level for n in newPatch.ch.nodes}  # This is a set, deepcopy fails in assert below (change)
-        self.levelList = list(self.levels)
-        self.levelNames = [str(lev) for lev in self.levelList]
+        self.levelNames = list({str(n.level) for n in newPatch.ch.nodes})  # list(SET) makes unique
         self.levelMap = [n.level for n in newPatch.ch.nodes]
         self.nStates = len(self.levelMap)  # changes
-        self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelList)}
+        self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelNames)}
         self.levelNum = [self.level2levelNum[str(n.level)] for n in newPatch.ch.nodes]
         self.node2level = {str(n): n.level for n in newPatch.ch.nodes}
         self.means = [parameter.mu(n.level.mean,
@@ -209,7 +207,7 @@ class flatStepProtocol(toy.flatToyProtocol):
     def makeB(self):  # Only good for no-noise
         self.B = []
         self.AB = []
-        for uniqueLevel in range(len(self.levels)):
+        for uniqueLevel in range(len(self.levelNames)):
             # Blevel is the B-matrix for the observation of level==uniqueLevel
             Blevel = numpy.zeros([self.nStates, self.nStates])
             for d in range(self.nStates):  # Fill B with corresponding 1's
