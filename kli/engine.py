@@ -104,18 +104,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         # self.simDataL.append(simL)
         return simL
 
-    # I THINK THERE IS A MISTAKE IN THE CODE BELOW AND BESIDES I AM NOT USING IT
-    # def simG(self, nReps=1, clear=False):
-    #     if clear:
-    #         self.restart()
-    #         # self.clearData()
-    #     self.sim(nReps)  # Generates state trajectories, if needed
-    #     for n in range(nReps - len(self.simDataGM)):
-    #         newG = []
-    #         for node in self.nodes[n]:
-    #             newG.append(self.R.RNGs[1].normalvariate(self.means[node], self.stds[node]))
-    #         self.simDataGM.append(newG)
-
     def voltageTrajectory(self):
         """Compute the trajectory of the holding voltage as a function of time"""
         # The voltageTrajectory only depends on the Protocol not model.
@@ -204,19 +192,19 @@ class flatStepProtocol(toy.flatToyProtocol):
     def makeB(self):  # Only good for no-noise
         self.B = {}
         self.AB = {}
-        for uniqueName in self.levelNames:
+        for levelName in self.levelNames:
             # Blevel is the B-matrix for the observation of level==uniqueLevel
             Blevel = numpy.zeros([self.nStates, self.nStates])
             for d in range(self.nStates):  # Fill B with corresponding 1's
-                if self.levelMap[d] == uniqueName:
+                if self.levelMap[d] == levelName:
                     Blevel[d, d] = 1
-            self.B.update({uniqueName:Blevel})
+            self.B.update({levelName: Blevel})
             # ABlevel is AB-matricies for all voltage steps, at given level
             ABlevel = []
             # AVolt is A-matrix for given voltage
-            for Avolt in self.A:
+            for Avolt in self.A:  # self.A is a list of A matrix, one for each voltage
                 ABlevel.append(Avolt.dot(Blevel))
-            self.AB.update({uniqueName:ABlevel})
+            self.AB.update({levelName: ABlevel}) # Dictionary of AB lists over voltage
 
     def normalize(self, new):
         c = 1 / new.sum()
