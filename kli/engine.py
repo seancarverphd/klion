@@ -64,9 +64,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.nodeNames = [str(n) for n in nodes]
         self.levelNames = list({str(n.level) for n in nodes})  # list(SET) makes unique
         self.levelMap = [str(n.level) for n in nodes]
-        self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelNames)}
-        self.levelNum = [self.level2levelNum[str(n.level)] for n in nodes]
-        self.node2level = {str(n): n.level for n in nodes}
         self.means = [parameter.mu(n.level.mean,
                                    self.preferred.conductance) for n in nodes]
         self.stds = [parameter.mu(n.level.std,
