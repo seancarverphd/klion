@@ -10,7 +10,7 @@ import toy
 
 class flatStepProtocol(toy.flatToyProtocol):
     def initRNG(self, seed):
-        return toy.MultipleRNGs(2,seed) # random.Random()  # for simulation of states
+        return toy.MultipleRNGs(2,seed) # Two instances of random.Random with seed save added
 
     def restart(self):  # Clears data and resets RNG with same seed
         super(flatStepProtocol, self).restart()
@@ -54,12 +54,12 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.A = []
         for v in self.voltages:
             self.A.append(newPatch.getA(v, self.dt))  # when change, getA() called with same v's, value can change
-        self.parseNodes(newPatch.ch.nodes)
+        self.processNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
         # ??? Don't restart(); might want to change Model and use old data
 
-    def parseNodes(self, nodes):
+    def processNodes(self, nodes):
         self.nStates = len(nodes)
         self.nodeNames = [str(n) for n in nodes]
         self.levelNames = list({str(n.level) for n in nodes})  # list(SET) makes unique
@@ -100,8 +100,6 @@ class flatStepProtocol(toy.flatToyProtocol):
                 state = self.select(RNG.RNGs[0], self.A[i], state)
                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
         self.recentState = simS
-        # self.simStates.append(simS)
-        # self.simDataL.append(simL)
         return simL
 
     def voltageTrajectory(self):
