@@ -54,23 +54,23 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.A = []
         for v in self.voltages:
             self.A.append(newPatch.getA(v, self.dt))  # when change, getA() called with same v's, value can change
-        self.parseNodesAndLevels(newPatch)
+        self.parseNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
         # ??? Don't restart(); might want to change Model and use old data
 
-    def parseNodesAndLevels(self, newPatch):
-        self.nodeNames = [str(n) for n in newPatch.ch.nodes]
-        self.levelNames = list({str(n.level) for n in newPatch.ch.nodes})  # list(SET) makes unique
-        self.levelMap = [n.level for n in newPatch.ch.nodes]
-        self.nStates = len(self.levelMap)  # changes
+    def parseNodes(self, nodes):
+        self.nStates = len(nodes)
+        self.nodeNames = [str(n) for n in nodes]
+        self.levelNames = list({str(n.level) for n in nodes})  # list(SET) makes unique
+        self.levelMap = [str(n.level) for n in nodes]
         self.level2levelNum = {str(lev): i for i, lev in enumerate(self.levelNames)}
-        self.levelNum = [self.level2levelNum[str(n.level)] for n in newPatch.ch.nodes]
-        self.node2level = {str(n): n.level for n in newPatch.ch.nodes}
+        self.levelNum = [self.level2levelNum[str(n.level)] for n in nodes]
+        self.node2level = {str(n): n.level for n in nodes}
         self.means = [parameter.mu(n.level.mean,
-                                   self.preferred.conductance) for n in newPatch.ch.nodes]
+                                   self.preferred.conductance) for n in nodes]
         self.stds = [parameter.mu(n.level.std,
-                                  self.preferred.conductance) for n in newPatch.ch.nodes]
+                                  self.preferred.conductance) for n in nodes]
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
