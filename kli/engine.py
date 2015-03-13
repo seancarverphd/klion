@@ -78,7 +78,7 @@ class flatStepProtocol(toy.flatToyProtocol):
     def appendTrajectory(self, state, simS, simL):
         simS.append(state)
         # NO NOISE:
-        simL.append(self.levelNum[state])  # use self.levelMap for actual levels (not nums)
+        simL.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
         # NOISE: 
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # where I think "voltage" should really be difference between voltage and reversal potential
@@ -205,21 +205,21 @@ class flatStepProtocol(toy.flatToyProtocol):
         assert False  # Should never reach this point
 
     def makeB(self):  # Only good for no-noise
-        self.B = []
-        self.AB = []
-        for uniqueLevel in range(len(self.levelNames)):
+        self.B = {}
+        self.AB = {}
+        for uniqueName in self.levelNames:
             # Blevel is the B-matrix for the observation of level==uniqueLevel
             Blevel = numpy.zeros([self.nStates, self.nStates])
             for d in range(self.nStates):  # Fill B with corresponding 1's
-                if self.levelNum[d] == uniqueLevel:
+                if self.levelMap[d] == uniqueName:
                     Blevel[d, d] = 1
-            self.B.append(Blevel)
+            self.B.update({uniqueName:Blevel})
             # ABlevel is AB-matricies for all voltage steps, at given level
             ABlevel = []
             # AVolt is A-matrix for given voltage
             for Avolt in self.A:
                 ABlevel.append(Avolt.dot(Blevel))
-            self.AB.append(ABlevel)
+            self.AB.update({uniqueName:ABlevel})
 
     def normalize(self, new):
         c = 1 / new.sum()
