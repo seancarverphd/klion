@@ -51,7 +51,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             self.nextDistrib.append(initDistrib)  # Use initDistrib for initial distribution
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]*u.mV, None))
+                self.nextDistrib.append(newPatch.equilibrium(self.voltages[i], self.preferredVoltage))
         self.A = []
         for v in self.voltages:
             self.A.append(newPatch.getA(v*u.mV, self.dt, None, self.preferredTime))  # when change, getA() called with same v's, value can change
