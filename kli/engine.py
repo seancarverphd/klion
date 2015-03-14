@@ -148,7 +148,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         DFDataT = []
         DFDataV = []
         counter = 0  # The counter is for downsampling
-        for i, s in enumerate(self.states[rep]):
+        for i, s in enumerate(self.allHiddenStates[rep]):
             if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:  # Grab a data point

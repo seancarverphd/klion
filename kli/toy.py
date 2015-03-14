@@ -94,7 +94,7 @@ class flatToyProtocol(object):
     def restart(self):  # Clears data and resets RNG with same seed
         self.R.reset()
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
-        self.states = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.allHiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
         self.likeInfo = []
         self.changedSinceLastSim = False
@@ -117,7 +117,7 @@ class flatToyProtocol(object):
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
-                self.states.append(self.hiddenStates)
+                self.allHiddenStates.append(self.hiddenStates)
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
 
