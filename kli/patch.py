@@ -66,8 +66,10 @@ class singleChannelPatch(object):
         channel.VOLTAGE.remap(volts)
         return self.ch.makeQ()
 
-    def getA(self, volts, dt):
+    def getA(self, volts, dt, timeUnit):
         Q = self.getQ(volts)
+        if timeUnit is not None:
+            Q = parameter.mu(Q,'1/'+timeUnit)
         A = scipy.linalg.expm(dt * Q)
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
