@@ -16,7 +16,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         super(flatStepProtocol, self).restart()
         self.simDataGM = []  # conductance, simulated separately.
 
-    def changeProtocol(self, parent):
+    def setUpExperiment(self, parent):
+        assert not parent.thePatch.hasNoise  # Later will implement NOISE
         self.preferredTime = parent.preferred.time  # preferred time unit
         self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
@@ -27,31 +28,36 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.durations = [parameter.mu(dur, self.preferredTime)
                           for dur in parent.voltageStepDurations]
         self.nsamples = [None if numpy.isinf(dur) else int(dur/self.dt) for dur in self.durations]
+        self.setUpInitializations(parent.thePatch.ch.weightedDistrib(),
+                                  parent.thePatch.equilibrium)
+        self.processNodes(parent.thePatch.ch.nodes)
+        self.A = [parent.thePatch.getA(v, self.dt,
+                                       self.preferredVoltage,
+                                       self.preferredTime) for v in self.voltages]
+        self.makeB()  # NO-NOISE only.
+        self.changedSinceLastSim = True
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
         self.restart()
 
-    def changeModel(self, parent):
-        newPatch = parent.thePatch
-        assert not newPatch.hasNoise  # Later will implement NOISE
-        # Need to verify levels don't change when new model
-        # assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
-        self.nextDistrib = []
-        initDistrib = newPatch.ch.weightedDistrib()
-        if initDistrib == None:  # No initial distribution because all weights 0, use equilibrium distribution
-            assert (self.nsamples[0] == None)  # Infinite duration for first voltage, use equilibrium
+    def setUpInitializations(self, timeZeroInitialization, equilibrium):
+        # Initializations occur when the voltage clamp is held for a long time without collecting
+        # data. The initializations, except possibly the first one at time zero are determined
+        # by the equilibrium distribution at the holding potential for the initialization.
+        self.allInitializations = []
+            # timeZeroInitialization = parent.thePatch.ch.weightedDistrib()
+        if timeZeroInitialization is None:  # No initial distribution because all weights 0,
+                                            # use equilibrium distribution
+            assert (self.nsamples[0] is None)  # Infinite duration for first voltage,
+                                               # use equilibrium
         else:
-            assert (not self.nsamples[0] == None)  # Finite duration for first voltage
-            self.nextDistrib.append(initDistrib)  # Use initDistrib for initial distribution
+            assert (self.nsamples[0] is not None)  # Finite duration for first voltage
+            self.allInitializations.append(timeZeroInitialization)  # Use timeZeroInitialization
+                                                                    # for initial distribution
+        # Now we generate an initialization distribution where nsamples is None
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                self.nextDistrib.append(newPatch.equilibrium(self.voltages[i], self.preferredVoltage))
-        self.A = [newPatch.getA(v, self.dt,
-                                self.preferredVoltage,
-                                self.preferredTime) for v in self.voltages]  # when change, getA() called with same v's, value can change
-        self.processNodes(newPatch.ch.nodes)
-        self.makeB()  # NO-NOISE only.
-        self.changedSinceLastSim = True
-        # ??? Don't restart(); might want to change Model and use old data
+                self.allInitializations.append(equilibrium(self.voltages[i],
+                                                           self.preferredVoltage))
 
     def processNodes(self, nodes):
         self.nStates = len(nodes)
@@ -64,7 +70,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                                   self.preferredConductance) for n in nodes]
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
-        return self.select(RNG, self.nextDistrib[nextInitNum])
+        return self.select(RNG, self.allInitializations[nextInitNum])
 
     def appendTrajectory(self, state, saveStates, saveLevels):
         if self.debugFlag:
@@ -204,7 +210,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             self.recentLikeInfo = []
         for iv, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if iv == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-                (alphak, ck) = self.update(datum, self.nextDistrib[nextInitNum], 0)  # don't pass in alphak
+                (alphak, ck) = self.update(datum, self.allInitializations[nextInitNum], 0)  # don't pass in alphak
                 mll += math.log(ck)
                 nextInitNum += 1
                 k0 += 1

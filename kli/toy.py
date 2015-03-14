@@ -80,8 +80,7 @@ class flatToyProtocol(object):
         self.debug(False)  # To save hidden states, call sellf.debug(True)
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.restart()
-        self.changeProtocol(parent)
-        self.changeModel(parent)
+        self.setUpExperiment(parent)
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveSeedRNG(seed)
@@ -98,10 +97,7 @@ class flatToyProtocol(object):
         self.likeInfo = []
         self.changedSinceLastSim = False
 
-    def changeProtocol(self, parent):
-        pass  # For this class, protocol always remains same: measure time of single event
-
-    def changeModel(self, parent):
+    def setUpExperiment(self, parent):
         self.experiment = parent.getExperiment()
         self.toy2, self.q, self.q0, self.q1 = self.experiment
         self.changedSinceLastSim = True
@@ -276,50 +272,50 @@ def toy3mlike4opt(q, data):
     return mll
 
 
-class likefun(object):
-    def __init__(self, parent, paramTuple):
-        self.parent = parent
-        self.paramTuple = paramTuple
-        self.F = self.parent.flatten()
-
-    def set(self, valueTuple):
-        for i, P in enumerate(self.paramTuple):
-            P.assign(valueTuple[i])
-        # Ex = self.parent.getExperiment()
-        self.F.changeModel(self.parent)
-        # self.F.changeModel(self.parent)
-
-    def setLog(self, valueTuple):
-        for i, P in enumerate(self.paramTuple):
-            P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
-        # Ex = self.parent.getExperiment()
-        self.F.changeModel(self.parent)
-        # self.F.changeModel(self.parent)
-
-    def sim(self, XTrue, nReps=100, seed=None, log=True):
-        self.XTrue = XTrue
-        if log == True:
-            self.setLog(XTrue)
-        else:
-            self.set(XTrue)
-        self.F.reseed(seed)
-        self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
-
-    def minuslike(self, x):
-        self.setLog(x)
-        # if x[0] < 0. or x[1]<0:
-        #    print "x is negative"
-        #print "x[0], q[0]", x[0], q0.value
-        #print "x[1], q[1]", x[1], q1.value
-        return self.F.minuslike()
-
-    def like(self, x, log=True):
-        if log == True:
-            self.setLog(x)
-        else:
-            self.set(x)
-        return self.F.like()
-
+# class likefun(object):
+#     def __init__(self, parent, paramTuple):
+#         self.parent = parent
+#         self.paramTuple = paramTuple
+#         self.F = self.parent.flatten()
+#
+#     def set(self, valueTuple):
+#         for i, P in enumerate(self.paramTuple):
+#             P.assign(valueTuple[i])
+#         # Ex = self.parent.getExperiment()
+#         self.F.changeModel(self.parent)
+#         # self.F.changeModel(self.parent)
+#
+#     def setLog(self, valueTuple):
+#         for i, P in enumerate(self.paramTuple):
+#             P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
+#         # Ex = self.parent.getExperiment()
+#         self.F.changeModel(self.parent)
+#         # self.F.changeModel(self.parent)
+#
+#     def sim(self, XTrue, nReps=100, seed=None, log=True):
+#         self.XTrue = XTrue
+#         if log == True:
+#             self.setLog(XTrue)
+#         else:
+#             self.set(XTrue)
+#         self.F.reseed(seed)
+#         self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
+#
+#     def minuslike(self, x):
+#         self.setLog(x)
+#         # if x[0] < 0. or x[1]<0:
+#         #    print "x is negative"
+#         #print "x[0], q[0]", x[0], q0.value
+#         #print "x[1], q[1]", x[1], q1.value
+#         return self.F.minuslike()
+#
+#     def like(self, x, log=True):
+#         if log == True:
+#             self.setLog(x)
+#         else:
+#             self.set(x)
+#         return self.F.like()
+#
 
 class likefun1(object):  # One dimensional likelihood grid
     def __init__(self, parent, XParam, seed=None):
@@ -388,8 +384,8 @@ YRange = numpy.arange(0.11, 30.11, 1)  # Different values so rate constants rema
 #LF3 = likefun1(T3,q0)
 #LF3.setRange(XRange)
 #LF3.replot(XTrue=15,seed=11,nReps=1000)
-LF = likefun(T3, [q0, q1])
-LF.sim((1., 2.), nReps=1000, seed=0, log=True)
+# LF = likefun(T3, [q0, q1])
+# LF.sim((1., 2.), nReps=1000, seed=0, log=True)
 
 #Histogram and PDFs
 #plt.figure()
