@@ -73,7 +73,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         return self.select(RNG, self.nextDistrib[nextInitNum])
 
     def appendTrajectory(self, state, simS, simL):
-        simS.append(state)
+        if self.debugFlag:
+            simS.append(self.nodeNames[state])
         # NO NOISE:
         simL.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
         # NOISE: 
@@ -99,7 +100,8 @@ class flatStepProtocol(toy.flatToyProtocol):
             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
                 state = self.select(RNG.RNGs[0], self.A[i], state)
                 self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-        self.recentState = simS
+        if self.debugFlag:
+            self.recentState = simS
         return simL
 
     def voltageTrajectory(self):
@@ -146,11 +148,8 @@ class flatStepProtocol(toy.flatToyProtocol):
 
     def simDataFrame(self, rep=0, downsample=0):
         self.voltageTrajectory()
-        # Might or might not use hasG = self.hasNoise on next line
-        hasG = (rep < len(self.simDataGM))
         DFNodes = []
         DFDataT = []
-        DFDataG = []  # G is standard letter for conductance
         DFDataV = []
         counter = 0  # The counter is for downsampling
         for i, s in enumerate(self.states[rep]):
@@ -158,23 +157,14 @@ class flatStepProtocol(toy.flatToyProtocol):
                 counter = downsample
             if counter >= downsample:  # Grab a data point
                 counter = 0
-                DFNodes.append(self.nodeNames[s])  # s is an integer
+                DFNodes.append(s)  # s is an integer
                 DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
                 DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
-                if hasG:
-                    DFDataG.append(self.simDataGM[rep][i])
-                else:
-                    DFDataG.append(self.means[s])
             counter += 1
         TLabel = 'T_' + self.preferred.time
         VLabel = 'V_' + self.preferred.voltage
-        if self.hasNoise:
-            GLabel = 'G_' + self.preferred.conductance
-            dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV, GLabel: DFDataG}
-            return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel, GLabel]))
-        else:
-            dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
-            return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
+        dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
+        return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
 
     def select(self, RNG, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
