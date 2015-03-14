@@ -60,10 +60,10 @@ class flatStepProtocol(toy.flatToyProtocol):
             assert set(self.levelNames) == {str(n.level)
                                             for n in parent.thePatch.ch.nodes}  # list(SET) makes unique
         # if self.NoiseChanged:
-        #     self.means = tuple([parameter.mu(n.level.mean,
-        #                         self.preferredConductance) for n in nodes])
+        #     self.means == tuple([parameter.mu(n.level.mean,
+        #                         self.preferredConductance) for n in parent.thePatch.ch.nodes])
         #     self.stds = tuple([parameter.mu(n.level.std,
-        #                        self.preferredConductance) for n in nodes])
+        #                        self.preferredConductance) for n in parent.thePatch.ch.nodes])
         if nodesChanged:
             self.processNodes(parent.thePatch.ch.nodes)
         if QChanged:
