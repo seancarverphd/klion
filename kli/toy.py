@@ -4,7 +4,6 @@ import time
 import parameter
 import matplotlib.pylab as plt
 import ad
-import scipy.optimize as opt
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
@@ -94,7 +93,7 @@ class flatToyProtocol(object):
     def restart(self):  # Clears data and resets RNG with same seed
         self.R.reset()
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
-        self.allHiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
         self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
         self.likeInfo = []
         self.changedSinceLastSim = False
@@ -117,7 +116,7 @@ class flatToyProtocol(object):
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
-                self.allHiddenStates.append(self.hiddenStates)
+                self.hiddenStates.append(self.hiddenStateTrajectory)
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
 
@@ -136,10 +135,10 @@ class flatToyProtocol(object):
         if RNG is None:
             RNG = self.initRNG(None)
         if self.toy2:
-            self.hiddenStates = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
+            self.hiddenStateTrajectory = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
         else:
-            self.hiddenStates = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
-        return sum(self.hiddenStates)
+            self.hiddenStateTrajectory = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
+        return sum(self.hiddenStateTrajectory)
 
     def likelihoods(self, passedData=None):
         if passedData is None:  # Data not passed

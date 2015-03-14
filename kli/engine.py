@@ -86,18 +86,18 @@ class flatStepProtocol(toy.flatToyProtocol):
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
-        self.hiddenStates = []
+        self.hiddenStateTrajectory = []
         levelsTrajectory = []
         nextInitNum = 0
         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
                 state = self.nextInit(RNG.RNGs[0], nextInitNum)  # Next: append state and level to simS and simL
-                self.appendTrajectory(state, self.hiddenStates, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
+                self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
                 nextInitNum += 1
                 continue
             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
                 state = self.select(RNG.RNGs[0], self.A[i], state)
-                self.appendTrajectory(state, self.hiddenStates, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
+                self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
         return levelsTrajectory
 
     def voltageTrajectory(self):
@@ -148,7 +148,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         DFDataT = []
         DFDataV = []
         counter = 0  # The counter is for downsampling
-        for i, s in enumerate(self.allHiddenStates[rep]):
+        for i, s in enumerate(self.hiddenStates[rep]):
             if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
                 counter = downsample
             if counter >= downsample:  # Grab a data point
