@@ -20,13 +20,12 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.preferredTime = parent.preferred.time  # preferred time unit
         self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
+
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
         self.voltages = [parameter.mu(v, self.preferredVoltage)
                          for v in parent.voltages]
         self.durations = []
         self.nsamples = []
-        # for v in parent.voltages:
-        #     self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
         for dur in parent.voltageStepDurations:
             durationValue = parameter.mu(dur, self.preferredTime)
             self.durations.append(durationValue)
@@ -52,9 +51,9 @@ class flatStepProtocol(toy.flatToyProtocol):
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i], self.preferredVoltage))
-        self.A = []
-        for v in self.voltages:
-            self.A.append(newPatch.getA(v, self.dt, self.preferredVoltage, self.preferredTime))  # when change, getA() called with same v's, value can change
+        self.A = [newPatch.getA(v, self.dt,
+                                self.preferredVoltage,
+                                self.preferredTime) for v in self.voltages]  # when change, getA() called with same v's, value can change
         self.processNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
