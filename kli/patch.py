@@ -62,14 +62,19 @@ class singleChannelPatch(object):
         else:
             assert (False)  # Take this out after implementing noise
 
-    def getQ(self, volts):
+    def getQ(self, volts, voltageUnit=None):
+        if voltageUnit is not None:
+            volts = volts*parameter.u.__getattr__(voltageUnit)
         channel.VOLTAGE.remap(volts)
         return self.ch.makeQ()
 
-    def getA(self, volts, dt, timeUnit):
+    def getA(self, volts, dt, voltageUnit=None, timeUnit=None):
+        if voltageUnit is not None:
+            volts = volts * parameter.u.__getattr__(timeUnit)
         Q = self.getQ(volts)
         if timeUnit is not None:
             Q = parameter.mu(Q,'1/'+timeUnit)
+            # dt = dt * parameter.u.__getattr__(timeUnit)
         A = scipy.linalg.expm(dt * Q)
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
@@ -77,8 +82,8 @@ class singleChannelPatch(object):
         assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
         return A
 
-    def equilibrium(self, volts):
-        return equilQ(self.getQ(volts))
+    def equilibrium(self, volts, voltageUnit=None):
+        return equilQ(self.getQ(volts, voltageUnit))
 
     # Select is now also defined in engine.flatStepProtocol
     def select(self, R, mat, row=0):  # select from matrix[row,:]

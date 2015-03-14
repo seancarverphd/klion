@@ -98,7 +98,7 @@ class flatToyProtocol(object):
         self.likeInfo = []
         self.changedSinceLastSim = False
 
-    def changeProtocol(self, parent=None):
+    def changeProtocol(self, parent):
         pass  # For this class, protocol always remains same: measure time of single event
 
     def changeModel(self, parent):

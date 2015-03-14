@@ -17,15 +17,18 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.simDataGM = []  # conductance, simulated separately.
 
     def changeProtocol(self, parent):
-        self.preferred = parent.preferred  # preferred units
-        self.dt = parameter.mu(parent.dt, self.preferred.time)  # self.dt a number
-        self.voltages = []
+        self.preferredTime = parent.preferred.time  # preferred time unit
+        self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
+        self.preferredConductance = parent.preferred.conductance # preferred conductance unit
+        self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
+        self.voltages = [copy.copy(parameter.v(v))
+                         for v in parent.voltages]
         self.durations = []
         self.nsamples = []
-        for v in parent.voltages:
-            self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
+        # for v in parent.voltages:
+        #     self.voltages.append(copy.copy(parameter.v(v)))  # deepcopy doesn't work with units
         for dur in parent.voltageStepDurations:
-            durationValue = parameter.mu(dur, self.preferred.time)
+            durationValue = parameter.mu(dur, self.preferredTime)
             self.durations.append(durationValue)
             if numpy.isinf(durationValue):
                 self.nsamples.append(None)
@@ -51,7 +54,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]))
         self.A = []
         for v in self.voltages:
-            self.A.append(newPatch.getA(v, self.dt, self.preferred.time))  # when change, getA() called with same v's, value can change
+            self.A.append(newPatch.getA(v, self.dt, None, self.preferredTime))  # when change, getA() called with same v's, value can change
         self.processNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
@@ -63,9 +66,9 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.levelNames = list({str(n.level) for n in nodes})  # list(SET) makes unique
         self.levelMap = [str(n.level) for n in nodes]
         self.means = [parameter.mu(n.level.mean,
-                                   self.preferred.conductance) for n in nodes]
+                                   self.preferredConductance) for n in nodes]
         self.stds = [parameter.mu(n.level.std,
-                                  self.preferred.conductance) for n in nodes]
+                                  self.preferredConductance) for n in nodes]
 
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
@@ -105,9 +108,9 @@ class flatStepProtocol(toy.flatToyProtocol):
         # The voltageTrajectory only depends on the Protocol not model.
         if self.hasVoltTraj:  # changeProtocol sets this to False
             return
-        self.voltagesM = []  # Strip units off voltages
-        for v in self.voltages:
-            self.voltagesM.append(parameter.mu(v, self.preferred.voltage))
+        # self.voltagesM = []  # Strip units off voltages
+        # for v in self.voltages:
+        #     self.voltagesM.append(parameter.mu(v, self.preferredVoltage))
         self.simDataVM = []
         self.simDataTM = []
         # self.simDataV.append(self.voltages[0])
@@ -115,7 +118,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             if ns == None:
                 timeM = 0  # no units, M is for magnitude (no units)
                 self.simDataTM.append(numpy.nan)
-                self.simDataVM.append(self.voltagesM[i])
+                self.simDataVM.append(self.voltages[i])
                 continue
             elif i == 0:  # not ns==None and i==0
                 timeM = 0  # no units
@@ -124,7 +127,7 @@ class flatStepProtocol(toy.flatToyProtocol):
             for j in range(ns):
                 timeM += self.dt
                 self.simDataTM.append(timeM)
-                self.simDataVM.append(self.voltagesM[i])  # same voltage every sample until voltage steps
+                self.simDataVM.append(self.voltages[i])  # same voltage every sample until voltage steps
         self.hasVoltTraj = True
 
     def likeDataFrame(self,rep=0, downsample=0):
@@ -155,8 +158,8 @@ class flatStepProtocol(toy.flatToyProtocol):
                 DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
                 DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
             counter += 1
-        TLabel = 'T_' + self.preferred.time
-        VLabel = 'V_' + self.preferred.voltage
+        TLabel = 'T_' + self.preferredTime
+        VLabel = 'V_' + self.preferredVoltage
         dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
         return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
 
