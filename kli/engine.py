@@ -23,27 +23,62 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
 
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
-        self.voltages = [parameter.mu(v, self.preferredVoltage)
-                         for v in parent.voltages]
-        self.durations = [parameter.mu(dur, self.preferredTime)
-                          for dur in parent.voltageStepDurations]
-        self.nsamples = [None if numpy.isinf(dur) else int(dur/self.dt) for dur in self.durations]
-        self.setUpInitializations(parent.thePatch.ch.weightedDistrib(),
-                                  parent.thePatch.equilibrium)  # equilibrium is a function
+        self.voltages = tuple([parameter.mu(v, self.preferredVoltage)
+                               for v in parent.voltages])
+        self.durations = tuple([parameter.mu(dur, self.preferredTime)
+                                for dur in parent.voltageStepDurations])
+        self.nsamples = tuple([None if numpy.isinf(dur) else int(dur/self.dt)
+                                for dur in self.durations])
+        self.allInitializations = self.setUpInitializations(
+                parent.thePatch.ch.weightedDistrib(),
+                parent.thePatch.equilibrium)  # equilibrium is a function
         self.processNodes(parent.thePatch.ch.nodes)
-        self.A = [parent.thePatch.getA(v, self.dt,
-                                       self.preferredVoltage,
-                                       self.preferredTime) for v in self.voltages]
+        self.A = tuple([parent.thePatch.getA(v, self.dt,
+                                            self.preferredVoltage,
+                                            self.preferredTime) for v in self.voltages])
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
         self.restart()
 
+    def changeModel(self, parent, integrityCheck=True,
+                    nodesChanged=True, QChanged=True):
+        if integrityCheck:
+            assert not parent.thePatch.hasNoise  # Later will implement NOISE
+            assert self.preferredTime == parent.preferred.time  # preferred time unit
+            assert self.preferredVoltage == parent.preferred.voltage # preferred voltage unit
+            assert self.preferredConductance == parent.preferred.conductance # preferred conductance unit
+            assert self.dt == parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
+            assert self.voltages == tuple([parameter.mu(v, self.preferredVoltage)
+                               for v in parent.voltages])
+            assert self.durations == tuple([parameter.mu(dur, self.preferredTime)
+                                for dur in parent.voltageStepDurations])
+            assert self.nsamples == tuple([None if numpy.isinf(dur) else int(dur/self.dt)
+                               for dur in self.durations])
+            assert (parent.thePatch.ch.weightedDistrib() is None or
+                    parent.thePatch.ch.weightedDistrib() == self.allInitializations[0])
+            # For No Noise Must Have Same Level
+            assert set(self.levelNames) == {str(n.level)
+                                            for n in parent.thePatch.ch.nodes}  # list(SET) makes unique
+        # if self.NoiseChanged:
+        #     self.means = tuple([parameter.mu(n.level.mean,
+        #                         self.preferredConductance) for n in nodes])
+        #     self.stds = tuple([parameter.mu(n.level.std,
+        #                        self.preferredConductance) for n in nodes])
+        if nodesChanged:
+            self.processNodes(parent.thePatch.ch.nodes)
+        if QChanged:
+            self.A = tuple([parent.thePatch.getA(v, self.dt,
+                                            self.preferredVoltage,
+                                            self.preferredTime) for v in self.voltages])
+            self.makeB()  # NO-NOISE only.
+        self.changedSinceLastSim = True
+
     def setUpInitializations(self, timeZeroInitialization, equilibrium):
         # Initializations occur when the voltage clamp is held for a long time without collecting
         # data. The initializations, except possibly the first one at time zero are determined
         # by the equilibrium distribution at the holding potential for the initialization.
-        self.allInitializations = []
+        allInitializations = []
             # timeZeroInitialization = parent.thePatch.ch.weightedDistrib()
         if timeZeroInitialization is None:  # No initial distribution because all weights 0,
                                             # use equilibrium distribution
@@ -51,23 +86,23 @@ class flatStepProtocol(toy.flatToyProtocol):
                                                # use equilibrium
         else:
             assert (self.nsamples[0] is not None)  # Finite duration for first voltage
-            self.allInitializations.append(timeZeroInitialization)  # Use timeZeroInitialization
+            allInitializations.append(timeZeroInitialization)  # Use timeZeroInitialization
                                                                     # for initial distribution
         # Now we generate an initialization distribution where nsamples is None
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                self.allInitializations.append(equilibrium(self.voltages[i],
-                                                           self.preferredVoltage))
+                allInitializations.append(equilibrium(self.voltages[i], self.preferredVoltage))
+        return tuple(allInitializations)
 
     def processNodes(self, nodes):
         self.nStates = len(nodes)
-        self.nodeNames = [str(n) for n in nodes]
-        self.levelNames = list({str(n.level) for n in nodes})  # list(SET) makes unique
-        self.levelMap = [str(n.level) for n in nodes]
-        self.means = [parameter.mu(n.level.mean,
-                                   self.preferredConductance) for n in nodes]
-        self.stds = [parameter.mu(n.level.std,
-                                  self.preferredConductance) for n in nodes]
+        self.nodeNames = tuple([str(n) for n in nodes])
+        self.levelNames = tuple({str(n.level) for n in nodes})  # list(SET) makes unique
+        self.levelMap = tuple([str(n.level) for n in nodes])
+        self.means = tuple([parameter.mu(n.level.mean,
+                                   self.preferredConductance) for n in nodes])
+        self.stds = tuple([parameter.mu(n.level.std,
+                                  self.preferredConductance) for n in nodes])
 
     def makeB(self):  # Only good for no-noise
         self.B = {}
@@ -79,7 +114,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                 if self.levelMap[d] == levelName:
                     Blevel[d, d] = 1
             self.B.update({levelName: Blevel})
-            # ABlevel is AB-matricies for all voltage steps, at given level
+            # ABlevel is AB-matrices for all voltage steps, at given level
             ABlevel = []
             # AVolt is A-matrix for given voltage
             for Avolt in self.A:  # self.A is a list of A matrix, one for each voltage
