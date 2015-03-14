@@ -24,15 +24,22 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
         self.voltages = [parameter.mu(v, self.preferredVoltage)
                          for v in parent.voltages]
-        self.durations = []
-        self.nsamples = []
-        for dur in parent.voltageStepDurations:
-            durationValue = parameter.mu(dur, self.preferredTime)
-            self.durations.append(durationValue)
-            if numpy.isinf(durationValue):
-                self.nsamples.append(None)
-            else:
-                self.nsamples.append(int(durationValue / self.dt))
+        self.durations = [parameter.mu(dur, self.preferredTime)
+                          for dur in parent.voltageStepDurations]
+        self.nsamples = [None if numpy.isinf(dur) else int(dur/self.dt) for dur in self.durations]
+        # for dur in self.durations:
+        #     if numpy.isinf(dur):
+        #         self.nsamples.append(None)
+        #     else:
+        #         self.nsamples.append(int(dur/self.dt))
+        # # self.nsamples = []
+        # for dur in parent.voltageStepDurations:
+        #     durationValue = parameter.mu(dur, self.preferredTime)
+        #     self.durations.append(durationValue)
+        #     if numpy.isinf(durationValue):
+        #         self.nsamples.append(None)
+        #     else:
+        #         self.nsamples.append(int(durationValue / self.dt))
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory()  # Only needed for plotting
         self.restart()
 
