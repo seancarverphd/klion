@@ -70,7 +70,7 @@ class singleChannelPatch(object):
 
     def getA(self, volts, dt, voltageUnit=None, timeUnit=None):
         if voltageUnit is not None:
-            volts = volts * parameter.u.__getattr__(timeUnit)
+            volts = volts * parameter.u.__getattr__(voltageUnit)
         Q = self.getQ(volts)
         if timeUnit is not None:
             # Q = parameter.mu(Q,'1/'+timeUnit)

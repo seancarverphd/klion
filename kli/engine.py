@@ -54,7 +54,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i], self.preferredVoltage))
         self.A = []
         for v in self.voltages:
-            self.A.append(newPatch.getA(v*u.mV, self.dt, None, self.preferredTime))  # when change, getA() called with same v's, value can change
+            self.A.append(newPatch.getA(v, self.dt, self.preferredVoltage, self.preferredTime))  # when change, getA() called with same v's, value can change
         self.processNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
