@@ -39,7 +39,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
-        self.restart()
 
     def changeModel(self, parent, integrityCheck=True,
                     nodesChanged=True, QChanged=True):
