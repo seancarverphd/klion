@@ -69,21 +69,22 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.stds = [parameter.mu(n.level.std,
                                   self.preferredConductance) for n in nodes]
 
-    def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
-        return self.select(RNG, self.allInitializations[nextInitNum])
-
-    def appendTrajectory(self, state, saveStates, saveLevels):
-        if self.debugFlag:
-            saveStates.append(self.nodeNames[state])
-        # NO NOISE:
-        saveLevels.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
-        # NOISE: 
-        # Might want to modify next line: multiply conductance by "voltage" to get current
-        # where I think "voltage" should really be difference between voltage and reversal potential
-        # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
-        # self.simDataX.append(self.Mean[state])
-        # IF SAVING VOLTAGE:
-        # self.simDataV.append(volts)
+    def makeB(self):  # Only good for no-noise
+        self.B = {}
+        self.AB = {}
+        for levelName in self.levelNames:
+            # Blevel is the B-matrix for the observation of level==uniqueLevel
+            Blevel = numpy.zeros([self.nStates, self.nStates])
+            for d in range(self.nStates):  # Fill B with corresponding 1's
+                if self.levelMap[d] == levelName:
+                    Blevel[d, d] = 1
+            self.B.update({levelName: Blevel})
+            # ABlevel is AB-matricies for all voltage steps, at given level
+            ABlevel = []
+            # AVolt is A-matrix for given voltage
+            for Avolt in self.A:  # self.A is a list of A matrix, one for each voltage
+                ABlevel.append(Avolt.dot(Blevel))
+            self.AB.update({levelName: ABlevel}) # Dictionary of AB lists over voltage
 
     def simulateOnce(self, RNG=None):
         if RNG is None:
@@ -102,65 +103,21 @@ class flatStepProtocol(toy.flatToyProtocol):
                 self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
         return levelsTrajectory
 
-    def voltageTrajectory(self):
-        """Compute the trajectory of the holding voltage as a function of time"""
-        # The voltageTrajectory only depends on the Protocol not model.
-        if self.hasVoltTraj:  # changeProtocol sets this to False
-            return
-        # self.voltagesM = []  # Strip units off voltages
-        # for v in self.voltages:
-        #     self.voltagesM.append(parameter.mu(v, self.preferredVoltage))
-        self.simDataVM = []
-        self.simDataTM = []
-        # self.simDataV.append(self.voltages[0])
-        for i, ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
-            if ns == None:
-                timeM = 0  # no units, M is for magnitude (no units)
-                self.simDataTM.append(numpy.nan)
-                self.simDataVM.append(self.voltages[i])
-                continue
-            elif i == 0:  # not ns==None and i==0
-                timeM = 0  # no units
-                self.simDataTM.append(timeM)
-                self.simDataVM.append(numpy.nan)
-            for j in range(ns):
-                timeM += self.dt
-                self.simDataTM.append(timeM)
-                self.simDataVM.append(self.voltages[i])  # same voltage every sample until voltage steps
-        self.hasVoltTraj = True
+    def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
+        return self.select(RNG, self.allInitializations[nextInitNum])
 
-    def likeDataFrame(self,rep=0, downsample=0):
-        PC0 = []
-        PC1 = []
-        POpen = []
-        Lmll = []
-        for i, sample in enumerate(self.data[rep]):
-            PC0.append(self.likeInfo[rep][i][0][0,0])
-            PC1.append(self.likeInfo[rep][i][0][0,1])
-            POpen.append(self.likeInfo[rep][i][0][0,2])
-            Lmll.append(self.likeInfo[rep][i][1])
-        likeDict = {'PC0': PC0, 'PC1': PC1, 'POpen': POpen, 'Lmll': Lmll}
-        return pandas.DataFrame(likeDict)
-
-    def simDataFrame(self, rep=0, downsample=0):
-        self.voltageTrajectory()
-        DFNodes = []
-        DFDataT = []
-        DFDataV = []
-        counter = 0  # The counter is for downsampling
-        for i, s in enumerate(self.hiddenStates[rep]):
-            if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
-                counter = downsample
-            if counter >= downsample:  # Grab a data point
-                counter = 0
-                DFNodes.append(s)  # s is an integer
-                DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
-                DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
-            counter += 1
-        TLabel = 'T_' + self.preferredTime
-        VLabel = 'V_' + self.preferredVoltage
-        dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
-        return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
+    def appendTrajectory(self, state, saveStates, saveLevels):
+        if self.debugFlag:
+            saveStates.append(self.nodeNames[state])
+        # NO NOISE:
+        saveLevels.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
+        # NOISE:
+        # Might want to modify next line: multiply conductance by "voltage" to get current
+        # where I think "voltage" should really be difference between voltage and reversal potential
+        # self.simDataX.append(self.R.normalvariate(self.Mean[state],self.Std[state]))
+        # self.simDataX.append(self.Mean[state])
+        # IF SAVING VOLTAGE:
+        # self.simDataV.append(volts)
 
     def select(self, RNG, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
@@ -172,23 +129,6 @@ class flatStepProtocol(toy.flatToyProtocol):
             if p < rowsum:
                  return col
         assert False  # Should never reach this point
-
-    def makeB(self):  # Only good for no-noise
-        self.B = {}
-        self.AB = {}
-        for levelName in self.levelNames:
-            # Blevel is the B-matrix for the observation of level==uniqueLevel
-            Blevel = numpy.zeros([self.nStates, self.nStates])
-            for d in range(self.nStates):  # Fill B with corresponding 1's
-                if self.levelMap[d] == levelName:
-                    Blevel[d, d] = 1
-            self.B.update({levelName: Blevel})
-            # ABlevel is AB-matricies for all voltage steps, at given level
-            ABlevel = []
-            # AVolt is A-matrix for given voltage
-            for Avolt in self.A:  # self.A is a list of A matrix, one for each voltage
-                ABlevel.append(Avolt.dot(Blevel))
-            self.AB.update({levelName: ABlevel}) # Dictionary of AB lists over voltage
 
     def normalize(self, new):
         c = 1 / new.sum()
@@ -225,3 +165,63 @@ class flatStepProtocol(toy.flatToyProtocol):
                     self.recentLikeInfo.append((alphak, mll))
             k0 += ns
         return -mll
+
+    def simDataFrame(self, rep=0, downsample=0):
+        self.voltageTrajectory()
+        DFNodes = []
+        DFDataT = []
+        DFDataV = []
+        counter = 0  # The counter is for downsampling
+        for i, s in enumerate(self.hiddenStates[rep]):
+            if numpy.isnan(self.simDataTM[i]):  # reset counter with initialization (hold at pre-voltage)
+                counter = downsample
+            if counter >= downsample:  # Grab a data point
+                counter = 0
+                DFNodes.append(s)  # s is an integer
+                DFDataT.append(self.simDataTM[i])  # TM means Time Magnitude (no units)
+                DFDataV.append(self.simDataVM[i])  # VM means Voltage Magnitude (no units)
+            counter += 1
+        TLabel = 'T_' + self.preferredTime
+        VLabel = 'V_' + self.preferredVoltage
+        dataDict = {TLabel: DFDataT, 'Node': DFNodes, VLabel: DFDataV}
+        return (pandas.DataFrame(dataDict, columns=[TLabel, 'Node', VLabel]))
+
+    def likeDataFrame(self,rep=0, downsample=0):
+        PC0 = []
+        PC1 = []
+        POpen = []
+        Lmll = []
+        for i, sample in enumerate(self.data[rep]):
+            PC0.append(self.likeInfo[rep][i][0][0,0])
+            PC1.append(self.likeInfo[rep][i][0][0,1])
+            POpen.append(self.likeInfo[rep][i][0][0,2])
+            Lmll.append(self.likeInfo[rep][i][1])
+        likeDict = {'PC0': PC0, 'PC1': PC1, 'POpen': POpen, 'Lmll': Lmll}
+        return pandas.DataFrame(likeDict)
+
+    def voltageTrajectory(self):
+        """Compute the trajectory of the holding voltage as a function of time"""
+        # The voltageTrajectory only depends on the Protocol not model.
+        if self.hasVoltTraj:  # changeProtocol sets this to False
+            return
+        # self.voltagesM = []  # Strip units off voltages
+        # for v in self.voltages:
+        #     self.voltagesM.append(parameter.mu(v, self.preferredVoltage))
+        self.simDataVM = []
+        self.simDataTM = []
+        # self.simDataV.append(self.voltages[0])
+        for i, ns in enumerate(self.nsamples):  # one nsample per voltage, so iterates over voltages
+            if ns == None:
+                timeM = 0  # no units, M is for magnitude (no units)
+                self.simDataTM.append(numpy.nan)
+                self.simDataVM.append(self.voltages[i])
+                continue
+            elif i == 0:  # not ns==None and i==0
+                timeM = 0  # no units
+                self.simDataTM.append(timeM)
+                self.simDataVM.append(numpy.nan)
+            for j in range(ns):
+                timeM += self.dt
+                self.simDataTM.append(timeM)
+                self.simDataVM.append(self.voltages[i])  # same voltage every sample until voltage steps
+        self.hasVoltTraj = True
