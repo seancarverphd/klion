@@ -6,7 +6,7 @@ import copy
 import parameter
 import pandas
 import toy
-
+from parameter import u
 
 class flatStepProtocol(toy.flatToyProtocol):
     def initRNG(self, seed):
@@ -21,7 +21,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
-        self.voltages = [copy.copy(parameter.v(v))
+        self.voltages = [parameter.mu(v, self.preferredVoltage)
                          for v in parent.voltages]
         self.durations = []
         self.nsamples = []
@@ -51,10 +51,10 @@ class flatStepProtocol(toy.flatToyProtocol):
             self.nextDistrib.append(initDistrib)  # Use initDistrib for initial distribution
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]))
+                self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]*u.mV, None))
         self.A = []
         for v in self.voltages:
-            self.A.append(newPatch.getA(v, self.dt, None, self.preferredTime))  # when change, getA() called with same v's, value can change
+            self.A.append(newPatch.getA(v*u.mV, self.dt, None, self.preferredTime))  # when change, getA() called with same v's, value can change
         self.processNodes(newPatch.ch.nodes)
         self.makeB()  # NO-NOISE only.
         self.changedSinceLastSim = True

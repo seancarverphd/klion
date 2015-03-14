@@ -73,8 +73,8 @@ class singleChannelPatch(object):
             volts = volts * parameter.u.__getattr__(timeUnit)
         Q = self.getQ(volts)
         if timeUnit is not None:
-            Q = parameter.mu(Q,'1/'+timeUnit)
-            # dt = dt * parameter.u.__getattr__(timeUnit)
+            # Q = parameter.mu(Q,'1/'+timeUnit)
+            dt = dt * parameter.u.__getattr__(timeUnit)
         A = scipy.linalg.expm(dt * Q)
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
