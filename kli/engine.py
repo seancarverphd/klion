@@ -37,7 +37,6 @@ class flatStepProtocol(toy.flatToyProtocol):
     def changeModel(self, parent):
         newPatch = parent.thePatch
         assert not newPatch.hasNoise  # Later will implement NOISE
-        self.hasNoise = newPatch.hasNoise
         # Need to verify levels don't change when new model
         # assert (self.levels == newPatch.uniqueLevels)  # Only makes sense with NO-NOISE
         self.nextDistrib = []
@@ -47,9 +46,8 @@ class flatStepProtocol(toy.flatToyProtocol):
         else:
             assert (not self.nsamples[0] == None)  # Finite duration for first voltage
             self.nextDistrib.append(initDistrib)  # Use initDistrib for initial distribution
-        # OLD:  self.initDistrib = newPatch.equilibrium(self.voltages[0])  # deepcopy not necessary here, or with A
         for i, ns in enumerate(self.nsamples):
-            if ns == None:  # Requires new initialization of state when simulating
+            if ns is None:  # Requires new initialization of state when simulating
                 self.nextDistrib.append(newPatch.equilibrium(self.voltages[i]))
         self.A = []
         for v in self.voltages:
@@ -72,11 +70,11 @@ class flatStepProtocol(toy.flatToyProtocol):
     def nextInit(self, RNG, nextInitNum):  # initializes state based on stored equilibrium distributions
         return self.select(RNG, self.nextDistrib[nextInitNum])
 
-    def appendTrajectory(self, state, simS, simL):
+    def appendTrajectory(self, state, saveStates, saveLevels):
         if self.debugFlag:
-            simS.append(self.nodeNames[state])
+            saveStates.append(self.nodeNames[state])
         # NO NOISE:
-        simL.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
+        saveLevels.append(self.levelMap[state])  # use self.levelMap for actual levels (not nums)
         # NOISE: 
         # Might want to modify next line: multiply conductance by "voltage" to get current
         # where I think "voltage" should really be difference between voltage and reversal potential
@@ -88,21 +86,19 @@ class flatStepProtocol(toy.flatToyProtocol):
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
-        simS = []
-        simL = []
+        self.hiddenStates = []
+        levelsTrajectory = []
         nextInitNum = 0
         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
                 state = self.nextInit(RNG.RNGs[0], nextInitNum)  # Next: append state and level to simS and simL
-                self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
+                self.appendTrajectory(state, self.hiddenStates, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
                 nextInitNum += 1
                 continue
             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
                 state = self.select(RNG.RNGs[0], self.A[i], state)
-                self.appendTrajectory(state, simS, simL)  # Pass ref to simS & simL so that appendTrajectory works
-        if self.debugFlag:
-            self.recentState = simS
-        return simL
+                self.appendTrajectory(state, self.hiddenStates, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
+        return levelsTrajectory
 
     def voltageTrajectory(self):
         """Compute the trajectory of the holding voltage as a function of time"""

@@ -117,7 +117,7 @@ class flatToyProtocol(object):
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
-                self.states.append(self.recentState)
+                self.states.append(self.hiddenStates)
         self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
 
@@ -136,10 +136,10 @@ class flatToyProtocol(object):
         if RNG is None:
             RNG = self.initRNG(None)
         if self.toy2:
-            self.recentState = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
+            self.hiddenStates = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
         else:
-            self.recentState = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
-        return sum(self.recentState)
+            self.hiddenStates = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
+        return sum(self.hiddenStates)
 
     def likelihoods(self, passedData=None):
         if passedData is None:  # Data not passed
