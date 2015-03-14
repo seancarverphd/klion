@@ -29,7 +29,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                           for dur in parent.voltageStepDurations]
         self.nsamples = [None if numpy.isinf(dur) else int(dur/self.dt) for dur in self.durations]
         self.setUpInitializations(parent.thePatch.ch.weightedDistrib(),
-                                  parent.thePatch.equilibrium)
+                                  parent.thePatch.equilibrium)  # equilibrium is a function
         self.processNodes(parent.thePatch.ch.nodes)
         self.A = [parent.thePatch.getA(v, self.dt,
                                        self.preferredVoltage,
