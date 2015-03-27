@@ -593,7 +593,10 @@ class Expression(object):
 
 class preferredUnits(object):
     def __init__(self):
-        pass
+        self.time = None
+        self.freq = None
+        self.voltage = None
+        self.conductance = None
 
 
 def getSpace(x):

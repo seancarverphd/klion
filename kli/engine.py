@@ -49,11 +49,11 @@ class flatStepProtocol(toy.flatToyProtocol):
             assert self.preferredConductance == parent.preferred.conductance # preferred conductance unit
             assert self.dt == parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
             assert self.voltages == tuple([parameter.mu(v, self.preferredVoltage)
-                               for v in parent.voltages])
+                                for v in parent.voltages])
             assert self.durations == tuple([parameter.mu(dur, self.preferredTime)
                                 for dur in parent.voltageStepDurations])
             assert self.nsamples == tuple([None if numpy.isinf(dur) else int(dur/self.dt)
-                               for dur in self.durations])
+                                for dur in self.durations])
             assert (parent.thePatch.ch.weightedDistrib() is None or
                     parent.thePatch.ch.weightedDistrib() == self.allInitializations[0])
             # For No Noise Must Have Same Level
