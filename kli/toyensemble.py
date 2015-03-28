@@ -10,7 +10,8 @@ preferred.freq = 'kHz'
 
 
 class ToyEnsemble(object):
-    def __init__(self, q=None, q0=None, q1=None, n2=None, n3=None, dt=None, tstop=None):
+    def __init__(self, q=None, q0=None, q1=None,
+                 n2=None, n3=None, dt=None, tstop=None):
         self.preferred = preferred
         if n2 > 0:
             assert q is not None
@@ -38,6 +39,16 @@ class FlatToyEnsemble(engine.flatStepProtocol):
     def setUpExperiment(self, parent):
         self.preferred_time = parent.preferred.time
         self.preferred_freq = parent.preferred.freq
+        self.q = parameter.mu(parent.q, self.preferred_freq)
+        self.q0 = parameter.mu(parent.q0, self.preferred_freq)
+        self.q1 = parameter.mu(parent.q1, self.preferred_freq)
         self.dt = parameter.mu(parent.dt, self.preferred_time)
-        self.tstop = parameter.mu(parent.tstop. self.preferred_time)
+        self.n2 = int(parent.n2)
+        self.n3 = int(parent.n3)
+        self.tstop = parameter.mu(parent.tstop, self.preferred_time)
         self.nsamples = int(self.tstop/self.dt)
+        self.processNodes(None) # parameter for consistency with super class
+
+    def processNodes(self, nodes):
+        assert nodes is None
+        pass
