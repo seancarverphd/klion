@@ -20,15 +20,6 @@ preferred.voltage = 'mV'
 preferred.conductance = 'pS'
 preferred.current = "fA"
 
-
-def equilQ(Qunits):
-    Q = parameter.m(Qunits)
-    (V, D) = np.linalg.eig(Q.T)  # eigenspace
-    imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
-    eigvect0 = D[:, imin]  # corresponding eigenvector
-    return eigvect0.T / sum(eigvect0)  # normalize and return (fixes sign)
-
-
 class StepProtocol(object):
     def __init__(self, patch, voltages, voltageStepDurations):
         self.thePatch = patch
@@ -63,14 +54,14 @@ class singleChannelPatch(object):
         else:
             assert (False)  # Take this out after implementing noise
 
-    def getQ(self, volts, voltageUnit=None):
+    def makeQ(self, volts, voltageUnit=None):
         if voltageUnit is not None:
             volts = volts*parameter.u.__getattr__(voltageUnit)
         self.VOLTAGE.remap(volts)
         return self.ch.makeQ()
 
-    def getA(self, volts, dt, voltageUnit=None, timeUnit=None):
-        Q = self.getQ(volts,voltageUnit)
+    def makeA(self, volts, dt, voltageUnit=None, timeUnit=None):
+        Q = self.makeQ(volts, voltageUnit)
         if timeUnit is not None:
             dt = dt * parameter.u.__getattr__(timeUnit)
         A = scipy.linalg.expm(dt * Q)
@@ -84,7 +75,11 @@ class singleChannelPatch(object):
         assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
 
     def equilibrium(self, volts, voltageUnit=None):
-        return equilQ(self.getQ(volts, voltageUnit))
+        Q = parameter.m(self.makeQ(volts, voltageUnit))
+        (V, D) = np.linalg.eig(Q.T)  # eigenspace
+        imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
+        eigvect0 = D[:, imin]  # corresponding eigenvector
+        return eigvect0.T / sum(eigvect0)  # normalize and return (fixes sign)
 
     # Select is now also defined in engine.flatStepProtocol
     def select(self, R, mat, row=0):  # select from matrix[row,:]

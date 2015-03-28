@@ -32,7 +32,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.allInitializations = self.setUpInitializations(parent.thePatch.ch.timeZeroDistribution(),
                 parent.thePatch.equilibrium)  # equilibrium is a function
         self.processNodes(parent.thePatch.ch.nodes)
-        self.A = tuple([parent.thePatch.getA(v, self.dt,
+        self.A = tuple([parent.thePatch.makeA(v, self.dt,
                                             self.preferredVoltage,
                                             self.preferredTime) for v in self.voltages])
         self.makeB()  # NO-NOISE only.
@@ -66,7 +66,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         if nodesChanged:
             self.processNodes(parent.thePatch.ch.nodes)
         if QChanged:
-            self.A = tuple([parent.thePatch.getA(v, self.dt,
+            self.A = tuple([parent.thePatch.makeA(v, self.dt,
                                             self.preferredVoltage,
                                             self.preferredTime) for v in self.voltages])
             self.makeB()  # NO-NOISE only.

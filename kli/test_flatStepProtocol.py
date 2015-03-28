@@ -95,7 +95,7 @@ class TestFlatStepProtocol(TestCase):
     #     self.assertEqual(kli.patch.FS.like(), self.FS.like())
 
     def test_q65(self):
-        Q = self.khhPatch.getQ(-65*u.mV)._magnitude
+        Q = self.khhPatch.makeQ(-65*u.mV)._magnitude
         self.assertEquals(Q[0, 0], -0.014969510799849182)
         self.assertEquals(Q[2, 0], 0.)
         self.assertEquals(Q[0, 2], 0.)
