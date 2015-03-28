@@ -104,38 +104,21 @@ class Channel(object):
         return Q
 
     def makeMean(self):
-        # Records means of nodes (conductances) in list
-        means = []
-        for n in self.nodes:
-            means.append(parameter.v(n.level.mean))
-        return means
+        return [parameter.v(n.level.mean) for n in self.nodes]  # Records means of nodes (conductances) in list
 
     def makeStd(self):
-        # Records std of nodes (conductances) in list
-        stds = []
-        for n in self.nodes:
-            stds.append(parameter.v(n.level.std))
-        return stds
+        return [parameter.v(n.level.std) for n in self.nodes]  # Records std of nodes (conductances) in list
 
     def recordOrder(self):
-        # Records order of nodes into a dictionary
-        # Now can reference order by string name
+        # Records order of nodes into a dictionary so can reference order by string name
         # Eg returns {'C1':0,'C2':1,'O':2}
-        self.nodeOrder = {}
-        for n in range(len(self.nodes)):
-            self.nodeOrder[self.nodes[n].name] = n
+        self.nodeOrder = {n.name : i for i, n in enumerate(self.nodes)}
 
     def getLevels(self):
-        levels = []
-        for n in self.nodes:
-            levels.append(n.level)
-        return set(levels)
+        return {n.levels for n in self.nodes}  # A set of unique levels
 
     def getNodeNames(self):
-        nodeNames = []
-        for n in self.nodes:
-            nodeNames.append(n.name)
-        return set(nodeNames)  # should all be distinct, used for checking distictiveness
+        return {n.name for n in self.nodes}  # Set of unique node names for checking distinctiveness
 
     def __repr__(self):
         nNodes = len(self.nodes)
