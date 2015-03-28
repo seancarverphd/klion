@@ -71,18 +71,14 @@ class Channel(object):
         self.recordOrder()  # defines nodeOrder dictionary
         self.disconnect()  # QList = 0; calls integrity() which calls reparametrize()
 
-    def weightedDistrib(self):
-        total = 0.
-        weights = []
-        for n in self.nodes:
-            weights.append(n.weight)
-            n.integrity()
-        weights = numpy.array(weights)
+    def timeZeroDistribution(self):
+        [n.integrity() for n in self.nodes]
+        weights = numpy.array([n.weight for n in self.nodes])
         total = sum(weights)
-        if total == 0:
+        if total == 0:  # No weights: use equilibrium distribution
             return None
         else:
-            return weights / total
+            return weights / total  # Weights specified: use normalized weights as distribution
 
     def clearWeights(self):
         for n in self.nodes:

@@ -29,8 +29,7 @@ class flatStepProtocol(toy.flatToyProtocol):
                                 for dur in parent.voltageStepDurations])
         self.nsamples = tuple([None if numpy.isinf(dur) else int(dur/self.dt)
                                 for dur in self.durations])
-        self.allInitializations = self.setUpInitializations(
-                parent.thePatch.ch.weightedDistrib(),
+        self.allInitializations = self.setUpInitializations(parent.thePatch.ch.timeZeroDistribution(),
                 parent.thePatch.equilibrium)  # equilibrium is a function
         self.processNodes(parent.thePatch.ch.nodes)
         self.A = tuple([parent.thePatch.getA(v, self.dt,
@@ -54,8 +53,8 @@ class flatStepProtocol(toy.flatToyProtocol):
                                 for dur in parent.voltageStepDurations])
             assert self.nsamples == tuple([None if numpy.isinf(dur) else int(dur/self.dt)
                                 for dur in self.durations])
-            assert (parent.thePatch.ch.weightedDistrib() is None or
-                    parent.thePatch.ch.weightedDistrib() == self.allInitializations[0])
+            assert (parent.thePatch.ch.timeZeroDistribution() is None or
+                    parent.thePatch.ch.timeZeroDistribution() == self.allInitializations[0])
             # For No Noise Must Have Same Level
             assert set(self.levelNames) == {str(n.level)
                                             for n in parent.thePatch.ch.nodes}  # list(SET) makes unique
@@ -78,13 +77,12 @@ class flatStepProtocol(toy.flatToyProtocol):
         # data. The initializations, except possibly the first one at time zero are determined
         # by the equilibrium distribution at the holding potential for the initialization.
         allInitializations = []
-            # timeZeroInitialization = parent.thePatch.ch.weightedDistrib()
-        if timeZeroInitialization is None:  # No initial distribution because all weights 0,
-                                            # use equilibrium distribution
-            assert (self.nsamples[0] is None)  # Infinite duration for first voltage,
-                                               # use equilibrium
+        if timeZeroInitialization is None:  # No initial distribution because all weights are zero,
+                                            # use equilibrium distribution same as other initializations
+            assert (self.nsamples[0] is None)  # Then must have infinite duration for first voltage,
+                                               # to use use equilibrium distribution
         else:
-            assert (self.nsamples[0] is not None)  # Finite duration for first voltage
+            assert (self.nsamples[0] is not None)  # Finite duration for first voltage. Use timeZeroInitialization
             allInitializations.append(timeZeroInitialization)  # Use timeZeroInitialization
                                                                     # for initial distribution
         # Now we generate an initialization distribution where nsamples is None
