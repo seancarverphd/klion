@@ -63,7 +63,7 @@ class TestFlatStepProtocol(TestCase):
         self.khh.biEdge("C1", "C2", self.a1, self.b1)
         self.khh.edge("C2", "O", self.a2)
         self.khh.edge("O", "C2", self.b2)
-        self.khhPatch = kli.patch.singleChannelPatch(self.khh)
+        self.khhPatch = kli.patch.singleChannelPatch(self.khh, self.VOLTAGE)  # set to channel.VOLTAGE for previous bug
         self.SP = kli.patch.StepProtocol(self.khhPatch, [-65*u.mV, -20*u.mV], [np.inf, 10*u.ms])
         self.FS = self.SP.flatten(5)
         self.FS.sim(10)
@@ -71,12 +71,16 @@ class TestFlatStepProtocol(TestCase):
     def test_patch_like(self):
         self.assertEquals(kli.patch.FS.like(),-168.873183577661)
 
-    def test_self_like(self):
-        self.assertEquals(self.FS.like(),-0.517332103313697)
+    # The following test passed when patch was setting VOLTAGE
+    # according to channel.VOLTAGE not self.VOLTAGE
+    # def test_self_like(self):
+    #      self.assertEquals(self.FS.like(),-0.517332103313697)
 
-    # def test_same_construction(self):
-    #     self.assertEquals(self.FS.nReps, 10)
-    #     self.assertEqual(kli.patch.FS.like(), self.FS.like())
+    def test_same_construction(self):
+        # This test used to fail because patch was setting VOLTAGE
+        # according to channel.VOLTAGE not self.VOLTAGE
+        self.assertEquals(self.FS.nReps, 10)
+        self.assertEqual(kli.patch.FS.like(), self.FS.like())
 
     # def test_old_patch_like(self):
     #     self.assertEquals(kli.patch.FS.like(),-26.748642946985434)

@@ -48,8 +48,9 @@ class StepProtocol(object):
 
 
 class singleChannelPatch(object):
-    def __init__(self, ch):
+    def __init__(self, ch, VOLTAGE):
         self.ch = ch
+        self.VOLTAGE = VOLTAGE
         self.Mean = self.ch.makeMean()
         self.Std = self.ch.makeStd()
         self.noise(False)
@@ -65,13 +66,13 @@ class singleChannelPatch(object):
     def getQ(self, volts, voltageUnit=None):
         if voltageUnit is not None:
             volts = volts*parameter.u.__getattr__(voltageUnit)
-        channel.VOLTAGE.remap(volts)
+        self.VOLTAGE.remap(volts)
         return self.ch.makeQ()
 
     def getA(self, volts, dt, voltageUnit=None, timeUnit=None):
-        if voltageUnit is not None:
-            volts = volts * parameter.u.__getattr__(voltageUnit)
-        Q = self.getQ(volts)
+        # if voltageUnit is not None:
+        #     volts = volts * parameter.u.__getattr__(voltageUnit)
+        Q = self.getQ(volts,voltageUnit)
         if timeUnit is not None:
             # Q = parameter.mu(Q,'1/'+timeUnit)
             dt = dt * parameter.u.__getattr__(timeUnit)
@@ -97,7 +98,7 @@ class singleChannelPatch(object):
         assert False  # Should never reach this point
 
 
-khhPatch = singleChannelPatch(channel.khh)
+khhPatch = singleChannelPatch(channel.khh, channel.VOLTAGE)
 SP = StepProtocol(khhPatch, [-65*u.mV, -20*u.mV], [np.inf, 10*u.ms])
 FS = SP.flatten(5)
 FS.sim(10)
