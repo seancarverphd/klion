@@ -70,18 +70,18 @@ class singleChannelPatch(object):
         return self.ch.makeQ()
 
     def getA(self, volts, dt, voltageUnit=None, timeUnit=None):
-        # if voltageUnit is not None:
-        #     volts = volts * parameter.u.__getattr__(voltageUnit)
         Q = self.getQ(volts,voltageUnit)
         if timeUnit is not None:
-            # Q = parameter.mu(Q,'1/'+timeUnit)
             dt = dt * parameter.u.__getattr__(timeUnit)
         A = scipy.linalg.expm(dt * Q)
+        self.assertSumOfRowsIsRowOfOnes(A)
+        return A
+
+    def assertSumOfRowsIsRowOfOnes(self,A):
         # assert sum of rows is row of ones to tolerance
         tol = 1e-7
         assert (np.amin(np.sum(A, axis=1)) > 1. - tol)
         assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
-        return A
 
     def equilibrium(self, volts, voltageUnit=None):
         return equilQ(self.getQ(volts, voltageUnit))
