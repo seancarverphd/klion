@@ -216,8 +216,14 @@ class Channel(object):
         self.reparameterize()
 
 # This code sets up a canonical channel
-# EK is Hodgkin Huxley value take from http://icwww.epfl.ch/~gerstner/SPNM/node14.html
-EK = parameter.Parameter("EK", -77, "mV", log=False)
+# EK,ENa,EL are Hodgkin Huxley values take from http://icwww.epfl.ch/~gerstner/SPNM/node14.html
+EK = parameter.Parameter("EK", -12-65, "mV", log=False)
+ENa = parameter.Parameter("ENa", 115-65, "mV", log=False)
+EL = parameter.Parameter("EL", 10.6-65, "mV", log=False)
+# gNa,gK, gL are Hodgkin Huxley values take from http://icwww.epfl.ch/~gerstner/SPNM/node14.html
+gNa = parameter.Parameter("gNa", 120, "mS/cm^2", log=True)
+gK = parameter.Parameter("gK", 36, "mS/cm^2", log=True)
+gL = parameter.Parameter("gL", 0.3, "mS/cm^2", log=True)
 # I = gV
 # gmax_khh is from www.neuron.yale.edu, but is a density parameter inappropriate for a single channel; use g_open instead
 gmax_khh = parameter.Parameter("gmax_khh", 0.02979, "microsiemens", log=True)
