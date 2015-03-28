@@ -16,6 +16,7 @@ default_tstop = parameter.Parameter("tstop", 20., "ms", log=True)
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
+preferred.freq = 'kHz'
 preferred.voltage = 'mV'
 preferred.conductance = 'pS'
 preferred.current = "fA"
@@ -74,8 +75,9 @@ class singleChannelPatch(object):
         assert (np.amin(np.sum(A, axis=1)) > 1. - tol)
         assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
 
-    def equilibrium(self, volts, voltageUnit=None):
-        Q = parameter.m(self.makeQ(volts, voltageUnit))
+    def equilibrium(self, volts, voltageUnit=None, freqUnit=None):
+        Qunits = self.makeQ(volts, voltageUnit)
+        Q = parameter.mu(Qunits, freqUnit)
         (V, D) = np.linalg.eig(Q.T)  # eigenspace
         imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
         eigvect0 = D[:, imin]  # corresponding eigenvector

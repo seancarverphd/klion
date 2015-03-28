@@ -21,6 +21,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.preferredTime = parent.preferred.time  # preferred time unit
         self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
+        self.preferredFreq = parent.preferred.freq  # preferred frequency unit
 
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
         self.voltages = tuple([parameter.mu(v, self.preferredVoltage)
@@ -88,7 +89,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         # Now we generate an initialization distribution where nsamples is None
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                allInitializations.append(equilibrium(self.voltages[i], self.preferredVoltage))
+                allInitializations.append(equilibrium(self.voltages[i], self.preferredVoltage, self.preferredFreq))
         return tuple(allInitializations)
 
     def processNodes(self, nodes):
