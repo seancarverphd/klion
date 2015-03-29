@@ -89,7 +89,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         # Now we generate an initialization distribution where nsamples is None
         for i, ns in enumerate(self.nsamples):
             if ns is None:  # Requires new initialization of state when simulating
-                allInitializations.append(equilibrium(self.voltages[i], self.preferredVoltage, self.preferredFreq))
+                allInitializations.append(equilibrium(self.voltages[i], self.preferredVoltage, self.preferredTime))
         return tuple(allInitializations)
 
     def processNodes(self, nodes):

@@ -75,9 +75,9 @@ class singleChannelPatch(object):
         assert (np.amin(np.sum(A, axis=1)) > 1. - tol)
         assert (np.amax(np.sum(A, axis=1)) < 1. + tol)
 
-    def equilibrium(self, volts, voltageUnit=None, freqUnit=None):
+    def equilibrium(self, volts, voltageUnit=None, timeUnit=None):
         Qunits = self.makeQ(volts, voltageUnit)
-        Q = parameter.mu(Qunits, freqUnit)
+        Q = parameter.mu(Qunits, '1/'+timeUnit)
         (V, D) = np.linalg.eig(Q.T)  # eigenspace
         imin = np.argmin(np.absolute(V))  # index of 0 eigenvalue
         eigvect0 = D[:, imin]  # corresponding eigenvector
