@@ -127,7 +127,7 @@ class flatStepProtocol(toy.flatToyProtocol):
         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
                 state = self.nextInit(RNG.RNGs[0], nextInitNum)  # Next: append state and level to simS and simL
-                self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
+                self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # refs to appendTrajectory
                 nextInitNum += 1
                 continue
             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
