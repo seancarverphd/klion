@@ -16,7 +16,6 @@ default_tstop = parameter.Parameter("tstop", 20., "ms", log=True)
 
 preferred = parameter.preferredUnits()
 preferred.time = 'ms'
-preferred.freq = 'kHz'
 preferred.voltage = 'mV'
 preferred.conductance = 'pS'
 preferred.current = "fA"

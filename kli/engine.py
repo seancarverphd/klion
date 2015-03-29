@@ -21,7 +21,6 @@ class flatStepProtocol(toy.flatToyProtocol):
         self.preferredTime = parent.preferred.time  # preferred time unit
         self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
         self.preferredConductance = parent.preferred.conductance # preferred conductance unit
-        self.preferredFreq = parent.preferred.freq  # preferred frequency unit
 
         self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
         self.voltages = tuple([parameter.mu(v, self.preferredVoltage)
