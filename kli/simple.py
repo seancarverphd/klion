@@ -86,6 +86,14 @@ class ExactSimple(object):
     def KL(self, other):
         return self.Elogf() - other.Elogf(self)
 
+    def PCorrect(self,other):
+        testStatistic = [self.B.logpmf(i) - other.B.logpmf(i) for i in range(self.B.args[0]+1)]
+        prob = 0
+        for i, t in enumerate(testStatistic):
+            if t > 0:
+                prob += self.B.pmf(i)
+        return prob
+    
 S20 = Simple(20,.5,1)
 ES20 = ExactSimple(S20)
 S21 = Simple(21,.5,1)
