@@ -8,7 +8,7 @@ import pandas
 import toy
 from parameter import u
 
-class flatStepProtocol(toy.flatToyProtocol):
+class flatStepProtocol(toy.FlatToy):
     def initRNG(self, seed):
         return toy.MultipleRNGs(2,seed) # Two instances of random.Random with seed save added
 

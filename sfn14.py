@@ -389,8 +389,8 @@ def diffDensity(fig, F2, F3, Trange):
 q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
 q1 = parameter.Parameter("q1", 0.25, "kHz", log=True)
 q = parameter.Parameter("q", 1. / 6., "kHz", log=True)
-T3 = toy.toyProtocol([q0, q1])
-T2 = toy.toyProtocol([q])
+T3 = toy.Toy([q0, q1])
+T2 = toy.Toy([q])
 H = aichist(T3, T2, q0, q1, q)
 H.compute()
 # print H.AIC

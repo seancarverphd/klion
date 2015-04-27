@@ -5,19 +5,16 @@ import parameter
 import matplotlib.pylab as plt
 import ad
 
-preferred = parameter.preferredUnits()
-preferred.time = 'ms'
-preferred.freq = 'kHz'
 
-
-class toyProtocol(object):
+class Toy(object):
     def __init__(self, q):
         self.q = q
-        self.preferred = preferred
+        self.preferred = parameter.preferredUnits()
+        self.preferred.freq = 'kHz'
 
     def flatten(self, seed=None):
         parent = self  # for readability
-        FT = flatToyProtocol(parent, seed)
+        FT = FlatToy(parent, seed)
         return FT
 
     def getExperiment(self):  # For subclassing replace this code
@@ -56,6 +53,7 @@ class SaveSeedRNG(random.Random):
     def reset(self):  # Resets RNG to same seed as used before
         self.seed(self.usedSeed)
 
+
 class MultipleRNGs(object):
     def __init__(self, numRNGs, seed=None, offset=1000000):
         self.RNGs = []  # Not yet implemented, if numRNGs is a list make it RNGs, set seeds and offsets
@@ -75,7 +73,8 @@ class MultipleRNGs(object):
         for i in range(len(self.RNGs)):
             self.RNGs[i].reset()
 
-class flatToyProtocol(object):
+
+class FlatToy(object):
     def __init__(self, parent, seed=None):
         self.debug(False)  # To save hidden states, call sellf.debug(True)
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
@@ -368,8 +367,8 @@ class likefun2(object):  # Two dimensional likelihood grid
 q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
 q1 = parameter.Parameter("q1", 0.25, "kHz", log=True)
 q = parameter.Parameter("q", 1. / 6., "kHz", log=True)
-T3 = toyProtocol([q0, q1])
-T2 = toyProtocol([q])
+T3 = Toy([q0, q1])
+T2 = Toy([q])
 FT3 = T3.flatten(seed=3)
 FT2 = T2.flatten(seed=3)
 XRange = numpy.arange(0.1, 30.1, 1)
