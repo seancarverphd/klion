@@ -153,13 +153,13 @@ class FlatToy(object):
             nLast = len(data)  # Go to end of data, don't restrict
         for datum in data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
-            if self.debugFlag and self.recentLikeInfo is not None:
-                likeInfo.append(self.recentLikeInfo)
+            #if self.debugFlag and self.recentLikeInfo is not None:
+            #    likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
 
     def likeOnce(self, datum):  # Overload when subclassing
-        if self.debugFlag:
-            self.recentLikeInfo = None
+        #if self.debugFlag:
+        #    self.recentLikeInfo = None
         if not self.datumIntegrity(datum):
             return -numpy.infty
         elif self.toy2:
