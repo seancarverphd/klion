@@ -230,7 +230,11 @@ gmax_khh = parameter.Parameter("gmax_khh", 0.02979, "microsiemens", log=True)
 # "The single-channel conductance of typical ion channels ranges from 0.1 to 100 pS (picosiemens)."  Bertil Hille (2008), Scholarpedia, 3(10):6051.
 # For now, g_open is used only for plotting
 g_open = parameter.Parameter("g_open", 1., "picosiemens", log=True)
-# The following two parameters were made up (but they are not used at the moment):  
+# gNa_open, gK_open from  Adam Strassber and Louis DeFelice "Limitations of the Hodgkin-Huxley Formalism: Effects of
+# single channel kinetics on Transmembrane Voltage Dynamics, Neural Computation 5, 843-855 (1993) PAGE 845
+gK_open = parameter.Parameter("gK_open", 20., "picosiemens", log=True)
+gNa_open = parameter.Parameter("gNa_open", 20., "picosiemens", log=True)
+# The following two parameters were made up (but they are not used at the moment):
 gstd_open = parameter.Parameter("gstd_open", 0.1, "picosiemens", log=True)
 gstd_closed = parameter.Parameter("gstd_closed", 0.01, "picosiemens", log=True)
 
