@@ -70,3 +70,23 @@ class FlatSimple(toy.FlatToy):
             return False
         else:
             return True
+
+class ExactSimple(object):
+    def __init__(self, parent):
+        self.experiment = parent.getExperiment()
+        self.n, self.p, self.lam = self.experiment
+        self.B = scipy.stats.binom(self.n, self.p)
+
+    def Elogf(self, true=None):
+        if true is None:
+            return -self.B.entropy()
+        else:
+            return sum([self.B.logpmf(i)*true.B.pmf(i) for i in range(true.B.args[0]+1)])  # true.args+1 for range
+
+    def KL(self, other):
+        return self.Elogf() - other.Elogf(self)
+
+S20 = Simple(20,.5,1)
+ES20 = ExactSimple(S20)
+S21 = Simple(21,.5,1)
+ES21 = ExactSimple(S21)
