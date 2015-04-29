@@ -37,8 +37,11 @@ class Simple(object):
 
     def flatten(self, seed=None):
         parent = self # for readability
-        FS = FlatSimple(parent, seed)
-        return FS
+        return FlatSimple(parent, seed)
+
+    def exact(self):
+        parent = self # for readability
+        return ExactSimple(parent)
 
     def getExperiment(self):
         n = int(parameter.mu(self.n, 'dimensionless'))
@@ -86,14 +89,14 @@ class ExactSimple(object):
     def KL(self, other):
         return self.Elogf() - other.Elogf(self)
 
-    def PCorrect(self,other):
+    def PFalsify(self,other):
         testStatistic = [self.B.logpmf(i) - other.B.logpmf(i) for i in range(self.B.args[0]+1)]
         prob = 0
         for i, t in enumerate(testStatistic):
             if t > 0:
                 prob += self.B.pmf(i)
         return prob
-    
+
 S20 = Simple(20,.5,1)
 ES20 = ExactSimple(S20)
 S21 = Simple(21,.5,1)
