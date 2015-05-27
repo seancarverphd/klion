@@ -27,7 +27,7 @@ def mu(x, finalUnit):  # Returns magnitude (with units stripped) but converts to
     try:
         z = y.to(getattr(u, finalUnit))  # convert to unit
     except pint.DimensionalityError:
-        raise pint.DimensionalityError
+        raise
     except AttributeError:  # might be an AD number
         return y  # return AD number
     return m(z)  # return magnitude of z

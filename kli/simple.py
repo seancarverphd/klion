@@ -28,7 +28,7 @@ class NumSaveSeedRNG(numpy.random.RandomState):
 
 
 class Simple(object):
-    def __init__(self, n, p, lam):
+    def __init__(self, n, p, lam=None):
         self.n = n
         self.p = p
         self.lam = lam
@@ -47,7 +47,7 @@ class Simple(object):
         n = int(parameter.mu(self.n, 'dimensionless'))
         p = parameter.mu(self.p, 'dimensionless')
         lam = parameter.mu(self.lam, self.preferred.freq)
-        return (n, p, lam)
+        return n, p, lam
 
 
 class FlatSimple(toy.FlatToy):
@@ -69,7 +69,7 @@ class FlatSimple(toy.FlatToy):
         return self.B.logpmf(datum)
 
     def datumIntegrity(self, datum):
-        if datum > self.n:
+        if datum > self.n:  # Can't happen
             return False
         else:
             return True
