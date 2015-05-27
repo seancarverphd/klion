@@ -36,11 +36,11 @@ class Simple(object):
         self.preferred.freq = 'kHz'
 
     def flatten(self, seed=None):
-        parent = self # for readability
+        parent = self  # for readability
         return FlatSimple(parent, seed)
 
     def exact(self):
-        parent = self # for readability
+        parent = self  # for readability
         return ExactSimple(parent)
 
     def getExperiment(self):

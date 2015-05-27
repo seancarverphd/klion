@@ -10,7 +10,7 @@ u = pint.UnitRegistry()  # Need to import u in every module that uses units
 def v(x):  # Returns value (possibly with units) of a parameter or expression
     try:
         return x.evaluate()
-    except:  # e.g. if x is a float return x
+    except AttributeError:  # e.g. if x is a float return x
         return x
 
 
@@ -18,7 +18,7 @@ def m(x):  # Returns magnitude (with units stripped).  Use cautiously.
     y = v(x)  # get value of parameter or expression first
     try:
         return y._magnitude
-    except:  # e.g. if y does not contain units
+    except AttributeError:  # e.g. if y does not contain units
         return y
 
 
@@ -26,7 +26,9 @@ def mu(x, finalUnit):  # Returns magnitude (with units stripped) but converts to
     y = v(x)  # get value
     try:
         z = y.to(getattr(u, finalUnit))  # convert to unit
-    except:  # might be an AD number
+    except pint.DimensionalityError:
+        raise pint.DimensionalityError
+    except AttributeError:  # might be an AD number
         return y  # return AD number
     return m(z)  # return magnitude of z
 
