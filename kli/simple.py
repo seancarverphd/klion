@@ -74,6 +74,10 @@ class FlatSimple(toy.FlatToy):
         else:
             return True
 
+    def mle(self):
+        pass
+
+
 class ExactSimple(object):
     def __init__(self, parent):
         self.experiment = parent.getExperiment()
@@ -97,7 +101,7 @@ class ExactSimple(object):
                 prob += self.B.pmf(i)
         return prob
 
-S20 = Simple(20,.5,1)
+S20 = Simple(20, .5, 1)
 ES20 = ExactSimple(S20)
-S21 = Simple(21,.5,1)
+S21 = Simple(21, .5, 1)
 ES21 = ExactSimple(S21)
