@@ -118,7 +118,7 @@ class FlatToy(object):
         self.changedSinceLastSim = False
 
     def resim(self, nReps=1):
-        self.sim(nReps,clear=True)
+        self.sim(nReps, clear=True)
 
     def debug(self, flag=None):
         if flag == True:
@@ -170,8 +170,11 @@ class FlatToy(object):
             return numpy.log(self.q1) + numpy.log(self.q0) + numpy.log(
                 (numpy.exp(-self.q0 * datum) - numpy.exp(-self.q1 * datum)) / (self.q1 - self.q0))
 
+    def datumWellFormed(self, datum):
+        return isinstance(datum, float) or isinstance(datum, int)
+
     def datumIntegrity(self, datum):
-        if not (isinstance(datum, float) or isinstance(datum, int)):
+        if not self.datumWellFormed(datum):
             return False
         elif datum < 0.:
             return False
@@ -198,8 +201,11 @@ class FlatToy(object):
     def logf(self, data=None):
         return numpy.matrix(self.likelihoods(data))
 
+    def nRepsRestrictedData(self):
+        return self.data[0:self.nReps]
+
     def lr(self, alt):  # likelihood ratio; self is true model
-        data = self.data[0:self.nReps]
+        data = self.nRepsRestrictedData()
         return self.logf(data) - alt.logf(data)
 
     def lr_mn_sd(self, alt):  # self is true model
@@ -215,7 +221,7 @@ class FlatToy(object):
         return L.sum(axis=0)
 
     def aic(self, alt):  # self is true model
-        data = self.data[0:self.nReps]
+        data = self.nRepsRestrictedData()
         return 2 * (self.logf(data) - alt.logf(data))
 
     def a_mn_sd(self, alt):  # self is true model
