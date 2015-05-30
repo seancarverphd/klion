@@ -4,7 +4,7 @@ import time
 import numpy
 import scipy.stats
 import parameter
-
+import reps
 
 class NumSaveSeedRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
@@ -31,6 +31,7 @@ class Simple(object):
     def __init__(self, n, p, lam=None):
         self.n = n
         self.p = p
+        assert lam is None # lam parameter not yet implemented
         self.lam = lam
         self.preferred = parameter.preferredUnits()
         self.preferred.freq = 'kHz'
@@ -57,6 +58,7 @@ class FlatSimple(toy.FlatToy):
     def setUpExperiment(self, parent):
         self.experiment = parent.getExperiment()
         self.n, self.p, self.lam = self.experiment
+        assert self.lam is None  # parameter lam not yet implemented
         self.B = scipy.stats.binom(self.n, self.p)
         self.changedSinceLastSim = True
 
@@ -68,11 +70,11 @@ class FlatSimple(toy.FlatToy):
     def likeOnce(self, datum):
         return self.B.logpmf(datum)
 
+    def datumWellFormed(self,datum):
+        return isinstance(datum, int)
+
     def datumIntegrity(self, datum):
-        if datum > self.n:  # Can't happen
-            return False
-        else:
-            return True
+        return self.datumWellFormed(datum) and (datum <= self.n) and (datum >= 0)
 
     def mle(self):
         pass
@@ -101,7 +103,11 @@ class ExactSimple(object):
                 prob += self.B.pmf(i)
         return prob
 
-S20 = Simple(20, .5, 1)
-ES20 = ExactSimple(S20)
-S21 = Simple(21, .5, 1)
-ES21 = ExactSimple(S21)
+S20 = Simple(20, .5)
+ES20 = S20.exact()
+FS20 = S20.flatten()
+R20 = reps.Reps(FS20,9)
+S21 = Simple(21, .5)
+ES21 = S21.exact()
+FS21 = S21.flatten()
+R21 = reps.Reps(FS21,9)

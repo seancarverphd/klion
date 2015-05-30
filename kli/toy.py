@@ -200,6 +200,9 @@ class FlatToy(object):
 
     def logf(self, data=None):
         return numpy.matrix(self.likelihoods(data))
+        #  M = numpy.matrix(self.likelihoods(data))
+        #  print M.mean()
+        #  return M
 
     def nRepsRestrictedData(self):
         return self.data[0:self.nReps]
@@ -236,27 +239,12 @@ class FlatToy(object):
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
 
-    def Eflogf(self, data=None):  # NEED TO ADJUST FOR REPEATED EXPERIMENTS (M and N both different from 1)
-        return (self.logf(data).mean())
-        # if self.toy2:
-        #    return numpy.log(self.q) - self.q*numpy.mean(self.data[0:self.nReps])
-        #else:  # toy 3
-        #    Qs = []
-        #    for n in range(self.nReps):
-        #        if self.q1 == self.q0:
-        #            Qs.append(-self.q0*self.data[n] + numpy.log(self.data[n]))    
-        #        else:
-        #            Qs.append(numpy.log((numpy.exp(-self.q0*self.data[n])-numpy.exp(-self.q1*self.data[n]))/(self.q1-self.q0)))
-        #            if numpy.isinf(Qs[-1]):
-        #                print "q1", self.q1, "q0", self.q0
-        #                
-        #    Qbar = numpy.mean(Qs)
-        #    return numpy.log(self.q1) + numpy.log(self.q0) + Qbar
+    def Ehlogf(self, data_h=None):
+        return (self.logf(data_h).mean())
 
-    def Eflogg(self, data):  # Must pass data, don't use self.data
-        return self.Eflogf(data)
-        # assert(self.toy2)
-        # return numpy.log(self.q) - self.q*numpy.mean(data)  # data passed as parameter: not self.data!
+    def KL(self, other):
+        data = self.nRepsRestrictedData()
+        return self.Ehlogf(data) - other.Ehlogf(data)
 
     # def pdfplot(self):
         #    assert(len(self.data)>99)

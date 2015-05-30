@@ -114,7 +114,7 @@ class kull(object):
                 self.q1.assign(q_1)
                 self.TrueMod.changeModel(self.trueParent)
                 self.TrueMod.sim(self.nReps, clear=True)
-                EfTrue = self.TrueMod.Eflogf()
+                EfTrue = self.TrueMod.Ehlogf()
                 mEfAlt = numpy.log(numpy.e * numpy.mean(self.TrueMod.taus))  # Simple because toy is simple
                 self.KL[i, j] = EfTrue + mEfAlt
                 print i, j, "up to", len(self.qRange)

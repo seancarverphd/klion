@@ -61,7 +61,7 @@ class Reps(toy.FlatToy):
         individualLikes = self.base.likelihoods(concatenatedData)  # if
         arrayLikes = numpy.array(individualLikes[0:nReps*self.reps])
         arrayLikes = numpy.reshape(arrayLikes, (nReps, self.reps))
-        self.likes = arrayLikes.sum(axis=0).tolist()
+        self.likes = arrayLikes.sum(axis=1).tolist()
         return self.likes
 
     def likeOnce(self, datum):
@@ -79,17 +79,6 @@ class Reps(toy.FlatToy):
 
     def mle(self):
         pass
-
-    def nRepsRestrictedData(self):
-        assert self.base.nReps >= self.reps * self.nReps
-        data = []
-        for r in range(self.nReps):
-            datum = []
-            for d in range(self.reps):
-                datum.append(d)
-            data.append(datum)
-        return data
-
 
     def lrN(self, alt, N, M):
         print "Don't call lrN from Reps class"
