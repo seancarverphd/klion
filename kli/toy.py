@@ -223,7 +223,7 @@ class FlatToy(object):
         return float(numpy.sum(ratio > 0))/float(ratio.shape[1])
 
     def PFalsifyNormal(self, alt, data=None):
-        mu, sig = self.base.likeRatioMuSigma(alt, data)
+        mu, sig = self.base.likeRatioMuSigma(alt.base, data)
         print "Using rReps ="+str(self.rReps)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
 
