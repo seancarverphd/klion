@@ -51,21 +51,37 @@ class Repetitions(toy.FlatToy):
             datum.append(self.base.simulateOnce(RNG))
         return datum
 
+    def fillLikes(self):
+        self.likes = []
+        newlike = []
+        for i, lk in enumerate(self.base.likes):
+            if (i % self.rReps) or i==0:  # True if i divisible by rReps and i neq 0
+                newlike.append(lk)
+            else:
+                self.likes.append(newlike)
+                newlike = []
+
     def likelihoods(self, passedData=None):
         if passedData is None:
-            concatenatedData = None  # use data stored in self.base
-            mReps = self.base.mReps/self.rReps
-        else:
-            concatenatedData = []
-            for datum in passedData:
-                assert self.datumWellFormed(datum)
-                concatenatedData += datum  # Expected that these are lists, see datumWellFormed
-            mReps = len(concatenatedData)/self.rReps
-        individualLikes = self.base.likelihoods(concatenatedData)  # if
-        arrayLikes = numpy.array(individualLikes[0:mReps*self.rReps])
-        arrayLikes = numpy.reshape(arrayLikes, (mReps, self.rReps))
-        self.likes = arrayLikes.sum(axis=1).tolist()
-        return self.likes
+            self.fillLikes()
+        super(Repetitions, self).likelihoods(passedData)
+
+
+    # def likelihoods(self, passedData=None):
+    #     if passedData is None:
+    #         concatenatedData = None  # use data stored in self.base
+    #         mReps = self.base.mReps/self.rReps
+    #     else:
+    #         concatenatedData = []
+    #         for datum in passedData:
+    #             assert self.datumWellFormed(datum)
+    #             concatenatedData += datum  # Expected that these are lists, see datumWellFormed
+    #         mReps = len(concatenatedData)/self.rReps
+    #     individualLikes = self.base.likelihoods(concatenatedData)  # if
+    #     arrayLikes = numpy.array(individualLikes[0:mReps*self.rReps])
+    #     arrayLikes = numpy.reshape(arrayLikes, (mReps, self.rReps))
+    #     self.likes = arrayLikes.sum(axis=1).tolist()
+    #     return self.likes
 
     def likeOnce(self, datum):
         assert self.datumWellFormed(datum)
