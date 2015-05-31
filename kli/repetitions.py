@@ -64,7 +64,7 @@ class Repetitions(toy.FlatToy):
     def likelihoods(self, passedData=None):
         if passedData is None:
             self.fillLikes()
-        super(Repetitions, self).likelihoods(passedData)
+        return super(Repetitions, self).likelihoods(passedData)
 
 
     # def likelihoods(self, passedData=None):

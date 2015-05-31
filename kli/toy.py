@@ -219,8 +219,8 @@ class FlatToy(object):
         return self.logf(data) - alt.logf(data)
 
     def PFalsify(self, alt, data=None):
-        ratio = self.likeRatios(alt, data)
-        return float(numpy.sum(ratio > 0))/float(ratio.shape[1])
+        ratios = self.likeRatios(alt, data)
+        return float(numpy.sum(ratios > 0))/float(ratios.shape[1])
 
     def PFalsifyNormal(self, alt, data=None):
         mu, sig = self.base.likeRatioMuSigma(alt.base, data)
