@@ -242,7 +242,7 @@ class PNplot(object):
     def theoretical(self):
         self.TrueMod = self.trueParent.flatten()
         self.AltMod = self.altParent.flatten()
-        self.TrueMod.sim(nReps=self.M)
+        self.TrueMod.sim(mReps=self.M)
         (self.mn, self.sd) = self.TrueMod.a_mn_sd(self.AltMod)
         self.nRange = range(1, self.rangePlot)
         self.PNtheo = []

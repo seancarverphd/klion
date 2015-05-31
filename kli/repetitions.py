@@ -3,11 +3,14 @@ import numpy
 import toy
 
 
-class Reps(toy.FlatToy):
-    def __init__(self, base, reps):
+class Repetitions(toy.FlatToy):
+    def __init__(self, base, rReps):
         self.base = base
-        self.reps = reps
-        super(Reps, self).__init__(base)
+        self.rReps= rReps
+        super(Repetitions, self).__init__(base)
+
+    def defineRepetitions(self):
+        pass
 
     def initRNG(self, seed=None):
         pass
@@ -25,54 +28,54 @@ class Reps(toy.FlatToy):
         self.likes = []
         self.base.restart()
 
-    def sim(self, nReps=1, clear=False):
+    def sim(self, mReps=1, clear=False):
         if clear:
             self.restart()
         # No changedSinceLastSim, don't want to clear base unless explicitly directed
         numOldReps = len(self.data)
-        numNewReps = nReps - len(self.data)
-        self.base.sim(self.reps*nReps)  # Simulate base and only compute newly needed data
+        numNewReps = mReps - len(self.data)
+        self.base.sim(self.rReps*mReps)  # Simulate base and only compute newly needed data
         for r in range(numNewReps):
             datum = []
-            for d in range(self.reps):
-                datum.append(self.base.data[(numOldReps+r)*self.reps + d])
+            for d in range(self.rReps):
+                datum.append(self.base.data[(numOldReps+r)*self.rReps + d])
             self.data.append(datum)
-        self.nReps = nReps
+        self.mReps = mReps
 
     def debug(self, flag=None):
         return self.base.debug(flag)
 
     def simulateOnce(self, RNG=None):
         datum = []
-        for r in self.reps:
+        for r in self.rReps:
             datum.append(self.base.simulateOnce(RNG))
         return datum
 
     def likelihoods(self, passedData=None):
         if passedData is None:
             concatenatedData = None  # use data stored in self.base
-            nReps = self.base.nReps/self.reps
+            mReps = self.base.mReps/self.rReps
         else:
             concatenatedData = []
             for datum in passedData:
                 assert self.datumWellFormed(datum)
                 concatenatedData += datum  # Expected that these are lists, see datumWellFormed
-            nReps = len(concatenatedData)/self.reps
+            mReps = len(concatenatedData)/self.rReps
         individualLikes = self.base.likelihoods(concatenatedData)  # if
-        arrayLikes = numpy.array(individualLikes[0:nReps*self.reps])
-        arrayLikes = numpy.reshape(arrayLikes, (nReps, self.reps))
+        arrayLikes = numpy.array(individualLikes[0:mReps*self.rReps])
+        arrayLikes = numpy.reshape(arrayLikes, (mReps, self.rReps))
         self.likes = arrayLikes.sum(axis=1).tolist()
         return self.likes
 
     def likeOnce(self, datum):
-        assert datumWellFormed(datum)
+        assert self.datumWellFormed(datum)
         logLike = 0
         for datumComponent in datum:
             logLike += self.base.likeOnce(datumComponent)  # These are numbers
         return logLike
 
     def datumWellFormed(self, datum):
-        mustBeTrue = len(datum) == self.reps
+        mustBeTrue = len(datum) == self.rReps
         for d in datum:
             mustBeTrue = mustBeTrue and self.base.datumWellFormed(d)
         return mustBeTrue

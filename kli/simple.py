@@ -4,7 +4,7 @@ import time
 import numpy
 import scipy.stats
 import parameter
-import reps
+import repetitions
 
 class NumSaveSeedRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
@@ -106,8 +106,8 @@ class ExactSimple(object):
 S20 = Simple(20, .5)
 ES20 = S20.exact()
 FS20 = S20.flatten()
-R20 = reps.Reps(FS20,9)
+R20 = repetitions.Repetitions(FS20,9)
 S21 = Simple(21, .5)
 ES21 = S21.exact()
 FS21 = S21.flatten()
-R21 = reps.Reps(FS21,9)
+R21 = repetitions.Repetitions(FS21,9)

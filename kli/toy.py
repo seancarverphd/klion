@@ -3,6 +3,7 @@ import random
 import time
 import parameter
 import matplotlib.pylab as plt
+import scipy.stats
 import ad
 
 
@@ -79,7 +80,12 @@ class FlatToy(object):
         self.debug(False)  # To save hidden states, call sellf.debug(True)
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.setUpExperiment(parent)
+        self.defineRepetitions()
         self.restart()
+
+    def defineRepetitions(self):
+        self.base = self  # Used in functions below; Defined differently for Repetitions subclass
+        self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveSeedRNG(seed)
@@ -104,21 +110,21 @@ class FlatToy(object):
     def changeModel(self, parent):
         self.setUpExperiment(self, parent)
 
-    def sim(self, nReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+    def sim(self, mReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if clear:
             self.restart()  # Resets random number generator
         elif self.changedSinceLastSim:
             self.restart()
-        numNewReps = nReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
+        numNewReps = mReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
                 self.hiddenStates.append(self.hiddenStateTrajectory)
-        self.nReps = nReps  # Might be decreasing nReps, but code still saves the old results
+        self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
         self.changedSinceLastSim = False
 
-    def resim(self, nReps=1):
-        self.sim(nReps, clear=True)
+    def resim(self, mReps=1):
+        self.sim(mReps, clear=True)
 
     def debug(self, flag=None):
         if flag == True:
@@ -143,7 +149,7 @@ class FlatToy(object):
             likes = self.likes # Append any new likes to cached self.likes
             likeInfo = self.likeInfo
             nFirst = len(likes)
-            nLast = self.nReps  # Restricts return to self.nReps
+            nLast = self.mReps  # Restricts return to self.nReps
         else:  # Data passed
             data = passedData
             likes = []
@@ -196,7 +202,7 @@ class FlatToy(object):
 
     def mle(self):
         assert self.toy2  # Not yet implemented for toy 3
-        return 1. / numpy.mean(self.data[0:self.nReps])
+        return 1. / numpy.mean(self.data[0:self.mReps])
 
     def logf(self, data=None):
         return numpy.matrix(self.likelihoods(data))
@@ -204,27 +210,37 @@ class FlatToy(object):
         #  print M.mean()
         #  return M
 
-    def nRepsRestrictedData(self):
-        return self.data[0:self.nReps]
+    def mRepsRestrictedData(self):
+        return self.data[0:self.mReps]
 
-    def lr(self, alt):  # likelihood ratio; self is true model
-        data = self.nRepsRestrictedData()
+    def likeRatios(self, alt, data=None):  # likelihood ratio; self is true model
+        if data is None:
+            data = self.mRepsRestrictedData()
         return self.logf(data) - alt.logf(data)
 
-    def lr_mn_sd(self, alt):  # self is true model
-        lrs = self.lr(alt)
-        mn = numpy.mean(lrs)
-        sd = numpy.std(lrs)
-        return mn, sd
+    def PFalsify(self, alt, data=None):
+        ratio = self.likeRatios(alt, data)
+        return float(numpy.sum(ratio > 0))/float(ratio.shape[1])
+
+    def PFalsifyNormal(self, alt, data=None):
+        mu, sig = self.base.likeRatioMuSigma(alt, data)
+        print "Using rReps ="+str(self.rReps)
+        return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
+
+    def likeRatioMuSigma(self, alt, data=None):  # self is true model
+        lrs = self.likeRatios(alt, data)
+        mu = numpy.mean(lrs)
+        sig = numpy.std(lrs)
+        return mu, sig
 
     def lrN(self, alt, N, M):  # add N of them, return M
-        self.sim(nReps=N * M)
-        lrNM = self.lr(alt)
+        self.sim(mReps=N * M)
+        lrNM = self.likeRatios(alt)
         L = numpy.reshape(lrNM, (M, N))
         return L.sum(axis=0)
 
     def aic(self, alt):  # self is true model
-        data = self.nRepsRestrictedData()
+        data = self.mRepsRestrictedData()
         return 2 * (self.logf(data) - alt.logf(data))
 
     def a_mn_sd(self, alt):  # self is true model
@@ -234,7 +250,7 @@ class FlatToy(object):
         return (mn, sd)
 
     def aicN(self, alt, N, M):  # add N of them, return M
-        self.sim(nReps=N * M)
+        self.sim(mReps=N * M)
         aicNM = self.aic(alt)
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
@@ -243,7 +259,7 @@ class FlatToy(object):
         return (self.logf(data_h).mean())
 
     def KL(self, other):
-        data = self.nRepsRestrictedData()
+        data = self.mRepsRestrictedData()
         return self.Ehlogf(data) - other.Ehlogf(data)
 
     # def pdfplot(self):
