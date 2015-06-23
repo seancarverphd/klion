@@ -52,7 +52,7 @@ class SaveSeedRNG(random.Random):
         self.reset()
 
     def reset(self):  # Resets RNG to same seed as used before
-        self.seed(self.usedSeed)
+        self.seed(self.usedSeed % 4294967295)
 
 
 class MultipleRNGs(object):

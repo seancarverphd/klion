@@ -24,7 +24,7 @@ class NumSaveSeedRNG(numpy.random.RandomState):
         self.reset()
 
     def reset(self):
-        self.seed(self.usedSeed)
+        self.seed(self.usedSeed % 4294967295)
 
 
 class Simple(object):
