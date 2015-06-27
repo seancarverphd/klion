@@ -79,7 +79,7 @@ class TestFlatStepProtocol(TestCase):
     def test_same_construction(self):
         # This test used to fail because patch was setting VOLTAGE
         # according to channel.VOLTAGE not self.VOLTAGE
-        self.assertEquals(self.FS.nReps, 10)
+        self.assertEquals(self.FS.mReps, 10)
         self.assertEqual(kli.patch.FS.like(), self.FS.like())
 
     # def test_old_patch_like(self):
