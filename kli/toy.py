@@ -110,7 +110,9 @@ class FlatToy(object):
     def changeModel(self, parent):
         self.setUpExperiment(self, parent)
 
-    def sim(self, mReps=1, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+    def sim(self, mReps=None, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+        if mReps is None:
+            mReps = len(self.data)
         if clear:
             self.restart()  # Resets random number generator
         elif self.changedSinceLastSim:
@@ -191,8 +193,7 @@ class FlatToy(object):
         return sum(L)
 
     def pdf(self, datum):
-        assert False  # Needs Fixing
-        # return numpy.exp(self.likelihoods([datum])[0])
+        return numpy.exp(self.likeOnce(datum))
 
     def mle(self):
         assert self.toy2  # Not yet implemented for toy 3
@@ -203,9 +204,6 @@ class FlatToy(object):
         #  M = numpy.matrix(self.likelihoods(data))
         #  print M.mean()
         #  return M
-
-    def mRepsRestrictedData(self):
-        return self.data[0:self.mReps]
 
     def likeRatios(self, alt, trueModel=None):  # likelihood ratio; self is true model
         if trueModel is None:
@@ -236,7 +234,6 @@ class FlatToy(object):
     def aic(self, alt, trueModel=None):  # self is true model
         if trueModel is None:
             trueModel = self
-        data = self.mRepsRestrictedData()
         return 2 * (self.logf(trueModel) - alt.logf(trueModel))
 
     def a_mn_sd(self, alt, trueModel=None):  # self is true model
@@ -251,14 +248,13 @@ class FlatToy(object):
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
 
-    def Ehlogf(self, data_h=None, trueModel=None):
+    def Ehlogf(self, trueModel=None):
         return (self.logf(trueModel).mean())
 
     def KL(self, other, trueModel=None):
         if trueModel is None:
             trueModel = self
-        data = self.mRepsRestrictedData()
-        return self.Ehlogf(data) - other.Ehlogf(data)
+        return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
 
     # def pdfplot(self):
         #    assert(len(self.data)>99)
