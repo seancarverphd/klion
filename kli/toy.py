@@ -53,7 +53,6 @@ class FlatToy(object):
         self.R = self.initRNG(seed)  # Afterwards, must call restart()
         self.setUpExperiment(parent)
         self.defineRepetitions()
-        self.restart()
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
@@ -70,35 +69,25 @@ class FlatToy(object):
         self.R.reset()
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
-        self.likes = []  # Likelihood (single number) of each datum. (Each datum may be a tuple) 
-        self.likeInfo = []
-        self.changedSinceLastSim = False
 
     def setUpExperiment(self, parent):
         self.experiment = parent.getExperiment()
         self.toy2, self.q, self.q0, self.q1 = self.experiment
-        self.changedSinceLastSim = True
+        self.restart()
 
-    def changeModel(self, parent):
-        self.setUpExperiment(self, parent)
-
-    def sim(self, mReps=None, clear=False):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+    def sim(self, mReps=None):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if mReps is None:
             mReps = len(self.data)
-        if clear:
-            self.restart()  # Resets random number generator
-        elif self.changedSinceLastSim:
-            self.restart()
         numNewReps = mReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
                 self.hiddenStates.append(self.hiddenStateTrajectory)
         self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
-        self.changedSinceLastSim = False
 
     def resim(self, mReps=1):
-        self.sim(mReps, clear=True)
+        self.restart()
+        self.sim(mReps)
 
     def debug(self, flag=None):
         if flag == True:
