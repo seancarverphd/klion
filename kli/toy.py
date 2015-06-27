@@ -5,7 +5,7 @@ import parameter
 import matplotlib.pylab as plt
 import scipy.stats
 import ad
-
+import repository
 
 class Toy(object):
     def __init__(self, q):
@@ -143,21 +143,14 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods(self, passedData=None):
-        if passedData is None:  # Data not passed
-            data = self.data  # Use cached data
-            likes = self.likes # Append any new likes to cached self.likes
-            likeInfo = self.likeInfo
-            nFirst = len(likes)
-            nLast = self.mReps  # Restricts return to self.nReps
-        else:  # Data passed
-            data = passedData
-            likes = []
-            self.temporaryLikeInfo = []
-            likeInfo = self.temporaryLikeInfo
-            nFirst = 0
-            nLast = len(data)  # Go to end of data, don't restrict
-        for datum in data[nFirst:nLast]:
+    def likelihoods(self, trueModel=None):
+        if trueModel is None:  # Data not passed
+            trueModel = self
+        likes = repository.Repo.likes.getOrMake(self, trueModel)
+        # likeInfo?
+        nFirst = len(likes)
+        nLast = trueModel.mReps  # Restricts return to self.mReps
+        for datum in trueModel.data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
             #if self.debugFlag and self.recentLikeInfo is not None:
             #    likeInfo.append(self.recentLikeInfo)
@@ -189,23 +182,24 @@ class FlatToy(object):
         else:
             return True
 
-    def minuslike(self, data=None):
-        L = self.likelihoods(data)
+    def minuslike(self, trueModel=None):
+        L = self.likelihoods(trueModel)
         return -sum(L)
 
-    def like(self, data=None):
-        L = self.likelihoods(data)
+    def like(self, trueModel=None):
+        L = self.likelihoods(trueModel)
         return sum(L)
 
     def pdf(self, datum):
-        return numpy.exp(self.likelihoods([datum])[0])
+        assert False  # Needs Fixing
+        # return numpy.exp(self.likelihoods([datum])[0])
 
     def mle(self):
         assert self.toy2  # Not yet implemented for toy 3
         return 1. / numpy.mean(self.data[0:self.mReps])
 
-    def logf(self, data=None):
-        return numpy.matrix(self.likelihoods(data))
+    def logf(self, trueModel=None):
+        return numpy.matrix(self.likelihoods(trueModel))
         #  M = numpy.matrix(self.likelihoods(data))
         #  print M.mean()
         #  return M
@@ -213,52 +207,56 @@ class FlatToy(object):
     def mRepsRestrictedData(self):
         return self.data[0:self.mReps]
 
-    def likeRatios(self, alt, data=None):  # likelihood ratio; self is true model
-        if data is None:
-            data = self.mRepsRestrictedData()
-        return self.logf(data) - alt.logf(data)
+    def likeRatios(self, alt, trueModel=None):  # likelihood ratio; self is true model
+        if trueModel is None:
+            trueModel = self
+        return self.logf(trueModel) - alt.logf(trueModel)
 
-    def PFalsify(self, alt, data=None):
-        ratios = self.likeRatios(alt, data)
+    def PFalsify(self, alt, trueModel=None):
+        ratios = self.likeRatios(alt, trueModel)
         return float(numpy.sum(ratios > 0))/float(ratios.shape[1])
 
-    def PFalsifyNormal(self, alt, data=None):
-        mu, sig = self.base.likeRatioMuSigma(alt.base, data)
+    def PFalsifyNormal(self, alt, trueModel=None):
+        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         print "Using rReps ="+str(self.rReps)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
 
-    def likeRatioMuSigma(self, alt, data=None):  # self is true model
-        lrs = self.likeRatios(alt, data)
+    def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
+        lrs = self.likeRatios(alt, trueModel)
         mu = numpy.mean(lrs)
         sig = numpy.std(lrs)
         return mu, sig
 
-    def lrN(self, alt, N, M):  # add N of them, return M
+    def lrN(self, alt, N, M, trueModel=None):  # add N of them, return M
         self.sim(mReps=N * M)
-        lrNM = self.likeRatios(alt)
+        lrNM = self.likeRatios(alt, trueModel)
         L = numpy.reshape(lrNM, (M, N))
         return L.sum(axis=0)
 
-    def aic(self, alt):  # self is true model
+    def aic(self, alt, trueModel=None):  # self is true model
+        if trueModel is None:
+            trueModel = self
         data = self.mRepsRestrictedData()
-        return 2 * (self.logf(data) - alt.logf(data))
+        return 2 * (self.logf(trueModel) - alt.logf(trueModel))
 
-    def a_mn_sd(self, alt):  # self is true model
+    def a_mn_sd(self, alt, trueModel=None):  # self is true model
         aics = self.aic(alt)
         mn = numpy.mean(aics)
         sd = numpy.std(aics)
         return (mn, sd)
 
-    def aicN(self, alt, N, M):  # add N of them, return M
+    def aicN(self, alt, N, M, trueModel=None):  # add N of them, return M
         self.sim(mReps=N * M)
         aicNM = self.aic(alt)
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
 
-    def Ehlogf(self, data_h=None):
-        return (self.logf(data_h).mean())
+    def Ehlogf(self, data_h=None, trueModel=None):
+        return (self.logf(trueModel).mean())
 
-    def KL(self, other):
+    def KL(self, other, trueModel=None):
+        if trueModel is None:
+            trueModel = self
         data = self.mRepsRestrictedData()
         return self.Ehlogf(data) - other.Ehlogf(data)
 
