@@ -49,10 +49,11 @@ class SaveStateRNG(numpy.random.RandomState):
 
 class FlatToy(object):
     def __init__(self, parent, seed=None):
-        self.debug(False)  # To save hidden states, call sellf.debug(True)
-        self.R = self.initRNG(seed)  # Afterwards, must call restart()
+        self.debugFlag = False  # To save hidden states, call self.debug() before generating data
+        self.R = self.initRNG(seed)
         self.setUpExperiment(parent)
         self.defineRepetitions()
+        self.start()
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
@@ -61,19 +62,25 @@ class FlatToy(object):
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
 
-    def reseed(self, seed=None):
-        self.R.setSeed(seed)
-        self.restart()
-
-    def restart(self):  # Clears data and resets RNG with same seed
-        self.R.reset()
+    def start(self):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
-        self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though.
+        self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
+
+    def _restart(self):  # Clears data and resets RNG with same seed
+        self.R.reset()
+        self.start()
+
+    def _reseed(self, seed=None):
+        self.R.reseed(seed)
+        self._restart()
 
     def setUpExperiment(self, parent):
         self.experiment = parent.getExperiment()
         self.toy2, self.q, self.q0, self.q1 = self.experiment
-        self.restart()
+
+    def _changeModel(self, parent):
+        self.setUpExperiment(parent)
+        self._restart()
 
     def sim(self, mReps=None):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if mReps is None:
@@ -85,14 +92,18 @@ class FlatToy(object):
                 self.hiddenStates.append(self.hiddenStateTrajectory)
         self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
 
-    def resim(self, mReps=1):
-        self.restart()
+    def _resim(self, mReps=1):
+        self._restart()
         self.sim(mReps)
 
-    def debug(self, flag=None):
+    def debug(self):
+        assert(len(data) == 0)   # Can't have generated any data; use "self._debug(True)" to override
+        self.debugFlag = True
+
+    def _debug(self, flag=None):
         if flag == True:
             self.debugFlag = True
-            self.restart()  # Restart because you need to rerun to save hidden states
+            self._restart()  # Restart because you need to rerun to save hidden states
         elif flag == False:
             self.debugFlag = False
         return self.debugFlag
@@ -248,14 +259,14 @@ class likefun(object):
         for i, P in enumerate(self.paramTuple):
             P.assign(valueTuple[i])
         # Ex = self.parent.getExperiment()
-        self.F.changeModel(self.parent)
+        self.F._changeModel(self.parent)
         # self.F.changeModel(self.parent)
 
     def setLog(self, valueTuple):
         for i, P in enumerate(self.paramTuple):
             P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
         # Ex = self.parent.getExperiment()
-        self.F.changeModel(self.parent)
+        self.F._changeModel(self.parent)
         # self.F.changeModel(self.parent)
 
     def sim(self, XTrue, nReps=100, seed=None, log=True):
@@ -264,7 +275,7 @@ class likefun(object):
             self.setLog(XTrue)
         else:
             self.set(XTrue)
-        self.F.reseed(seed)
+        self.F._reseed(seed)
         self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
 
     def minuslike(self, x):
@@ -295,12 +306,12 @@ class likefun1(object):  # One dimensional likelihood grid
     def set(self, X):
         self.XParam.assign(X)
         # Ex = self.parent.getExperiment()
-        self.F.changeModel(self.parent)
+        self.F._changeModel(self.parent)
 
     def sim(self, XTrue=15, nReps=100, seed=None):
         self.XTrue = XTrue
         self.set(XTrue)
-        self.F.reseed(seed)
+        self.F._reseed(seed)
         self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
 
     def compute(self):

@@ -384,13 +384,13 @@ class likefun(object):
         for i,P in enumerate(self.paramTuple):
             P.assign(valueTuple[i])
         Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        self.F._changeModel(Ex)
         #self.F.changeModel(self.parent)
     def setLog(self,valueTuple):
         for i,P in enumerate(self.paramTuple):
             P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
         Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        self.F._changeModel(Ex)
         #self.F.changeModel(self.parent)
     def sim(self,XTrue,nReps=100,seed=None,log=True):
         self.XTrue = XTrue
@@ -398,7 +398,7 @@ class likefun(object):
             self.setLog(XTrue)
         else:
             self.set(XTrue)
-        self.F.reseed(seed)
+        self.F._reseed(seed)
         self.F.sim(nReps,clear=True)  # clear=True should now be redundant, but kept here for readability
     def minuslike(self,x):
         self.setLog(x)
@@ -424,11 +424,11 @@ class likefun1(object):   # One dimensional likelihood grid
     def set(self,X):
         self.XParam.assign(X)
         Ex = self.parent.getExperiment()
-        self.F.changeModel(Ex)
+        self.F._changeModel(Ex)
     def sim(self,XTrue=15,nReps=100,seed=None):
         self.XTrue = XTrue
         self.set(XTrue)
-        self.F.reseed(seed)
+        self.F._reseed(seed)
         self.F.sim(nReps,clear=True)   # clear=True should now be redundant, but kept here for readability
     def compute(self):
         self.llikes = []

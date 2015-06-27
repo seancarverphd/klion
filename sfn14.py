@@ -112,7 +112,7 @@ class kull(object):
             for j, q_0 in enumerate(self.qRange):
                 self.q0.assign(q_0)
                 self.q1.assign(q_1)
-                self.TrueMod.changeModel(self.trueParent)
+                self.TrueMod._changeModel(self.trueParent)
                 self.TrueMod.sim(self.nReps, clear=True)
                 EfTrue = self.TrueMod.Ehlogf()
                 mEfAlt = numpy.log(numpy.e * numpy.mean(self.TrueMod.taus))  # Simple because toy is simple

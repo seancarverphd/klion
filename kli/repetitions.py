@@ -20,17 +20,17 @@ class Repetitions(toy.FlatToy):
         # self.base = base # moved to __init__() to avoid errors in debug
         # No changedSinceLastSim, don't want to clear base
 
-    def reseed(self, seed=None):
-        self.base.reseed(seed)
+    def _reseed(self, seed=None):
+        self.base._reseed(seed)
 
-    def restart(self):
+    def _restart(self):
         self.data = []
         self.likes = []
-        self.base.restart()
+        self.base._restart()
 
     def sim(self, mReps=1, clear=False):
         if clear:
-            self.restart()
+            self._restart()
         # No changedSinceLastSim, don't want to clear base unless explicitly directed
         numOldReps = len(self.data)
         numNewReps = mReps - len(self.data)

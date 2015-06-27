@@ -12,8 +12,8 @@ class flatStepProtocol(toy.FlatToy):
     def initRNG(self, seed):
         return toy.MultipleRNGs(2,seed) # Two instances of random.Random with seed save added
 
-    def restart(self):  # Clears data and resets RNG with same seed
-        super(flatStepProtocol, self).restart()
+    def _restart(self):  # Clears data and resets RNG with same seed
+        super(flatStepProtocol, self)._restart()
         self.simDataGM = []  # conductance, simulated separately.
 
     def setUpExperiment(self, parent):
@@ -39,7 +39,7 @@ class flatStepProtocol(toy.FlatToy):
         self.changedSinceLastSim = True
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
 
-    def changeModel(self, parent, integrityCheck=True,
+    def _changeModel(self, parent, integrityCheck=True,
                     nodesChanged=True, QChanged=True):
         if integrityCheck:
             assert not parent.thePatch.hasNoise  # Later will implement NOISE
