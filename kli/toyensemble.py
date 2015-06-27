@@ -34,7 +34,7 @@ class ToyEnsemble(object):
 
 class FlatToyEnsemble(engine.flatStepProtocol):
     def initRNG(self, seed=None):
-        return toy.SaveSeedRNG(seed)
+        return toy.SaveStateRNG(seed)
 
     def setUpExperiment(self, parent):
         self.preferred_time = parent.preferred.time

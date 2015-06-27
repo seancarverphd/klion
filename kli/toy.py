@@ -34,45 +34,17 @@ class Toy(object):
         return (toy2, q, q0, q1)
 
 
-class SaveSeedRNG(random.Random):
+class SaveStateRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
-        super(SaveSeedRNG, self).__init__()
-        self.setSeedAndOffset(seed,0)
-        self.setSeed(seed)
+        super(SaveStateRNG, self).__init__(seed)
+        self.savedState = self.get_state()
 
-    def setSeedAndOffset(self, seed=None, offset=0):
-        self.seedOffset = offset
-        self.setSeed(seed)
-
-    def setSeed(self, seed=None):
-        if seed is None:
-            self.usedSeed = long(time.time() * 256) + self.seedOffset
-        else:
-            self.usedSeed = seed + self.seedOffset  # can be changed with self.reseed()
-        self.reset()
+    def reseed(self, seed=None):
+        self.seed(seed)
+        self.savedState = self.get_state()
 
     def reset(self):  # Resets RNG to same seed as used before
-        self.seed(self.usedSeed)
-
-
-class MultipleRNGs(object):
-    def __init__(self, numRNGs, seed=None, offset=1000000):
-        self.RNGs = []  # Not yet implemented, if numRNGs is a list make it RNGs, set seeds and offsets
-        for i in range(numRNGs):
-            self.RNGs.append(SaveSeedRNG())
-            self.RNGs[-1].setSeedAndOffset(seed,offset*i)
-
-    def setSeedAndOffset(self, seed=None, offset=1000000):
-        for i in range(len(self.RNGs)):
-            self.RNGs[i].setSeedAndOffset(seed,offset*i)
-
-    def setSeed(self, seed=None):
-        for i in range(len(self.RNGs)):
-            self.RNGs[i].setSeed(seed)
-
-    def reset(self):
-        for i in range(len(self.RNGs)):
-            self.RNGs[i].reset()
+        self.set_state(self.savedState)
 
 
 class FlatToy(object):
@@ -88,7 +60,7 @@ class FlatToy(object):
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
-        return SaveSeedRNG(seed)
+        return SaveStateRNG(seed)
 
     def reseed(self, seed=None):
         self.R.setSeed(seed)
@@ -140,9 +112,9 @@ class FlatToy(object):
         if RNG is None:
             RNG = self.initRNG(None)
         if self.toy2:
-            self.hiddenStateTrajectory = (RNG.expovariate(self.q),)  # Though not Markovian, we can save the hidden transition times
+            self.hiddenStateTrajectory = (RNG.exponential(1./self.q),)  # Though not Markovian, we can save the hidden transition times
         else:
-            self.hiddenStateTrajectory = (RNG.expovariate(self.q1), RNG.expovariate(self.q0))
+            self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
     def likelihoods(self, trueModel=None):
