@@ -24,7 +24,7 @@ class Toy(object):
     def __init__(self, q):
         self.q = q
         self.preferred = parameter.preferredUnits()
-        self.preferred.freq = 'kHz'
+        self.preferred.time = 'milliseconds'
 
     def flatten(self, seed=None):
         parent = self  # for readability
@@ -34,14 +34,14 @@ class Toy(object):
     def getExperiment(self):  # For subclassing replace this code
         if len(self.q) == 1:
             toy2 = True
-            q = parameter.mu(self.q[0], self.preferred.freq)
+            q = parameter.mu(self.q[0], '1./'+self.preferred.time)
             q0 = None
             q1 = None
         elif len(self.q) == 2:
             toy2 = False
             q = None
-            q0 = parameter.mu(self.q[0], self.preferred.freq)
-            q1 = parameter.mu(self.q[1], self.preferred.freq)
+            q0 = parameter.mu(self.q[0], '1/'+self.preferred.time)
+            q1 = parameter.mu(self.q[1], '1/'+self.preferred.time)
         else:
             assert (False)  # Length of q should be 1 or 2
         return (toy2, q, q0, q1)

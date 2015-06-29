@@ -596,7 +596,6 @@ class Expression(object):
 class preferredUnits(object):
     def __init__(self):
         self.time = None
-        self.freq = None
         self.voltage = None
         self.conductance = None
 
