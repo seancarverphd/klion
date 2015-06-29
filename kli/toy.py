@@ -9,14 +9,14 @@ import repository
 
 class SaveStateRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
-        super(SaveStateRNG, self).__init__(seed)
-        self.savedState = self.get_state()
+        super(SaveStateRNG, self).__init__(seed)  # if seed=None, sets state by clock
+        self.savedState = self.get_state()   # save initial state to use later
 
     def reseed(self, seed=None):
-        self.seed(seed)
-        self.savedState = self.get_state()
+        self.seed(seed)  # if seed=None, sets state by clock
+        self.savedState = self.get_state()   # save initial state to use later
 
-    def reset(self):  # Resets RNG to same seed as used before
+    def reset(self):  # Resets RNG to same state as used first initialized or last time reseed() called.
         self.set_state(self.savedState)
 
 
