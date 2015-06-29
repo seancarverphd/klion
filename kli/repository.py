@@ -10,11 +10,20 @@ class RepoField(object):
             self.F[(assumed, true)] = L
         return L
 
+    def trim(self, true, mReps):
+        for key in self.F:
+            if key[1] is true:
+                del self.F[key][mReps:]
+
 
 class Repository(object):
     def __init__(self):
         self.likes = RepoField()
         self.likeInfo = RepoField()
+
+    def trim(self, true, mReps):
+        self.likes.trim(true, mReps)
+        self.likeInfo.trim(true, mReps)
 
 class DataOnly(object):
     def __init__(self,data=None):

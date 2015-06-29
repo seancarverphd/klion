@@ -65,10 +65,12 @@ class FlatToy(object):
     def start(self):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
+        self.mReps = 0
 
     def _restart(self):  # Clears data and resets RNG with same seed
         self.R.reset()
         self.start()
+        self.trim()
 
     def _reseed(self, seed=None):
         self.R.reseed(seed)
@@ -92,9 +94,13 @@ class FlatToy(object):
                 self.hiddenStates.append(self.hiddenStateTrajectory)
         self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
 
-    def _resim(self, mReps=1):
-        self._restart()
+    def resim(self, mReps=0):
+        self.R.reset()
+        self.start()
         self.sim(mReps)
+
+    def trim(self, mReps=0):
+        repository.Repo.trim(self, mReps)
 
     def debug(self):
         assert(len(data) == 0)   # Can't have generated any data; use "self._debug(True)" to override
@@ -121,7 +127,6 @@ class FlatToy(object):
         if trueModel is None:  # Data not passed
             trueModel = self
         likes = repository.Repo.likes.getOrMake(self, trueModel)
-        # likeInfo?
         nFirst = len(likes)
         nLast = trueModel.mReps  # Restricts return to self.mReps
         for datum in trueModel.data[nFirst:nLast]:
