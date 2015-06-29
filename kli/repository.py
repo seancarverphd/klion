@@ -1,32 +1,22 @@
-class RepoField(object):
+class TableOfModels(object):
     def __init__(self):
-        self.F = {}
+        self.table = {}
 
-    def getOrMake(self, assumed, trueModel):
+    def getOrMakeEntry(self, model):
         try:
-            L = self.F[(assumed, trueModel)]
+            entry = self.table[model]
         except KeyError:
-            L = []
-            self.F[(assumed, trueModel)] = L
-        return L
+            entry = []
+            self.table[model] = entry
+        return entry
 
-    def trim(self, trueModel, mReps):
-        for key in self.F:
-            if key[1] is trueModel:
-                del self.F[key][mReps:]
+    def trim(self, mReps=0):
+        for model in self.table:
+            del self.table[model][mReps:]
 
-
-class Repository(object):
-    def __init__(self):
-        self.likes = RepoField()
-        self.likeInfo = RepoField()
-
-    def trim(self, true, mReps):
-        self.likes.trim(true, mReps)
-        self.likeInfo.trim(true, mReps)
 
 class DataOnly(object):
-    def __init__(self,data=None):
+    def __init__(self, data=None):
         if data is None:
             self.data = []
         else:
@@ -51,6 +41,3 @@ class DataOnly(object):
 
     def __repr__(self):
         return repr(self.data)
-
-if 'Repo' not in globals():
-    Repo = Repository()

@@ -53,7 +53,8 @@ class FlatToy(object):
         self.R = self.initRNG(seed)
         self.setUpExperiment(parent)
         self.defineRepetitions()
-        self.start()
+        self.startData()
+        self.startLikes()
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
@@ -62,15 +63,20 @@ class FlatToy(object):
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
 
-    def start(self):
+    def startData(self):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
         self.mReps = 0
 
+    def startLikes(self):
+        self.likes = repository.TableOfModels()
+        self.likeInfo = repository.TableOfModels()
+
     def _restart(self):  # Clears data and resets RNG with same seed
         self.R.reset()
-        self.start()
-        self.trim()
+        self.startData()
+        self.startLikes()
+        print 'WARNING: Method only intended for debugging.  Not Fully supported.'
 
     def _reseed(self, seed=None):
         self.R.reseed(seed)
@@ -96,11 +102,12 @@ class FlatToy(object):
 
     def resim(self, mReps=0):
         self.R.reset()
-        self.start()
+        self.startData()
         self.sim(mReps)
 
     def trim(self, mReps=0):
-        repository.Repo.trim(self, mReps)
+        self.likes.trim(mReps)
+        self.likeInfo.trim(mReps)
 
     def debug(self):
         assert(len(data) == 0)   # Can't have generated any data; use "self._debug(True)" to override
@@ -124,17 +131,15 @@ class FlatToy(object):
         return sum(self.hiddenStateTrajectory)
 
     def likelihoods(self, trueModel=None):
-        print 'Num 4a:', repository.Repo.likes.F
         if trueModel is None:  # Data not passed
             trueModel = self
-        likes = repository.Repo.likes.getOrMake(self, trueModel)
+        likes = trueModel.likes.getOrMakeEntry(self)
         nFirst = len(likes)
         nLast = trueModel.mReps  # Restricts return to self.mReps
         for datum in trueModel.data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
             # if self.debugFlag and self.recentLikeInfo is not None:
             #    likeInfo.append(self.recentLikeInfo)
-        print 'Num 4b:', repository.Repo.likes.F
         return likes[0:nLast]  # Restrict what you return to stopping point
 
     def likeOnce(self, datum):  # Overload when subclassing

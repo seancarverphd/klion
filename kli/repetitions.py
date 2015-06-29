@@ -1,7 +1,6 @@
 __author__ = 'sean'
 import numpy
 import toy
-import repository
 
 class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
@@ -36,11 +35,7 @@ class Repetitions(toy.FlatToy):
         if trueModel is None:
             trueModel = self
         mRepsBaseOriginal = self.base.mReps
-        print 'Num 2:', repository.Repo.likes.F
         self.base.sim(reps)
-        print 'Num 3:', repository.Repo.likes.F
-        self.base.likelihoods(trueModel.base)
-        print 'Num 5:', repository.Repo.likes.F
         self.base.likelihoods(trueModel.base)
         self.base.sim(mRepsBaseOriginal)
 
@@ -56,9 +51,8 @@ class Repetitions(toy.FlatToy):
     def likelihoods(self, trueModel=None):
         if trueModel is None:
             trueModel = self
-        likes = repository.Repo.likes.getOrMake(self, trueModel)
-        baseLikes = repository.Repo.likes.getOrMake(self.base, trueModel.base)
-        print 'Num 1:', repository.Repo.likes.F
+        likes = trueModel.likes.getOrMakeEntry(self)
+        baseLikes = trueModel.base.likes.getOrMakeEntry(self.base)
         self.extendBaseLikes(self.rReps*self.mReps, trueModel)
         nFirst = len(likes)
         nLast = trueModel.mReps
@@ -73,8 +67,7 @@ class Repetitions(toy.FlatToy):
     def simulateOnce(self, RNG=None):
         return [self.base.simulateOnce(RNG) for d in range(self.rReps)]
 
-    # Bad because recomputes likes, need to check base likes
-
+    # Bad because recomputes likes rather than using base.likes
     def likeOnce(self, datum):
         assert self.datumWellFormed(datum)
         logLike = 0
