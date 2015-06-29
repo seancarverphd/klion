@@ -124,6 +124,7 @@ class FlatToy(object):
         return sum(self.hiddenStateTrajectory)
 
     def likelihoods(self, trueModel=None):
+        print 'Num 4a:', repository.Repo.likes.F
         if trueModel is None:  # Data not passed
             trueModel = self
         likes = repository.Repo.likes.getOrMake(self, trueModel)
@@ -131,8 +132,9 @@ class FlatToy(object):
         nLast = trueModel.mReps  # Restricts return to self.mReps
         for datum in trueModel.data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
-            #if self.debugFlag and self.recentLikeInfo is not None:
+            # if self.debugFlag and self.recentLikeInfo is not None:
             #    likeInfo.append(self.recentLikeInfo)
+        print 'Num 4b:', repository.Repo.likes.F
         return likes[0:nLast]  # Restrict what you return to stopping point
 
     def likeOnce(self, datum):  # Overload when subclassing

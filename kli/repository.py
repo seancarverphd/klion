@@ -2,17 +2,17 @@ class RepoField(object):
     def __init__(self):
         self.F = {}
 
-    def getOrMake(self, assumed, true):
+    def getOrMake(self, assumed, trueModel):
         try:
-            L = self.F[(assumed, true)]
+            L = self.F[(assumed, trueModel)]
         except KeyError:
             L = []
-            self.F[(assumed, true)] = L
+            self.F[(assumed, trueModel)] = L
         return L
 
-    def trim(self, true, mReps):
+    def trim(self, trueModel, mReps):
         for key in self.F:
-            if key[1] is true:
+            if key[1] is trueModel:
                 del self.F[key][mReps:]
 
 
@@ -42,7 +42,7 @@ class DataOnly(object):
         else:
             self.mReps = mReps
 
-    def append(self,new):
+    def append(self, new):
         self.data.append(new)
         self.mReps = len(self.data)
 
@@ -52,5 +52,5 @@ class DataOnly(object):
     def __repr__(self):
         return repr(self.data)
 
-
-Repo = Repository()
+if 'Repo' not in globals():
+    Repo = Repository()

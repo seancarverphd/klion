@@ -1,7 +1,7 @@
 __author__ = 'sean'
 import numpy
 import toy
-
+import repository
 
 class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
@@ -27,19 +27,45 @@ class Repetitions(toy.FlatToy):
         self.likes = []
         self.base._restart()
 
-    def extendBase(self, reps):
+    def extendBaseData(self, reps):
         mRepsBaseOriginal = self.base.mReps
         self.base.sim(reps)
+        self.base.sim(mRepsBaseOriginal)
+
+    def extendBaseLikes(self, reps, trueModel=None):
+        if trueModel is None:
+            trueModel = self
+        mRepsBaseOriginal = self.base.mReps
+        print 'Num 2:', repository.Repo.likes.F
+        self.base.sim(reps)
+        print 'Num 3:', repository.Repo.likes.F
+        self.base.likelihoods(trueModel.base)
+        print 'Num 5:', repository.Repo.likes.F
+        self.base.likelihoods(trueModel.base)
         self.base.sim(mRepsBaseOriginal)
 
     def sim(self, mReps=None):
         if mReps is None:
             mReps = len(self.data)
-        self.extendBase(self.rReps*mReps)
+        self.extendBaseData(self.rReps*mReps)
         for r in range(len(self.data),mReps):
             datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
             self.data.append(datum)
         self.mReps = mReps
+
+    def likelihoods(self, trueModel=None):
+        if trueModel is None:
+            trueModel = self
+        likes = repository.Repo.likes.getOrMake(self, trueModel)
+        baseLikes = repository.Repo.likes.getOrMake(self.base, trueModel.base)
+        print 'Num 1:', repository.Repo.likes.F
+        self.extendBaseLikes(self.rReps*self.mReps, trueModel)
+        nFirst = len(likes)
+        nLast = trueModel.mReps
+        for n in range(nFirst, nLast):
+            likeum = [baseLikes[n*self.rReps + d] for d in range(self.rReps)]
+            likes.append(sum(likeum))
+        return likes[0:nLast]
 
     def _debug(self, flag=None):
         return self.base._debug(flag)
