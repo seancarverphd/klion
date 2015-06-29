@@ -243,7 +243,7 @@ class PNplot(object):
         self.TrueMod = self.trueParent.flatten()
         self.AltMod = self.altParent.flatten()
         self.TrueMod.sim(mReps=self.M)
-        (self.mn, self.sd) = self.TrueMod.a_mn_sd(self.AltMod)
+        (self.mn, self.sd) = self.TrueMod.aicMuSigma(self.AltMod)
         self.nRange = range(1, self.rangePlot)
         self.PNtheo = []
         for n in self.nRange:

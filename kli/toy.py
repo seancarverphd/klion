@@ -7,6 +7,19 @@ import scipy.stats
 import ad
 import repository
 
+class SaveStateRNG(numpy.random.RandomState):
+    def __init__(self, seed=None):
+        super(SaveStateRNG, self).__init__(seed)
+        self.savedState = self.get_state()
+
+    def reseed(self, seed=None):
+        self.seed(seed)
+        self.savedState = self.get_state()
+
+    def reset(self):  # Resets RNG to same seed as used before
+        self.set_state(self.savedState)
+
+
 class Toy(object):
     def __init__(self, q):
         self.q = q
@@ -32,19 +45,6 @@ class Toy(object):
         else:
             assert (False)  # Length of q should be 1 or 2
         return (toy2, q, q0, q1)
-
-
-class SaveStateRNG(numpy.random.RandomState):
-    def __init__(self, seed=None):
-        super(SaveStateRNG, self).__init__(seed)
-        self.savedState = self.get_state()
-
-    def reseed(self, seed=None):
-        self.seed(seed)
-        self.savedState = self.get_state()
-
-    def reset(self):  # Resets RNG to same seed as used before
-        self.set_state(self.savedState)
 
 
 class FlatToy(object):
@@ -179,15 +179,12 @@ class FlatToy(object):
     def pdf(self, datum):
         return numpy.exp(self.likeOnce(datum))
 
-    def mle(self):
-        assert self.toy2  # Not yet implemented for toy 3
-        return 1. / numpy.mean(self.data[0:self.mReps])
+    # def mle(self):
+    #     assert self.toy2  # Not yet implemented for toy 3
+    #     return 1. / numpy.mean(self.data[0:self.mReps])
 
     def logf(self, trueModel=None):
         return numpy.matrix(self.likelihoods(trueModel))
-        #  M = numpy.matrix(self.likelihoods(data))
-        #  print M.mean()
-        #  return M
 
     def likeRatios(self, alt, trueModel=None):  # likelihood ratio; self is true model
         if trueModel is None:
@@ -200,7 +197,6 @@ class FlatToy(object):
 
     def PFalsifyNormal(self, alt, trueModel=None):
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
-        print "Using rReps ="+str(self.rReps)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
@@ -209,6 +205,7 @@ class FlatToy(object):
         sig = numpy.std(lrs)
         return mu, sig
 
+    # Deprecated and will be removed in future.  Need to update sfn14.
     def lrN(self, alt, N, M, trueModel=None):  # add N of them, return M
         self.sim(mReps=N * M)
         lrNM = self.likeRatios(alt, trueModel)
@@ -220,12 +217,13 @@ class FlatToy(object):
             trueModel = self
         return 2 * (self.logf(trueModel) - alt.logf(trueModel))
 
-    def a_mn_sd(self, alt, trueModel=None):  # self is true model
-        aics = self.aic(alt)
-        mn = numpy.mean(aics)
-        sd = numpy.std(aics)
-        return (mn, sd)
+    def aicMuSigma(self, alt, trueModel=None):  # self is true model
+        aics = self.aic(alt, trueModel)
+        mu = numpy.mean(aics)
+        sigma = numpy.std(aics)
+        return (mu, sigma)
 
+    # Deprecated and will be removed in future.  Need to update sfn14,
     def aicN(self, alt, N, M, trueModel=None):  # add N of them, return M
         self.sim(mReps=N * M)
         aicNM = self.aic(alt)
@@ -239,26 +237,6 @@ class FlatToy(object):
         if trueModel is None:
             trueModel = self
         return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
-
-    # def pdfplot(self):
-        #    assert(len(self.data)>99)
-        #    m = min(self.data)
-        #    M = max(self.data)
-        #    X = numpy.arange(m,M,(M-m)/100)
-        #    Y = []
-        #    for x in X:
-        #        Y.append(self.pdf(x))
-        #    plt.plot(X,Y)
-        #    plt.hist(self.data,50,normed=1)
-        #    plt.show()
-
-
-def toy3mlike4opt(q, data):
-    mll = 0
-    for datum in data:
-        mll -= ad.admath.log(q[1]) + ad.admath.log(q[0])
-        mll -= ad.admath.log((ad.admath.exp(-q[0] * datum) - ad.admath.exp(-q[1] * datum)) / (q[1] - q[0]))
-    return mll
 
 
 class likefun(object):
@@ -305,53 +283,6 @@ class likefun(object):
             self.set(x)
         return self.F.like()
 
-
-class likefun1(object):  # One dimensional likelihood grid
-    def __init__(self, parent, XParam, seed=None):
-        self.parent = parent
-        self.XParam = XParam
-        self.F = self.parent.flatten(seed=seed)
-
-    def setRange(self, XRange):
-        self.XRange = XRange
-
-    def set(self, X):
-        self.XParam.assign(X)
-        # Ex = self.parent.getExperiment()
-        self.F._changeModel(self.parent)
-
-    def sim(self, XTrue=15, nReps=100, seed=None):
-        self.XTrue = XTrue
-        self.set(XTrue)
-        self.F._reseed(seed)
-        self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
-
-    def compute(self):
-        self.llikes = []
-        for x in self.XRange:
-            self.set(x)
-            self.llikes.append(self.F.like())
-
-    def plot(self):
-        plt.plot(self.XRange, self.llikes)
-        plt.show()
-
-    def addVLines(self):
-        pass
-
-    def replot(self, XTrue=15, nReps=100, seed=None):
-        self.sim(XTrue=XTrue, nReps=nReps, seed=seed)
-        self.compute()
-        self.plot()
-
-
-class likefun2(object):  # Two dimensional likelihood grid
-    def __init__(self, parent, XParam, YParam):
-        self.parent = parent
-        self.XParam = XParam
-        self.YParam = YParam
-
-
 q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
 q1 = parameter.Parameter("q1", 0.25, "kHz", log=True)
 q = parameter.Parameter("q", 1. / 6., "kHz", log=True)
@@ -361,31 +292,3 @@ FT3 = T3.flatten(seed=3)
 FT2 = T2.flatten(seed=3)
 XRange = numpy.arange(0.1, 30.1, 1)
 YRange = numpy.arange(0.11, 30.11, 1)  # Different values so rate constants remain unequal
-
-# One dimensional likelihood plot with toy2 model
-#plt.figure()
-#LF2 = likefun1(T2,q)
-#LF2.setRange(XRange)
-#LF2.replot(XTrue=15.,seed=10,nReps=100)
-
-#One-dimensional likelihood plot with toy3 modle
-#plt.figure()
-#LF3 = likefun1(T3,q0)
-#LF3.setRange(XRange)
-#LF3.replot(XTrue=15,seed=11,nReps=1000)
-# LF = likefun(T3, [q0, q1])
-# LF.sim((1., 2.), nReps=1000, seed=0, log=True)
-
-#Histogram and PDFs
-#plt.figure()
-#FT3.sim(nReps=1000,clear=True)
-#FT3.pdfplot()
-#plt.figure()
-#FT2.sim(nReps=1000,clear=True)
-#FT2.pdfplot()
-#plt.figure()
-#q0.assign(2.)
-#q1.assign(2.)
-#FTE = T3.flatten(seed=4)
-#FTE.sim(nReps=1000,clear=True)
-#FTE.pdfplot()

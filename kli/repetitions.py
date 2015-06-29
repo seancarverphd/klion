@@ -34,10 +34,10 @@ class Repetitions(toy.FlatToy):
     def extendBaseLikes(self, reps, trueModel=None):
         if trueModel is None:
             trueModel = self
-        mRepsBaseOriginal = self.base.mReps
-        self.base.sim(reps)
+        mRepsBaseOriginal = trueModel.base.mReps
+        trueModel.base.sim(reps)
         self.base.likelihoods(trueModel.base)
-        self.base.sim(mRepsBaseOriginal)
+        trueModel.base.sim(mRepsBaseOriginal)
 
     def sim(self, mReps=None):
         if mReps is None:

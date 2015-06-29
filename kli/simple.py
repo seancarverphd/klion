@@ -6,35 +6,32 @@ import scipy.stats
 import parameter
 import repetitions
 
-class NumSaveSeedRNG(numpy.random.RandomState):
-    def __init__(self, seed=None):
-        super(NumSaveSeedRNG, self).__init__()
-        self.setSeedAndOffset(seed,0)
-        self.setSeed(seed)
-
-    def setSeedAndOffset(self, seed=None, offset=0):
-        self.seedOffset = offset
-        self.setSeed(seed)
-
-    def setSeed(self, seed=None):
-        if seed is None:
-            self.usedSeed = long(time.time() * 256) + self.seedOffset
-        else:
-            self.usedSeed = [seed, self.seedOffset]
-        self.reset()
-
-    def reset(self):
-        self.seed(self.usedSeed % 4294967295)
+# class NumSaveSeedRNG(numpy.random.RandomState):
+#     def __init__(self, seed=None):
+#         super(NumSaveSeedRNG, self).__init__()
+#         self.setSeedAndOffset(seed,0)
+#         self.setSeed(seed)
+#
+#     def setSeedAndOffset(self, seed=None, offset=0):
+#         self.seedOffset = offset
+#         self.setSeed(seed)
+#
+#     def setSeed(self, seed=None):
+#         if seed is None:
+#             self.usedSeed = long(time.time() * 256) + self.seedOffset
+#         else:
+#             self.usedSeed = [seed, self.seedOffset]
+#         self.reset()
+#
+#     def reset(self):
+#         self.seed(self.usedSeed % 4294967295)
 
 
 class Simple(object):
-    def __init__(self, n, p, lam=None):
+    def __init__(self, n, p):
         self.n = n
         self.p = p
-        assert lam is None # lam parameter not yet implemented
-        self.lam = lam
         self.preferred = parameter.preferredUnits()
-        self.preferred.freq = 'kHz'
 
     def flatten(self, seed=None):
         parent = self  # for readability
@@ -47,20 +44,14 @@ class Simple(object):
     def getExperiment(self):
         n = int(parameter.mu(self.n, 'dimensionless'))
         p = parameter.mu(self.p, 'dimensionless')
-        lam = parameter.mu(self.lam, self.preferred.freq)
-        return n, p, lam
+        return n, p
 
 
 class FlatSimple(toy.FlatToy):
-    def initRNG(self, seed=None):
-        return NumSaveSeedRNG(seed)
-
     def setUpExperiment(self, parent):
         self.experiment = parent.getExperiment()
-        self.n, self.p, self.lam = self.experiment
-        assert self.lam is None  # parameter lam not yet implemented
+        self.n, self.p = self.experiment
         self.B = scipy.stats.binom(self.n, self.p)
-        self.changedSinceLastSim = True
 
     def simulateOnce(self, RNG=None):
         if RNG is None:
@@ -76,14 +67,11 @@ class FlatSimple(toy.FlatToy):
     def datumIntegrity(self, datum):
         return self.datumWellFormed(datum) and (datum <= self.n) and (datum >= 0)
 
-    def mle(self):
-        pass
-
 
 class ExactSimple(object):
     def __init__(self, parent):
         self.experiment = parent.getExperiment()
-        self.n, self.p, self.lam = self.experiment
+        self.n, self.p = self.experiment
         self.B = scipy.stats.binom(self.n, self.p)
 
     def Elogf(self, true=None):
@@ -95,8 +83,8 @@ class ExactSimple(object):
     def KL(self, other):
         return self.Elogf() - other.Elogf(self)
 
-    def PFalsify(self,other):
-        testStatistic = [self.B.logpmf(i) - other.B.logpmf(i) for i in range(self.B.args[0]+1)]
+    def PFalsify(self, other):
+        testStatistic = [self.B.logpmf(i) - other.B.logpmf(i) for i in range(self.B.args[0] + 1)]
         prob = 0
         for i, t in enumerate(testStatistic):
             if t > 0:
