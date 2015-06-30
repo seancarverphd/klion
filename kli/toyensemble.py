@@ -32,7 +32,7 @@ class ToyEnsemble(object):
         return flat
 
 
-class FlatToyEnsemble(engine.flatStepProtocol):
+class FlatToyEnsemble(engine.FlatStepProtocol):
     def initRNG(self, seed=None):
         return toy.SaveStateRNG(seed)
 

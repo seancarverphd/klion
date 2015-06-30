@@ -34,7 +34,7 @@ class StepProtocol(object):
 
     def flatten(self, seed=None):
         parent = self  # for readablility of pass to engine command
-        FS = engine.flatStepProtocol(parent, seed)
+        FS = engine.FlatStepProtocol(parent, seed)
         return FS
 
 

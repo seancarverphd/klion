@@ -8,14 +8,8 @@ import pandas
 import toy
 from parameter import u
 
-class flatStepProtocol(toy.FlatToy):
-    def initRNG(self, seed):
-        return toy.MultipleRNGs(2,seed) # Two instances of random.Random with seed save added
 
-    def _restart(self):  # Clears data and resets RNG with same seed
-        super(flatStepProtocol, self)._restart()
-        self.simDataGM = []  # conductance, simulated separately.
-
+class FlatStepProtocol(toy.FlatToy):
     def setUpExperiment(self, parent):
         assert not parent.thePatch.hasNoise  # Later will implement NOISE
         self.preferredTime = parent.preferred.time  # preferred time unit
@@ -35,8 +29,7 @@ class flatStepProtocol(toy.FlatToy):
         self.A = tuple([parent.thePatch.makeA(v, self.dt,
                                             self.preferredVoltage,
                                             self.preferredTime) for v in self.voltages])
-        self.makeB()  # NO-NOISE only.
-        self.changedSinceLastSim = True
+        self.makeB()  # NO-NOISE only
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
 
     def _changeModel(self, parent, integrityCheck=True,
@@ -70,7 +63,7 @@ class flatStepProtocol(toy.FlatToy):
                                             self.preferredVoltage,
                                             self.preferredTime) for v in self.voltages])
             self.makeB()  # NO-NOISE only.
-        self.changedSinceLastSim = True
+        self._restart()
 
     def setUpInitializations(self, timeZeroInitialization, equilibrium):
         # Initializations occur when the voltage clamp is held for a long time without collecting
@@ -126,12 +119,12 @@ class flatStepProtocol(toy.FlatToy):
         nextInitNum = 0
         for i, ns in enumerate(self.nsamples):  # one nsample for each voltage step, equal number of samples in step
             if i == 0 or ns == None:  # if nsamples == None then indicates an initialization at equilibrium distrib
-                state = self.nextInit(RNG.RNGs[0], nextInitNum)  # Next: append state and level to simS and simL
+                state = self.nextInit(RNG, nextInitNum)  # Next: append state and level to simS and simL
                 self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # refs to appendTrajectory
                 nextInitNum += 1
                 continue
             for j in range(ns):  # Next i (could follow intializatation or another voltage step without init)
-                state = self.select(RNG.RNGs[0], self.A[i], state)
+                state = self.select(RNG, self.A[i], state)
                 self.appendTrajectory(state, self.hiddenStateTrajectory, levelsTrajectory)  # Pass ref to simS & simL so that appendTrajectory works
         return levelsTrajectory
 
@@ -153,7 +146,7 @@ class flatStepProtocol(toy.FlatToy):
 
     def select(self, RNG, mat, row=0):  # select from matrix[row,:]
         # select is also defined in patch.singleChannelPatch
-        p = RNG.random()
+        p = RNG.random_sample()
         rowsum = 0
         # cols should add to 1
         for col in range(mat.shape[1]):  # iterate over columns of mat

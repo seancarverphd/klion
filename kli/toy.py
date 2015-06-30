@@ -110,7 +110,7 @@ class FlatToy(object):
         self.likeInfo.trim(mReps)
 
     def debug(self):
-        assert(len(data) == 0)   # Can't have generated any data; use "self._debug(True)" to override
+        assert(len(self.data) == 0)   # Can't have generated any data; use "self._debug(True)" to override
         self.debugFlag = True
 
     def _debug(self, flag=None):
