@@ -196,8 +196,16 @@ class FlatToy(object):
         return float(numpy.sum(ratios > 0))/float(ratios.shape[1])
 
     def PFalsifyNormal(self, alt, trueModel=None):
+        if trueModel is None:
+            trueModel = self
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
+
+    def rInfinity(self, alt, trueModel=None, C=0.95):
+        if trueModel is None:
+            trueModel = self
+        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
         lrs = self.likeRatios(alt, trueModel)
