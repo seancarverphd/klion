@@ -113,7 +113,7 @@ class kull(object):
                 self.q0.assign(q_0)
                 self.q1.assign(q_1)
                 self.TrueMod._changeModel(self.trueParent)
-                self.TrueMod.sim(self.nReps, clear=True)
+                self.TrueMod.sim(self.nReps)
                 EfTrue = self.TrueMod.Ehlogf()
                 mEfAlt = numpy.log(numpy.e * numpy.mean(self.TrueMod.taus))  # Simple because toy is simple
                 self.KL[i, j] = EfTrue + mEfAlt
@@ -179,7 +179,7 @@ class aichist(object):
 
     def compute(self):
         self.AIC = numpy.zeros(self.nReps)
-        self.TrueMod.sim(self.nReps, clear=True)
+        self.TrueMod.sim(self.nReps)
         # fTrue = self.TrueMod.logf()
         #gAlt = self.AltMod.logf(self.TrueMod.taus[0:self.nReps])
         #self.AIC = 2.*(fTrue - gAlt)
