@@ -74,28 +74,40 @@ class ExactSimple(object):
         self.n, self.p = self.experiment
         self.B = scipy.stats.binom(self.n, self.p)
 
-    def Elogf(self, true=None):
-        if true is None:
+    def Elogf(self, trueModel=None):
+        if trueModel is None or trueModel is self:
             return -self.B.entropy()
         else:
-            return sum([self.B.logpmf(i)*true.B.pmf(i) for i in range(true.B.args[0]+1)])  # true.args+1 for range
+            n_true = trueModel.B.args[0]
+            return sum([self.B.logpmf(i)*trueModel.B.pmf(i)
+                        for i in range(n_true + 1)])  # range of binomial extends to n_true not just n_true - 1
 
-    def KL(self, other):
-        return self.Elogf() - other.Elogf(self)
+    def KL(self, other, true_model=None):
+        if true_model is None:
+            true_model = self
+        return self.Elogf(true_model) - other.Elogf(true_model)
 
-    def PFalsify(self, other):
-        testStatistic = [self.B.logpmf(i) - other.B.logpmf(i) for i in range(self.B.args[0] + 1)]
-        prob = 0
-        for i, t in enumerate(testStatistic):
-            if t > 0:
-                prob += self.B.pmf(i)
-        return prob
+    def PFalsify(self, other, true_model=None):
+        if true_model is None:
+            true_model = self
+        n_true = true_model.B.args[0]
+        test_statistic = [self.B.logpmf(i) - other.B.logpmf(i)
+                          for i in range(n_true + 1)]  # range of binomial extends to n_true not just n_true - 1
+        probabilities_of_correct_selection = [true_model.B.pmf(i) if test_statistic[i] > 0 else 0
+                                              for i in range(n_true + 1)]  # range of binomial extends to n_true
+        return sum(probabilities_of_correct_selection)
+        # prob = 0
+        # for i, t in enumerate(testStatistic):
+        #     if t > 0:
+        #         prob += self.B.pmf(i)
+        # return prob
 
 S20 = Simple(20, .5)
 ES20 = S20.exact()
 FS20 = S20.flatten()
 R20 = repetitions.Repetitions(FS20,9)
 S21 = Simple(21, .5)
+S19 = Simple(19, .5)
 ES21 = S21.exact()
 FS21 = S21.flatten()
 R21 = repetitions.Repetitions(FS21,9)
