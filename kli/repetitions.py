@@ -42,21 +42,13 @@ class Repetitions(toy.FlatToy):
     def extendBaseData(self, reps):
         self.push_mReps(reps)
         self.pop_mReps()
-        # mRepsBaseOriginal = self.base.mReps
-        # self.base.sim(reps)
-        # self.base.sim(mRepsBaseOriginal)
 
     def extendBaseLikes(self, trueModel=None, reps=None):
         if trueModel is None:
             trueModel = self
-        # if reps is None:
-        #     reps = trueModel.rReps * trueModel.mReps
-        # mRepsBaseOriginal = trueModel.base.mReps
-        # trueModel.base.sim(reps)
         trueModel.push_mReps(reps)
         self.base.likelihoods(trueModel.base)
         trueModel.pop_mReps()
-        # trueModel.base.sim(mRepsBaseOriginal)
 
     def sim(self, mReps=None):
         if mReps is None:
@@ -105,11 +97,8 @@ class Repetitions(toy.FlatToy):
         if trueModel is None:
             trueModel = self
         trueModel.push_mReps()
-        # mRepsBaseOriginal = trueModel.base.mReps
-        # trueModel.base.sim(trueModel.mReps * trueModel.rReps)
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         trueModel.pop_mReps()
-        # trueModel.base.sim(mRepsBaseOriginal)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
 
     def rInfinity(self, alt, trueModel=None, C=0.95):
@@ -120,7 +109,7 @@ class Repetitions(toy.FlatToy):
         trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
-    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95):
+    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95, reps=None):
         if trueModel is None:
             trueModel = self
         if rMinus is None:
@@ -129,8 +118,13 @@ class Repetitions(toy.FlatToy):
             newReps = max(1, int(rMinus))
             repeated_self = Repetitions(self.base, newReps)
             repeated_alt = Repetitions(alt.base, newReps)
-            repeated_true = Repetitions(trueModel.base, newReps)
-            repeated_true.sim()
+            if trueModel is self:
+                repeated_true = repeated_self
+            elif trueModel is alt:
+                repeated_true = repeated_alt
+            else:
+                repeated_true = Repetitions(trueModel.base, newReps)
+            repeated_true.sim(reps)
             PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
         cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
         return (scipy.stats.norm.ppf(C)*cv)**2
