@@ -1,6 +1,7 @@
 __author__ = 'sean'
 import numpy
 import toy
+import scipy
 
 class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
@@ -41,7 +42,7 @@ class Repetitions(toy.FlatToy):
 
     def sim(self, mReps=None):
         if mReps is None:
-            mReps = len(self.data)
+            mReps = int(len(self.base.data) / self.rReps)
         self.extendBaseData(self.rReps*mReps)
         for r in range(len(self.data),mReps):
             datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
@@ -53,9 +54,9 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         likes = trueModel.likes.getOrMakeEntry(self)
         baseLikes = trueModel.base.likes.getOrMakeEntry(self.base)
-        self.extendBaseLikes(self.rReps*self.mReps, trueModel)
+        self.extendBaseLikes(trueModel.rReps*trueModel.mReps, trueModel)
         nFirst = len(likes)
-        nLast = trueModel.mReps
+        nLast = trueModel.mReps  # bug: trueModel and self are mixed up but I don't know how.
         for n in range(nFirst, nLast):
             likeum = [baseLikes[n*self.rReps + d] for d in range(self.rReps)]
             likes.append(sum(likeum))
@@ -81,7 +82,28 @@ class Repetitions(toy.FlatToy):
             mustBeTrue = (mustBeTrue and self.base.datumWellFormed(d))
         return mustBeTrue
 
-    def mle(self):
+    def rInfinity(self, alt, trueModel=None, C=0.95):
+        if trueModel is None:
+            trueModel = self
+        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        return (scipy.stats.norm.ppf(C)*sig/mu)**2
+
+    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95):
+        if trueModel is None:
+            trueModel = self
+        if rMinus is None:
+            rMinus = self.rInfinity(alt, trueModel, C)
+        if PrMinus is None:
+            newReps = max(1, int(rMinus))
+            repeated_self = Repetitions(self.base, newReps)
+            repeated_alt = Repetitions(alt.base, newReps)
+            repeated_true = Repetitions(trueModel.base, newReps)
+            repeated_true.sim()
+            PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
+        cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
+        return (scipy.stats.norm.ppf(C)*cv)**2
+
+    def rStar(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95):
         pass
 
     def lrN(self, alt, N, M):

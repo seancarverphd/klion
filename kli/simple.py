@@ -6,26 +6,6 @@ import scipy.stats
 import parameter
 import repetitions
 
-# class NumSaveSeedRNG(numpy.random.RandomState):
-#     def __init__(self, seed=None):
-#         super(NumSaveSeedRNG, self).__init__()
-#         self.setSeedAndOffset(seed,0)
-#         self.setSeed(seed)
-#
-#     def setSeedAndOffset(self, seed=None, offset=0):
-#         self.seedOffset = offset
-#         self.setSeed(seed)
-#
-#     def setSeed(self, seed=None):
-#         if seed is None:
-#             self.usedSeed = long(time.time() * 256) + self.seedOffset
-#         else:
-#             self.usedSeed = [seed, self.seedOffset]
-#         self.reset()
-#
-#     def reset(self):
-#         self.seed(self.usedSeed % 4294967295)
-
 
 class Simple(object):
     def __init__(self, n, p):

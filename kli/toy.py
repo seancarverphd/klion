@@ -136,6 +136,7 @@ class FlatToy(object):
         likes = trueModel.likes.getOrMakeEntry(self)
         nFirst = len(likes)
         nLast = trueModel.mReps  # Restricts return to self.mReps
+        assert nLast > 0  # No data in true model
         for datum in trueModel.data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
             # if self.debugFlag and self.recentLikeInfo is not None:
@@ -200,12 +201,6 @@ class FlatToy(object):
             trueModel = self
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
-
-    def rInfinity(self, alt, trueModel=None, C=0.95):
-        if trueModel is None:
-            trueModel = self
-        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
-        return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
         lrs = self.likeRatios(alt, trueModel)
