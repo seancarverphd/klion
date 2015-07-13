@@ -29,9 +29,10 @@ class Repetitions(toy.FlatToy):
         self.base._restart()
 
     def push_mReps(self, reps=None):
+        if reps is None:
+            reps = self.mReps * self.rReps
         self.stack.append(self.base.mReps)
-        if reps is not None:
-            self.base.sim(reps)
+        self.base.sim(reps)
 
     def pop_mReps(self):
         assert len(self.stack) > 0
@@ -48,8 +49,8 @@ class Repetitions(toy.FlatToy):
     def extendBaseLikes(self, trueModel=None, reps=None):
         if trueModel is None:
             trueModel = self
-        if reps is None:
-            reps = trueModel.rReps * trueModel.mReps
+        # if reps is None:
+        #     reps = trueModel.rReps * trueModel.mReps
         # mRepsBaseOriginal = trueModel.base.mReps
         # trueModel.base.sim(reps)
         trueModel.push_mReps(reps)
@@ -103,7 +104,7 @@ class Repetitions(toy.FlatToy):
     def PFalsifyNormal(self, alt, trueModel=None):
         if trueModel is None:
             trueModel = self
-        trueModel.push_mReps(trueModel.mReps * trueModel.rReps)
+        trueModel.push_mReps()
         # mRepsBaseOriginal = trueModel.base.mReps
         # trueModel.base.sim(trueModel.mReps * trueModel.rReps)
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
@@ -114,7 +115,7 @@ class Repetitions(toy.FlatToy):
     def rInfinity(self, alt, trueModel=None, C=0.95):
         if trueModel is None:
             trueModel = self
-        trueModel.push_mReps(trueModel.mReps * trueModel.rReps)
+        trueModel.push_mReps()
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
