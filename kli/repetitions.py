@@ -7,6 +7,7 @@ class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
         self.base = base
         self.rReps= rReps
+        self.stack = []
         super(Repetitions, self).__init__(base)
 
     def defineRepetitions(self):
@@ -27,20 +28,34 @@ class Repetitions(toy.FlatToy):
         self.likes = []
         self.base._restart()
 
-    def extendBaseData(self, reps):
-        mRepsBaseOriginal = self.base.mReps
+    def push_mReps(self, reps=None):
+        self.stack.append(self.base.mReps)
+        if reps is not None:
+            self.base.sim(reps)
+
+    def pop_mReps(self):
+        assert len(self.stack) > 0
+        reps = self.stack.pop(-1)
         self.base.sim(reps)
-        self.base.sim(mRepsBaseOriginal)
+
+    def extendBaseData(self, reps):
+        self.push_mReps(reps)
+        self.pop_mReps()
+        # mRepsBaseOriginal = self.base.mReps
+        # self.base.sim(reps)
+        # self.base.sim(mRepsBaseOriginal)
 
     def extendBaseLikes(self, trueModel=None, reps=None):
         if trueModel is None:
             trueModel = self
         if reps is None:
             reps = trueModel.rReps * trueModel.mReps
-        mRepsBaseOriginal = trueModel.base.mReps
-        trueModel.base.sim(reps)
+        # mRepsBaseOriginal = trueModel.base.mReps
+        # trueModel.base.sim(reps)
+        trueModel.push_mReps(reps)
         self.base.likelihoods(trueModel.base)
-        trueModel.base.sim(mRepsBaseOriginal)
+        trueModel.pop_mReps()
+        # trueModel.base.sim(mRepsBaseOriginal)
 
     def sim(self, mReps=None):
         if mReps is None:
@@ -85,10 +100,23 @@ class Repetitions(toy.FlatToy):
             mustBeTrue = (mustBeTrue and self.base.datumWellFormed(d))
         return mustBeTrue
 
+    def PFalsifyNormal(self, alt, trueModel=None):
+        if trueModel is None:
+            trueModel = self
+        trueModel.push_mReps(trueModel.mReps * trueModel.rReps)
+        # mRepsBaseOriginal = trueModel.base.mReps
+        # trueModel.base.sim(trueModel.mReps * trueModel.rReps)
+        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        trueModel.pop_mReps()
+        # trueModel.base.sim(mRepsBaseOriginal)
+        return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
+
     def rInfinity(self, alt, trueModel=None, C=0.95):
         if trueModel is None:
             trueModel = self
+        trueModel.push_mReps(trueModel.mReps * trueModel.rReps)
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
     def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95):
