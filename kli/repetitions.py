@@ -32,9 +32,11 @@ class Repetitions(toy.FlatToy):
         self.base.sim(reps)
         self.base.sim(mRepsBaseOriginal)
 
-    def extendBaseLikes(self, reps, trueModel=None):
+    def extendBaseLikes(self, trueModel=None, reps=None):
         if trueModel is None:
             trueModel = self
+        if reps is None:
+            reps = trueModel.rReps * trueModel.mReps
         mRepsBaseOriginal = trueModel.base.mReps
         trueModel.base.sim(reps)
         self.base.likelihoods(trueModel.base)
@@ -52,13 +54,14 @@ class Repetitions(toy.FlatToy):
     def likelihoods(self, trueModel=None):
         if trueModel is None:
             trueModel = self
+        assert trueModel.rReps == self.rReps
         likes = trueModel.likes.getOrMakeEntry(self)
         baseLikes = trueModel.base.likes.getOrMakeEntry(self.base)
-        self.extendBaseLikes(trueModel.rReps*trueModel.mReps, trueModel)
+        self.extendBaseLikes(trueModel)
         nFirst = len(likes)
-        nLast = trueModel.mReps  # bug: trueModel and self are mixed up but I don't know how.
+        nLast = trueModel.mReps
         for n in range(nFirst, nLast):
-            likeum = [baseLikes[n*self.rReps + d] for d in range(self.rReps)]
+            likeum = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
             likes.append(sum(likeum))
         return likes[0:nLast]
 
