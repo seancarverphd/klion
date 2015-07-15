@@ -109,30 +109,36 @@ class Repetitions(toy.FlatToy):
         trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
-    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95, reps=None):
+    def repeated_models(self, alt, trueModel, rReps, mReps):
+        repeated_self = Repetitions(self.base, rReps)
+        repeated_alt = Repetitions(alt.base, rReps)
+        if trueModel is self:
+            repeated_true = repeated_self
+        elif trueModel is alt:
+            repeated_true = repeated_alt
+        else:
+            repeated_true = Repetitions(trueModel.base, rReps)
+        repeated_true.sim(mReps)  # if reps is None then use available data in trueModel.base
+        return repeated_self, repeated_alt, repeated_true
+
+    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95, mReps=None):
         if trueModel is None:
             trueModel = self
         if rMinus is None:
             rMinus = self.rInfinity(alt, trueModel, C)
+            rMinus = max(1, int(rMinus))  # Make a positive integer
         if PrMinus is None:
-            newReps = max(1, int(rMinus))
-            repeated_self = Repetitions(self.base, newReps)
-            repeated_alt = Repetitions(alt.base, newReps)
-            if trueModel is self:
-                repeated_true = repeated_self
-            elif trueModel is alt:
-                repeated_true = repeated_alt
-            else:
-                repeated_true = Repetitions(trueModel.base, newReps)
-            repeated_true.sim(reps)  # if reps is None then use available data
+            repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, rMinus, mReps)
             PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
         cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
         return (scipy.stats.norm.ppf(C)*cv)**2
 
-    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10):
+    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
-            rMinus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
-            print "I%teration: ", i, "| Value of R:", rMinus
+            rMinus = rPlus if i > 0 else rMinus
+            rPlus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
+            print "Iteration: ", i, "| Value of R:", rMinus
+        # if plot:
         return rMinus
 
     def lrN(self, alt, N, M):
