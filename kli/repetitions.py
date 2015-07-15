@@ -93,6 +93,18 @@ class Repetitions(toy.FlatToy):
             mustBeTrue = (mustBeTrue and self.base.datumWellFormed(d))
         return mustBeTrue
 
+    def PFalsify_function_of_rReps(self, alt, trueModel=None, rReps=None, mReps=1):
+        if trueModel is None:
+            trueModel = self
+        if rReps is None:
+            rReps = [trueModel.rReps]  # Can pass longer list of rReps: [1, 2, 3, 4, 5, 6, etc.]
+        probabilities = []
+        for reps in rReps:
+            repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, reps, mReps)
+            Pr = repeated_self.PFalsify(repeated_alt, repeated_true)
+            probabilities.append(Pr)
+        return probabilities
+
     def PFalsifyNormal(self, alt, trueModel=None):
         if trueModel is None:
             trueModel = self
@@ -109,7 +121,9 @@ class Repetitions(toy.FlatToy):
         trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
-    def repeated_models(self, alt, trueModel, rReps, mReps):
+    def repeated_models(self, alt, trueModel=None, rReps=1, mReps=1):
+        if trueModel is None:
+            trueModel = self
         repeated_self = Repetitions(self.base, rReps)
         repeated_alt = Repetitions(alt.base, rReps)
         if trueModel is self:
@@ -126,7 +140,7 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         if rMinus is None:
             rMinus = self.rInfinity(alt, trueModel, C)
-            rMinus = max(1, int(rMinus))  # Make a positive integer
+        rMinus = max(1, int(rMinus))  # Make a positive integer
         if PrMinus is None:
             repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, rMinus, mReps)
             PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
@@ -139,6 +153,8 @@ class Repetitions(toy.FlatToy):
             rPlus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
             print "Iteration: ", i, "| Value of R:", rMinus
         # if plot:
+            # reps_range =
+            # probabilities_as_reps_vary = 
         return rMinus
 
     def lrN(self, alt, N, M):
