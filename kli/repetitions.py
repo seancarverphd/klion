@@ -7,6 +7,7 @@ class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
         self.base = base
         self.rReps= rReps
+        self.bReps = None
         self.stack = []
         super(Repetitions, self).__init__(base)
 
@@ -59,7 +60,7 @@ class Repetitions(toy.FlatToy):
             self.data.append(datum)
         self.mReps = mReps
 
-    def likelihoods(self, trueModel=None):
+    def likelihoods_of_monte_carlo_sample(self, trueModel=None):
         if trueModel is None:
             trueModel = self
         assert trueModel.rReps == self.rReps

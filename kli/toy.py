@@ -59,6 +59,7 @@ class FlatToy(object):
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
+        self.bReps = None
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -130,7 +131,7 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods(self, trueModel=None):
+    def likelihoods_of_monte_carlo_sample(self, trueModel=None):
         if trueModel is None:  # Data not passed
             trueModel = self
         likes = trueModel.likes.getOrMakeEntry(self)
@@ -142,6 +143,15 @@ class FlatToy(object):
             # if self.debugFlag and self.recentLikeInfo is not None:
             #    likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
+
+    def likelihoods_of_bootstrap_sample(self, trueModel=None):
+        pass  # Stub for now, need to add this function.
+
+    def likelihoods(self, trueModel):
+        if self.bReps is None:
+            return self.likelihoods_of_monte_carlo_sample(trueModel)
+        else:
+            return self.likelihoods_of_bootstrap_sample(trueModel)
 
     def likeOnce(self, datum):  # Overload when subclassing
         #if self.debugFlag:
