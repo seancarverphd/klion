@@ -124,13 +124,16 @@ class Repetitions(toy.FlatToy):
                 repeated_true = repeated_alt
             else:
                 repeated_true = Repetitions(trueModel.base, newReps)
-            repeated_true.sim(reps)
+            repeated_true.sim(reps)  # if reps is None then use available data
             PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
         cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
         return (scipy.stats.norm.ppf(C)*cv)**2
 
-    def rStar(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95):
-        pass
+    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10):
+        for i in range(iter):
+            rMinus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
+            print "I%teration: ", i, "| Value of R:", rMinus
+        return rMinus
 
     def lrN(self, alt, N, M):
         print "Don't call lrN from Reps class"
