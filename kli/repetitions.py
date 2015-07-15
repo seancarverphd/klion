@@ -147,14 +147,16 @@ class Repetitions(toy.FlatToy):
         cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
         return (scipy.stats.norm.ppf(C)*cv)**2
 
+    def rMinus2Plus_plot(self, alt, trueModel, rMinus, rPlus, C):
+        pass
+
     def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
             rMinus = rPlus if i > 0 else rMinus
             rPlus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
             print "Iteration: ", i, "| Value of R:", rMinus
-        # if plot:
-            # reps_range =
-            # probabilities_as_reps_vary = 
+        if plot:
+            self.rMinus2Plus_plot(alt, trueModel, rMinus, rPlus, C)
         return rMinus
 
     def lrN(self, alt, N, M):
