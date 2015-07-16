@@ -24,9 +24,8 @@ class Repetitions(toy.FlatToy):
         self.likes = []
         self.base._restart()
 
-    def push_mReps(self, reps=None):
-        if reps is None:
-            reps = self.mReps * self.rReps
+    def set_base_mReps_to_mr(self):
+        reps = self.mReps * self.rReps
         self.stack.append(self.base.mReps)
         self.base.sim(reps)
 
@@ -35,39 +34,48 @@ class Repetitions(toy.FlatToy):
         reps = self.stack.pop(-1)
         self.base.sim(reps)
 
-    def extendBaseData(self, reps):
-        self.push_mReps(reps)
+    def extendBaseData(self):
+        self.set_base_mReps_to_mr()
         self.pop_mReps()
 
     def extendBaseLikes(self, trueModel=None, reps=None):
         if trueModel is None:
             trueModel = self
-        trueModel.push_mReps(reps)
-        self.base.likelihoods(trueModel.base)
+        trueModel.set_base_mReps_to_mr()
+        self.base.likelihoods_monte_carlo_sample(trueModel.base)
         trueModel.pop_mReps()
+        return trueModel.base.likes.getOrMakeEntry(self.base)
 
     def sim(self, mReps=None):
         if mReps is None:
             mReps = int(len(self.base.data) / self.rReps)
-        self.extendBaseData(self.rReps*mReps)
-        for r in range(len(self.data),mReps):
+        self.mReps = mReps
+        self.extendBaseData()
+        for r in range(len(self.data), mReps):
             datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
             self.data.append(datum)
-        self.mReps = mReps
 
-    def likelihoods_of_monte_carlo_sample(self, trueModel=None):
+    def likelihoods_construct_from_base(self, trueModel=None, bootstrap=False):
         if trueModel is None:
             trueModel = self
         assert trueModel.rReps == self.rReps
-        likes = trueModel.likes.getOrMakeEntry(self)
-        baseLikes = trueModel.base.likes.getOrMakeEntry(self.base)
-        self.extendBaseLikes(trueModel)
-        nFirst = len(likes)
-        nLast = trueModel.mReps
-        for n in range(nFirst, nLast):
-            likeum = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
-            likes.append(sum(likeum))
+        likes = []
+        baseLikes = self.extendBaseLikes(trueModel)
+        if bootstrap:
+            baseLikes = self.resample(baseLikes, self.bReps*trueModel.rReps)
+            nLast = self.bReps
+        else:
+            nLast = trueModel.mReps
+        for n in range(nLast):
+            like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
+            likes.append(sum(like))
         return likes[0:nLast]
+
+    def likelihoods_monte_carlo_sample(self, trueModel=None):
+        return self.likelihoods_construct_from_base(trueModel, bootstrap=False)
+
+    def likelihoods_bootstrap_sample(self, trueModel=None):
+        return self.likelihoods_construct_from_base(trueModel, bootstrap=True)
 
     def _debug(self, flag=None):
         return self.base._debug(flag)
@@ -104,7 +112,7 @@ class Repetitions(toy.FlatToy):
     def PFalsifyNormal(self, alt, trueModel=None):
         if trueModel is None:
             trueModel = self
-        trueModel.push_mReps()
+        trueModel.set_base_mReps_to_mr()
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         trueModel.pop_mReps()
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
@@ -112,7 +120,7 @@ class Repetitions(toy.FlatToy):
     def rInfinity(self, alt, trueModel=None, C=0.95):
         if trueModel is None:
             trueModel = self
-        trueModel.push_mReps()
+        trueModel.set_base_mReps_to_mr()
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
         trueModel.pop_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2

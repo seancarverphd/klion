@@ -148,8 +148,10 @@ class FlatToy(object):
             #    likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
 
-    def resample(self, sample):
-        return self.bootstrap_RNG.choice(sample, self.bReps).tolist()
+    def resample(self, sample, reps=None):
+        if reps is None:
+            reps = self.bReps
+        return self.bootstrap_RNG.choice(sample, reps).tolist()
 
     def likelihoods_bootstrap_sample(self, trueModel=None):
         likes = self.likelihoods_monte_carlo_sample(trueModel)
