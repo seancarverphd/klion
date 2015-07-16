@@ -24,24 +24,27 @@ class Repetitions(toy.FlatToy):
         self.likes = []
         self.base._restart()
 
-    def set_base_mReps_to_mr(self):
-        reps = self.mReps * self.rReps
+    def set_base_mReps_to_mr(self, m=None, r=None):
+        if m is None:
+            m = self.mReps
+        if r is None:
+            r = self.rReps
         self.stack.append(self.base.mReps)
-        self.base.sim(reps)
+        self.base.sim(m*r)
 
     def pop_mReps(self):
         assert len(self.stack) > 0
         reps = self.stack.pop(-1)
         self.base.sim(reps)
 
-    def extendBaseData(self):
-        self.set_base_mReps_to_mr()
+    def extendBaseData(self, m=None, r=None):
+        self.set_base_mReps_to_mr(m, r)
         self.pop_mReps()
 
-    def extendBaseLikes(self, trueModel=None, reps=None):
+    def extendBaseLikes(self, trueModel=None, m=None, r=None):
         if trueModel is None:
             trueModel = self
-        trueModel.set_base_mReps_to_mr()
+        trueModel.set_base_mReps_to_mr(m, r)
         self.base.likelihoods_monte_carlo_sample(trueModel.base)
         trueModel.pop_mReps()
         return trueModel.base.likes.getOrMakeEntry(self.base)
@@ -60,10 +63,10 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         assert trueModel.rReps == self.rReps
         likes = []
-        baseLikes = self.extendBaseLikes(trueModel)
+        baseLikes = self.extendBaseLikes(trueModel)  # returns trueModel.base.likes
         if bootstrap:
-            baseLikes = self.resample(baseLikes, self.bReps*trueModel.rReps)
-            nLast = self.bReps
+            baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
+            nLast = trueModel.bReps
         else:
             nLast = trueModel.mReps
         for n in range(nLast):
@@ -97,14 +100,23 @@ class Repetitions(toy.FlatToy):
             mustBeTrue = (mustBeTrue and self.base.datumWellFormed(d))
         return mustBeTrue
 
-    def PFalsify_function_of_rReps(self, alt, trueModel=None, rReps=None, mReps=1):
+    def PFalsify_function_of_rReps(self, alt, trueModel=None,
+                                   rRepsList=None, mReps=None, bReps=None,
+                                   bootstrap_seed=None):
         if trueModel is None:
             trueModel = self
-        if rReps is None:
-            rReps = [trueModel.rReps]  # Can pass longer list of rReps: [1, 2, 3, 4, 5, 6, etc.]
+        if rRepsList is None:
+            rRepsList = [trueModel.rReps]  # Can pass longer list of rReps: [1, 2, 3, 4, 5, 6, etc.]
+        if mReps is None:
+            mReps = trueModel.mReps
+        if bReps is None:
+            bReps = trueModel.bReps
+        self.extendBaseLikes(trueModel, mReps, max(rRepsList))
+        local_bootstrap_RNG = self.initRNG(bootstrap_seed)
         probabilities = []
-        for reps in rReps:
-            repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, reps, mReps)
+        for r in rRepsList:
+            repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, r, mReps)
+            repeated_true.bootstrap(bReps, RNG=local_bootstrap_RNG)
             Pr = repeated_self.PFalsify(repeated_alt, repeated_true)
             probabilities.append(Pr)
         return probabilities

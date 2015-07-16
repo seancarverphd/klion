@@ -61,9 +61,14 @@ class FlatToy(object):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
-    def bootstrap(self, bReps, seed=None):
+    def bootstrap(self, bReps, seed=None, RNG=None):
+        # Pass either seed (for new RNG) or RNG
         self.bReps = bReps
-        self.bootstrap_RNG = self.initRNG(seed)
+        if RNG is None:
+            self.bootstrap_RNG = self.initRNG(seed)
+        else:
+            self.bootstrap_RNG = RNG
+            assert seed is None
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -160,7 +165,7 @@ class FlatToy(object):
     def likelihoods(self, trueModel=None):
         if trueModel is None:
             trueModel = self
-        if self.bReps is None:
+        if trueModel.bReps is None:
             return self.likelihoods_monte_carlo_sample(trueModel)
         else:
             return self.likelihoods_bootstrap_sample(trueModel)
