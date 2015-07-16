@@ -53,13 +53,17 @@ class FlatToy(object):
         self.R = self.initRNG(seed)
         self.setUpExperiment(parent)
         self.defineRepetitions()
+        self.bootstrap(None)
         self.startData()
         self.startLikes()
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
-        self.bReps = None
+
+    def bootstrap(self, bReps, seed=None):
+        self.bReps = bReps
+        self.bootstrap_RNG = self.initRNG(seed)
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -131,7 +135,7 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods_of_monte_carlo_sample(self, trueModel=None):
+    def likelihoods_monte_carlo_sample(self, trueModel=None):
         if trueModel is None:  # Data not passed
             trueModel = self
         likes = trueModel.likes.getOrMakeEntry(self)
@@ -144,14 +148,20 @@ class FlatToy(object):
             #    likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
 
-    def likelihoods_of_bootstrap_sample(self, trueModel=None):
-        pass  # Stub for now, need to add this function.
+    def resample(self, sample):
+        return self.bootstrap_RNG.choice(sample, self.bReps).tolist()
 
-    def likelihoods(self, trueModel):
+    def likelihoods_bootstrap_sample(self, trueModel=None):
+        likes = self.likelihoods_monte_carlo_sample(trueModel)
+        return self.resample(likes)
+
+    def likelihoods(self, trueModel=None):
+        if trueModel is None:
+            trueModel = self
         if self.bReps is None:
-            return self.likelihoods_of_monte_carlo_sample(trueModel)
+            return self.likelihoods_monte_carlo_sample(trueModel)
         else:
-            return self.likelihoods_of_bootstrap_sample(trueModel)
+            return self.likelihoods_bootstrap_sample(trueModel)
 
     def likeOnce(self, datum):  # Overload when subclassing
         #if self.debugFlag:

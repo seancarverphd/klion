@@ -7,19 +7,14 @@ class Repetitions(toy.FlatToy):
     def __init__(self, base, rReps):
         self.base = base
         self.rReps= rReps
-        self.bReps = None
         self.stack = []
         super(Repetitions, self).__init__(base)
 
     def defineRepetitions(self):
         pass
 
-    def initRNG(self, seed=None):
-        pass
-
     def setUpExperiment(self, base):
         pass
-        # self.base = base # moved to __init__() to avoid errors in debug
 
     def _reseed(self, seed=None):
         self.base._reseed(seed)
