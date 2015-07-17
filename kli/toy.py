@@ -146,7 +146,9 @@ class FlatToy(object):
         likes = trueModel.likes.getOrMakeEntry(self)
         nFirst = len(likes)
         nLast = trueModel.mReps  # Restricts return to self.mReps
-        assert nLast > 0  # No data in true model
+        if nLast == 0:  # No data in true model
+            print "Warning: Must Have Data in True Model; No Likelihoods"
+            return None
         for datum in trueModel.data[nFirst:nLast]:
             likes.append(self.likeOnce(datum))
             # if self.debugFlag and self.recentLikeInfo is not None:
@@ -221,7 +223,11 @@ class FlatToy(object):
 
     def PFalsify(self, alt, trueModel=None):
         ratios = self.likeRatios(alt, trueModel)
-        return float(numpy.sum(ratios > 0))/float(ratios.shape[1])
+        number_of_ratios = ratios.shape[1]
+        if number_of_ratios == 0:
+            print "Warning: No Likelihoods"
+            return None
+        return float(numpy.sum(ratios > 0))/float(number_of_ratios)
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
         lrs = self.likeRatios(alt, trueModel)

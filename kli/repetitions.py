@@ -101,15 +101,15 @@ class Repetitions(toy.FlatToy):
         return mustBeTrue
 
     def PFalsify_function_of_rReps(self, alt, trueModel=None,
-                                   rRepsList=None, mReps=None, bReps=None,
+                                   rRepsList=True, mReps=True, bReps=True,
                                    bootstrap_seed=None):
         if trueModel is None:
             trueModel = self
-        if rRepsList is None:
-            rRepsList = [trueModel.rReps]  # Can pass longer list of rReps: [1, 2, 3, 4, 5, 6, etc.]
-        if mReps is None:
+        if rRepsList is True:  # use trueModel (singleton list, default)
+            rRepsList = [trueModel.rReps]  # Can pass longer list: e.g rRepsList=[1, 2, 3, 4, 5, 6]
+        if mReps is True:  # use trueModel (default)
             mReps = trueModel.mReps
-        if bReps is None:
+        if bReps is True:  # use trueModel (default)
             bReps = trueModel.bReps
         self.extendBaseLikes(trueModel, mReps, max(rRepsList))
         local_bootstrap_RNG = self.initRNG(bootstrap_seed)
