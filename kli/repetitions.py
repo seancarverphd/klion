@@ -32,21 +32,21 @@ class Repetitions(toy.FlatToy):
         self.stack.append(self.base.mReps)
         self.base.sim(m*r)
 
-    def pop_mReps(self):
+    def pop_base_mReps(self):
         assert len(self.stack) > 0
-        reps = self.stack.pop(-1)
-        self.base.sim(reps)
+        mReps = self.stack.pop(-1)
+        self.base.sim(mReps)
 
     def extendBaseData(self, m=None, r=None):
         self.set_base_mReps_to_mr(m, r)
-        self.pop_mReps()
+        self.pop_base_mReps()
 
     def extendBaseLikes(self, trueModel=None, m=None, r=None):
         if trueModel is None:
             trueModel = self
         trueModel.set_base_mReps_to_mr(m, r)
         self.base.likelihoods_monte_carlo_sample(trueModel.base)
-        trueModel.pop_mReps()
+        trueModel.pop_base_mReps()
         return trueModel.base.likes.getOrMakeEntry(self.base)
 
     def sim(self, mReps=None):
@@ -72,7 +72,9 @@ class Repetitions(toy.FlatToy):
         for n in range(nLast):
             like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
             likes.append(sum(like))
-        return likes[0:nLast]
+        if self.debugFlag:
+            print "likes = ", likes
+        return likes
 
     def likelihoods_monte_carlo_sample(self, trueModel=None):
         return self.likelihoods_construct_from_base(trueModel, bootstrap=False)
@@ -126,7 +128,7 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         trueModel.set_base_mReps_to_mr()
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
-        trueModel.pop_mReps()
+        trueModel.pop_base_mReps()
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
 
     def rInfinity(self, alt, trueModel=None, C=0.95):
@@ -134,7 +136,7 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         trueModel.set_base_mReps_to_mr()
         mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
-        trueModel.pop_mReps()
+        trueModel.pop_base_mReps()
         return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
     def repeated_models(self, alt, trueModel=None, rReps=1, mReps=1):

@@ -3,6 +3,7 @@ import random
 import time
 import parameter
 import matplotlib.pylab as plt
+import matplotlib
 import scipy.stats
 import ad
 import repository
@@ -221,12 +222,29 @@ class FlatToy(object):
             trueModel = self
         return self.logf(trueModel) - alt.logf(trueModel)
 
+    def likeRatioHistogram(self, alt, trueModel=None, bins=10):
+        likelihood_ratios = self.likeRatios(alt, trueModel)
+        plt.figure()
+        ax = plt.gca()
+        plt.hist(likelihood_ratios.T, bins=bins, normed=True, color='black')
+        (left, right, down, up) = plt.axis()
+        reject = matplotlib.patches.Rectangle((left, down), 0-left, up-down, color='red', alpha=.3)
+        accept = matplotlib.patches.Rectangle((0, down), right-0, up-down, color='green', alpha=.3)
+        ax.add_patch(reject)
+        ax.add_patch(accept)
+        plt.hist(likelihood_ratios.T, bins=bins, normed=True, color='black')
+        plt.axis([left, right, down, up])
+        plt.ylabel('Density of Likelihood Ratios')
+
     def PFalsify(self, alt, trueModel=None):
         ratios = self.likeRatios(alt, trueModel)
         number_of_ratios = ratios.shape[1]
         if number_of_ratios == 0:
             print "Warning: No Likelihoods"
             return None
+        if self.debugFlag:
+            print "number of ratios =", number_of_ratios
+            print "ratios =", ratios
         return float(numpy.sum(ratios > 0))/float(number_of_ratios)
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
