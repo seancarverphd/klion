@@ -73,15 +73,15 @@ class FlatToy(object):
     def str_hat(self, alt, trueModel):
         if trueModel is None or trueModel is self:
             trueModel = self
-            tru_name = "Same As H"
+            tru_name = " = H"
         elif trueModel is alt:
             trueModel = alt
-            tru_name = "Same as A"
+            tru_name = " = A"
         else:
-            tru_name = trueModel.str_name() + trueModel.str_reps()
+            tru_name = ": " + trueModel.str_name() + trueModel.str_reps()
         hyp_name = self.str_name() + self.str_reps()
         alt_name = alt.str_name() + alt.str_reps()
-        return 'H: '+hyp_name+'\nA: '+alt_name+'\nT: '+tru_name+trueModel.str_mb()
+        return 'H: '+hyp_name+' A: '+alt_name+'\nT'+tru_name+trueModel.str_mb()
 
     def str_mb(self):
         return ": m=%s, b=%s" % (str(self.mReps), str(self.bReps))
@@ -268,6 +268,7 @@ class FlatToy(object):
         ax.add_patch(accept)
         plt.hist(likelihood_ratios.T, bins=bins, normed=True, color='black')
         plt.axis([left, right, down, up])
+        plt.xlabel("Likelihood Ratio")
         plt.ylabel('Density of Likelihood Ratios')
         plt.title(self.str_hat(alt, trueModel))
 

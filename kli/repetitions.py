@@ -11,7 +11,7 @@ class Repetitions(toy.FlatToy):
         super(Repetitions, self).__init__(base, seed=None, name=name)
 
     def str_reps(self):
-        return '(%d reps of %s)' % (self.rReps, self.base.str_name())
+        return ' (%d reps of %s)' % (self.rReps, self.base.str_name())
 
     def __str__(self):
         first = super(Repetitions, self).__str__()
@@ -20,7 +20,7 @@ class Repetitions(toy.FlatToy):
             middle = '\n'
         else:
             middle = ' '
-        return first + middle +  last
+        return first + middle + last
 
     def defineRepetitions(self):
         pass
