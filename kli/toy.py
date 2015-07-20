@@ -49,7 +49,7 @@ class Toy(object):
 
 
 class FlatToy(object):
-    def __init__(self, parent, seed=None):
+    def __init__(self, parent, seed=None, name=None):
         self.debugFlag = False  # To save hidden states, call self.debug() before generating data
         self.R = self.initRNG(seed)
         self.setUpExperiment(parent)
@@ -57,6 +57,18 @@ class FlatToy(object):
         self.bootstrap(None)
         self.startData()
         self.startLikes()
+        self.rename(name)
+
+    def rename(self, name=None):
+        if name is None:
+            name = repr(self)
+        self.name = name
+
+    def __str__(self):
+        if self.name is None:
+            return repr(self)
+        else:
+            return self.name
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
