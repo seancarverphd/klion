@@ -13,9 +13,9 @@ class Simple(object):
         self.p = p
         self.preferred = parameter.preferredUnits()
 
-    def flatten(self, seed=None):
+    def flatten(self, seed=None, name=None):
         parent = self  # for readability
-        return FlatSimple(parent, seed)
+        return FlatSimple(parent, seed, name)
 
     def exact(self):
         parent = self  # for readability
@@ -84,10 +84,10 @@ class ExactSimple(object):
 
 S20 = Simple(20, .5)
 ES20 = S20.exact()
-FS20 = S20.flatten()
-R20 = repetitions.Repetitions(FS20,9)
+FS20 = S20.flatten(name='FS20')
+R20 = repetitions.Repetitions(FS20,9,name='R20')
 S21 = Simple(21, .5)
 S19 = Simple(19, .5)
 ES21 = S21.exact()
-FS21 = S21.flatten()
-R21 = repetitions.Repetitions(FS21,9)
+FS21 = S21.flatten(name='FS21')
+R21 = repetitions.Repetitions(FS21,9,name='R21')

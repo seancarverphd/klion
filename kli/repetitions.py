@@ -4,11 +4,23 @@ import toy
 import scipy
 
 class Repetitions(toy.FlatToy):
-    def __init__(self, base, rReps):
+    def __init__(self, base, rReps, name=None):
         self.base = base
         self.rReps= rReps
         self.stack = []
-        super(Repetitions, self).__init__(base)
+        super(Repetitions, self).__init__(base, seed=None, name=name)
+
+    def str_reps(self):
+        return '(%d reps of %s)' % (self.rReps, self.base.str_name())
+
+    def __str__(self):
+        first = super(Repetitions, self).__str__()
+        last = self.str_reps()
+        if len(first)+len(last) > 40:
+            middle = '\n'
+        else:
+            middle = ' '
+        return first + middle +  last
 
     def defineRepetitions(self):
         pass

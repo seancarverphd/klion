@@ -27,9 +27,9 @@ class Toy(object):
         self.preferred = parameter.preferredUnits()
         self.preferred.time = 'milliseconds'
 
-    def flatten(self, seed=None):
+    def flatten(self, seed=None, name=None):
         parent = self  # for readability
-        FT = FlatToy(parent, seed)
+        FT = FlatToy(parent, seed, name)
         return FT
 
     def getExperiment(self):  # For subclassing replace this code
@@ -64,11 +64,33 @@ class FlatToy(object):
             name = repr(self)
         self.name = name
 
-    def __str__(self):
+    def str_name(self):  # for overloading in repetitions
         if self.name is None:
             return repr(self)
         else:
             return self.name
+
+    def str_hat(self, alt, trueModel):
+        if trueModel is None or trueModel is self:
+            trueModel = self
+            tru_name = "Same As H"
+        elif trueModel is alt:
+            trueModel = alt
+            tru_name = "Same as A"
+        else:
+            tru_name = trueModel.str_name() + trueModel.str_reps()
+        hyp_name = self.str_name() + self.str_reps()
+        alt_name = alt.str_name() + alt.str_reps()
+        return 'H: '+hyp_name+'\nA: '+alt_name+'\nT: '+tru_name+trueModel.str_mb()
+
+    def str_mb(self):
+        return ": m=%s, b=%s" % (str(self.mReps), str(self.bReps))
+
+    def str_reps(self):
+        return ""
+
+    def __str__(self):
+        return self.str_name() + self.str_mb()
 
     def defineRepetitions(self):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
@@ -247,6 +269,7 @@ class FlatToy(object):
         plt.hist(likelihood_ratios.T, bins=bins, normed=True, color='black')
         plt.axis([left, right, down, up])
         plt.ylabel('Density of Likelihood Ratios')
+        plt.title(self.str_hat(alt, trueModel))
 
     def PFalsify(self, alt, trueModel=None):
         ratios = self.likeRatios(alt, trueModel)
