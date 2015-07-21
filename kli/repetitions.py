@@ -1,6 +1,7 @@
 __author__ = 'sean'
 import numpy
 import toy
+import matplotlib.pylab as plt
 import scipy
 
 class Repetitions(toy.FlatToy):
@@ -187,7 +188,16 @@ class Repetitions(toy.FlatToy):
         return (scipy.stats.norm.ppf(C)*cv)**2
 
     def rMinus2Plus_plot(self, alt, trueModel, rMinus, rPlus, C):
-        pass
+        if trueModel is None:
+            trueModel = self
+        r1 = max(2, int(rMinus))
+        r2 = max(2, int(rPlus))
+        rMin = min(r1-1,r2-1)
+        rMax = max(r1+1,r2+1)
+        rList = range(rMin,rMax)
+        PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rList, trueModel.mReps)
+        plt.figure()
+        plt.plot(rList,PFalsifyList)
 
     def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
