@@ -197,7 +197,7 @@ class FlatToy(object):
 
     def likelihoods_bootstrap_sample(self, trueModel=None):
         likes = self.likelihoods_monte_carlo_sample(trueModel)
-        return self.resample(likes)
+        return trueModel.resample(likes)
 
     def likelihoods(self, trueModel=None):
         if trueModel is None:
@@ -253,7 +253,7 @@ class FlatToy(object):
 
     def likeRatios(self, alt, trueModel=None):  # likelihood ratio; self is true model
         if trueModel is None:
-            trueModel = self
+            trueModel = self  # if true=None, want alt(hyp) not alt(alt), below
         return self.logf(trueModel) - alt.logf(trueModel)
 
     def likeRatioHistogram(self, alt, trueModel=None, bins=10):
