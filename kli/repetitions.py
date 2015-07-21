@@ -125,8 +125,7 @@ class Repetitions(toy.FlatToy):
         return mustBeTrue
 
     def PFalsify_function_of_rReps(self, alt, trueModel=None,
-                                   rRepsList=True, mReps=True, bReps=True,
-                                   bootstrap_seed=None):
+                                   rRepsList=True, mReps=True, bReps=True, seed=None):
         if trueModel is None:
             trueModel = self
         if rRepsList is True:  # use trueModel (singleton list, default)
@@ -136,7 +135,7 @@ class Repetitions(toy.FlatToy):
         if bReps is True:  # use trueModel (default)
             bReps = trueModel.bReps
         self.extendBaseLikes(trueModel, mReps, max(rRepsList))
-        local_bootstrap_RNG = self.initRNG(bootstrap_seed)
+        local_bootstrap_RNG = self.initRNG(seed)
         probabilities = []
         for r in rRepsList:
             repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, r, mReps)
