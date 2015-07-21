@@ -54,8 +54,8 @@ class FlatToy(object):
         self.R = self.initRNG(seed)
         self.setUpExperiment(parent)
         self.defineRepetitions()
-        self.bootstrap(None)
         self.startData()
+        self.bootstrap(None)
         self.startLikes()
         self.rename(name)
 
@@ -96,14 +96,18 @@ class FlatToy(object):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
-    def bootstrap(self, bReps, seed=None):
+    def bootstrap_choose(self, bReps, seed=None, RNG=None):
         # Pass either seed (for new RNG) or RNG
-        self.bReps = bReps
         if bReps is None:
             self.bootstrap_choice = []
-        else:
+            return None
+        if RNG is None:
             RNG = self.initRNG(seed)
-            self.bootstrap_choice = RNG.choice(range(self.mReps), bReps).tolist()
+        return RNG.choice(range(self.mReps), bReps).tolist()
+
+    def bootstrap(self, bReps, seed=None, RNG=None):
+        self.bReps = bReps
+        self.bootstrap_choice = self.bootstrap_choose(bReps, seed, RNG)
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)

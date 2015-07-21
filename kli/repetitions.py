@@ -25,6 +25,13 @@ class Repetitions(toy.FlatToy):
     def defineRepetitions(self):
         pass
 
+    def bootstrap(self, bReps, seed=None, RNG=None):
+        self.bReps = bReps
+        reps = bReps*self.rReps if bReps is not None else None
+        self.set_base_mReps_to_mr(self.mReps, self.rReps)
+        self.bootstrap_choice = self.base.bootstrap_choose(reps, seed, RNG)
+        self.pop_base_mReps()
+
     def setUpExperiment(self, base):
         pass
 
@@ -75,11 +82,14 @@ class Repetitions(toy.FlatToy):
             trueModel = self
         assert trueModel.rReps == self.rReps
         likes = []
-        baseLikes = self.extendBaseLikes(trueModel)  # returns trueModel.base.likes
+        baseLikesNoBootstrap = self.extendBaseLikes(trueModel)  # returns trueModel.base.likes
         if bootstrap:
-            baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
+            baseLikes = [baseLikesNoBootstrap[i] for i in trueModel.bootstrap_choice]
+                         # for i in trueModel.bootstrap_choose(trueModel.bReps*trueModel.rReps)]
+            # baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
             nLast = trueModel.bReps
         else:
+            baseLikes = baseLikesNoBootstrap
             nLast = trueModel.mReps
         for n in range(nLast):
             like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
