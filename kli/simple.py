@@ -8,7 +8,7 @@ import repetitions
 
 
 class Simple(object):
-    def __init__(self, n, p):
+    def __init__(self, n=1, p=.5):
         self.n = n
         self.p = p
         self.preferred = parameter.preferredUnits()
@@ -82,12 +82,18 @@ class ExactSimple(object):
         #         prob += self.B.pmf(i)
         # return prob
 
-S20 = Simple(20, .5)
+S20 = Simple(n=20, p=.5)
 ES20 = S20.exact()
 FS20 = S20.flatten(name='FS20')
 R20 = repetitions.Repetitions(FS20,9,name='R20')
-S21 = Simple(21, .5)
-S19 = Simple(19, .5)
+B9 = Simple(n=1, p=.9)
+B8 = Simple(n=1, p=.8)
+EB9 = B9.exact()
+FB9 = B9.flatten(name='Bern.9')
+EB8 = B8.exact()
+FB8 = B8.flatten(name='Bern.8')
+S21 = Simple(n=21, p=.5)
+S19 = Simple(n=19, p=.5)
 ES21 = S21.exact()
 FS21 = S21.flatten(name='FS21')
 R21 = repetitions.Repetitions(FS21,9,name='R21')
