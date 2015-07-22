@@ -2,6 +2,7 @@ __author__ = 'sean'
 import numpy
 import toy
 import matplotlib.pylab as plt
+import matplotlib
 import scipy
 
 class Repetitions(toy.FlatToy):
@@ -181,6 +182,7 @@ class Repetitions(toy.FlatToy):
     def PrCurve(self, rMinus, pMinus, rPlus=None):
         cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
         PrPlus = scipy.stats.norm.cdf(numpy.sqrt(rPlus)/cv) # = PrPlus
+        # print cv
         return PrPlus
 
     def inversePrCurve(self, rMinus, pMinus, PrPlus):
@@ -214,7 +216,7 @@ class Repetitions(toy.FlatToy):
             pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps)
         return self.inversePrCurve(rMinus, pMinus, C)
 
-    def rMinus2Plus_plot(self, alt, trueModel, rMinus, rPlus, C):
+    def rMinus2Plus_plot(self, alt, trueModel, rMinus, pMinus, rPlus, C):
         if trueModel is None:
             trueModel = self
         r1 = max(2, int(rMinus))
@@ -223,20 +225,30 @@ class Repetitions(toy.FlatToy):
         rMax = max(r1+1, r2+1)
         rList = range(rMin, rMax)
         PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rList, trueModel.mReps)
-        # rListFine = numpy.arange(rMin, rMax, .1)
-        # Pr = [self.PrCurve(rMinus, )
+        rListFine = numpy.arange(rMin, rMax, .1)
+        Probs = [self.PrCurve(rMinus, pMinus, r) for r in rListFine]
         plt.figure()
-        plt.plot(rList,PFalsifyList,'*')
-        # plt.plot(rListFine,pMinus)
+        ax = plt.gca()
+        plt.plot(rList,PFalsifyList,'*', markersize=10)
+        plt.plot(rListFine,Probs,'k:')
+        (left, right, down, up) = plt.axis()
+        plt.plot([rMinus,rMinus],[down,up],'r')
+        plt.plot([rPlus,rPlus],[down,up],'g')
+        reject = matplotlib.patches.Rectangle((left, down), right-left, 0.95-down, color='red', alpha=.3)
+        accept = matplotlib.patches.Rectangle((left, 0.95), right-left, up-0.95, color='green', alpha=.3)
+        ax.add_patch(reject)
+        ax.add_patch(accept)
+        plt.axis([left, right, up, down])
 
     def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
             rMinus = rPlus if i > 0 else rMinus
             pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, reps)
             rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, reps)
+            # print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
             print "Iteration: ", i, "| Value of R:", rMinus
         if plot:
-            self.rMinus2Plus_plot(alt, trueModel, rMinus, rPlus, C)
+            self.rMinus2Plus_plot(alt, trueModel, rMinus, pMinus, rPlus, C)
         return rMinus
 
     def lrN(self, alt, N, M):
