@@ -175,34 +175,65 @@ class Repetitions(toy.FlatToy):
         repeated_true.sim(mReps)  # if reps is None then use available data in trueModel.base
         return repeated_self, repeated_alt, repeated_true
 
-    def rPlus(self, alt, trueModel=None, rMinus=None, PrMinus=None, C=0.95, mReps=None):
+    def desired_likelihood_ratio_coeff_variation(self, rMinus, pMinus):
+        return numpy.sqrt(rMinus)/scipy.stats.norm.ppf(pMinus)
+
+    def PrCurve(self, rMinus, pMinus, rPlus=None):
+        cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
+        PrPlus = scipy.stats.norm.cdf(numpy.sqrt(rPlus)/cv) # = PrPlus
+        return PrPlus
+
+    def inversePrCurve(self, rMinus, pMinus, PrPlus):
+        cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
+        rPlus = (scipy.stats.norm.ppf(PrPlus)*cv)**2
+        return rPlus
+
+    def compute_initial_rMinus(self, alt, trueModel, C):
+        rMinus = self.rInfinity(alt, trueModel, C)
+        return max(1, int(rMinus))  # Make a positive integer
+
+    def pos_integer(self, x):
+        return max(1, int(x))
+
+    def compute_pMinus(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=None):
         if trueModel is None:
             trueModel = self
+        if mReps is None:
+            mReps = trueModel.mReps
         if rMinus is None:
-            rMinus = self.rInfinity(alt, trueModel, C)
-        rMinus = max(1, int(rMinus))  # Make a positive integer
-        if PrMinus is None:
-            repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel, rMinus, mReps)
-            PrMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
-        cv = numpy.sqrt(rMinus)/scipy.stats.norm.ppf(PrMinus)
-        return (scipy.stats.norm.ppf(C)*cv)**2
+            rMinus = self.compute_initial_rMinus(alt, trueModel, C)
+        repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel,
+                                                                          self.pos_integer(rMinus), mReps)
+        pMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
+        return pMinus
+
+    def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=None):
+        if rMinus is None:
+            rMinus = self.compute_initial_rMinus(alt, trueModel, C)
+        if pMinus is None:
+            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps)
+        return self.inversePrCurve(rMinus, pMinus, C)
 
     def rMinus2Plus_plot(self, alt, trueModel, rMinus, rPlus, C):
         if trueModel is None:
             trueModel = self
         r1 = max(2, int(rMinus))
         r2 = max(2, int(rPlus))
-        rMin = min(r1-1,r2-1)
-        rMax = max(r1+1,r2+1)
-        rList = range(rMin,rMax)
+        rMin = min(r1-1, r2-1)
+        rMax = max(r1+1, r2+1)
+        rList = range(rMin, rMax)
         PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rList, trueModel.mReps)
+        # rListFine = numpy.arange(rMin, rMax, .1)
+        # Pr = [self.PrCurve(rMinus, )
         plt.figure()
-        plt.plot(rList,PFalsifyList)
+        plt.plot(rList,PFalsifyList,'*')
+        # plt.plot(rListFine,pMinus)
 
     def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
             rMinus = rPlus if i > 0 else rMinus
-            rPlus = self.rPlus(alt, trueModel, rMinus, None, C, reps)
+            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, reps)
+            rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, reps)
             print "Iteration: ", i, "| Value of R:", rMinus
         if plot:
             self.rMinus2Plus_plot(alt, trueModel, rMinus, rPlus, C)
