@@ -198,11 +198,12 @@ class Repetitions(toy.FlatToy):
     def pos_integer(self, x):
         return max(1, int(x))
 
-    def compute_pMinus(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=None):
+    def compute_pMinus(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True):
         if trueModel is None:
             trueModel = self
-        if mReps is None:
+        if mReps is True:
             mReps = trueModel.mReps
+        assert mReps is not None
         if rMinus is None:
             rMinus = self.compute_initial_rMinus(alt, trueModel, C)
         repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel,
@@ -210,7 +211,7 @@ class Repetitions(toy.FlatToy):
         pMinus = repeated_self.PFalsify(repeated_alt, repeated_true, adjustExtreme=True)
         return pMinus
 
-    def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=None):
+    def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=True):
         if rMinus is None:
             rMinus = self.compute_initial_rMinus(alt, trueModel, C)
         if pMinus is None:
@@ -242,12 +243,12 @@ class Repetitions(toy.FlatToy):
         ax.add_patch(accept)
         plt.axis([left, right, down, up])
 
-    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
+    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True, iter=10, plot=False):
         for i in range(iter):
             rMinus = rPlus if i > 0 else rMinus
-            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, reps)
-            rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, reps)
-            print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
+            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps)
+            rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, mReps)
+            # print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
             print "Iteration: ", i, "| Value of R:", rMinus
         if plot:
             self.rMinus2Plus_plot(alt, trueModel, rMinus, pMinus, rPlus, C)
