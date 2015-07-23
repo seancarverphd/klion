@@ -177,12 +177,13 @@ class Repetitions(toy.FlatToy):
         return repeated_self, repeated_alt, repeated_true
 
     def desired_likelihood_ratio_coeff_variation(self, rMinus, pMinus):
-        return numpy.sqrt(rMinus)/scipy.stats.norm.ppf(pMinus)
+        cv =  numpy.sqrt(rMinus)/scipy.stats.norm.ppf(pMinus)
+        return cv
 
-    def PrCurve(self, rMinus, pMinus, rPlus=None):
-        cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
-        PrPlus = scipy.stats.norm.cdf(numpy.sqrt(rPlus)/cv) # = PrPlus
-        # print cv
+    def PrCurve(self, rMinus=None, pMinus=None, r=None, cv=None):
+        if cv is None:
+            cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
+        PrPlus = scipy.stats.norm.cdf(numpy.sqrt(r)/cv) # = PrPlus
         return PrPlus
 
     def inversePrCurve(self, rMinus, pMinus, PrPlus):
@@ -226,7 +227,8 @@ class Repetitions(toy.FlatToy):
         rList = range(rMin, rMax)
         PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rList, trueModel.mReps)
         rListFine = numpy.arange(rMin, rMax, .1)
-        Probs = [self.PrCurve(rMinus, pMinus, r) for r in rListFine]
+        cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
+        Probs = [self.PrCurve(r=r, cv=cv) for r in rListFine]
         plt.figure()
         ax = plt.gca()
         plt.plot(rList,PFalsifyList,'*', markersize=10)
@@ -238,7 +240,7 @@ class Repetitions(toy.FlatToy):
         accept = matplotlib.patches.Rectangle((left, 0.95), right-left, up-0.95, color='green', alpha=.3)
         ax.add_patch(reject)
         ax.add_patch(accept)
-        plt.axis([left, right, up, down])
+        plt.axis([left, right, down, up])
 
     def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, reps=None, iter=10, plot=False):
         for i in range(iter):
