@@ -271,7 +271,7 @@ class FlatToy(object):
         plt.ylabel('Density of Likelihood Ratios')
         plt.title(self.str_hat(alt, trueModel))
 
-    def PFalsify(self, alt, trueModel=None):
+    def PFalsify(self, alt, trueModel=None, adjustExtreme=False):
         ratios = self.likeRatios(alt, trueModel)
         number_of_ratios = ratios.shape[1]
         if number_of_ratios == 0:
@@ -280,7 +280,12 @@ class FlatToy(object):
         if self.debugFlag:
             print "number of ratios =", number_of_ratios
             print "ratios =", ratios
-        return float(numpy.sum(ratios > 0))/float(number_of_ratios)
+        number_of_positives = numpy.sum(ratios > 0)
+        if adjustExtreme and number_of_positives == 0:
+            number_of_positives += 0.5
+        elif adjustExtreme and number_of_positives==number_of_ratios:
+            number_of_positives -= 0.5
+        return number_of_positives/float(number_of_ratios)
 
     def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
         lrs = self.likeRatios(alt, trueModel)

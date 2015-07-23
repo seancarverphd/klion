@@ -207,7 +207,7 @@ class Repetitions(toy.FlatToy):
             rMinus = self.compute_initial_rMinus(alt, trueModel, C)
         repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel,
                                                                           self.pos_integer(rMinus), mReps)
-        pMinus = repeated_self.PFalsify(repeated_alt, repeated_true)
+        pMinus = repeated_self.PFalsify(repeated_alt, repeated_true, adjustExtreme=True)
         return pMinus
 
     def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=None):
@@ -247,7 +247,7 @@ class Repetitions(toy.FlatToy):
             rMinus = rPlus if i > 0 else rMinus
             pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, reps)
             rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, reps)
-            # print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
+            print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
             print "Iteration: ", i, "| Value of R:", rMinus
         if plot:
             self.rMinus2Plus_plot(alt, trueModel, rMinus, pMinus, rPlus, C)
