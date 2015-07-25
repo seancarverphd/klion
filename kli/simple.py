@@ -1,8 +1,6 @@
 __author__ = 'sean'
-import toy
-import time
-import numpy
 import scipy.stats
+import toy
 import parameter
 import repetitions
 
