@@ -150,21 +150,28 @@ class Repetitions(toy.FlatToy):
         if trueModel is None:
             trueModel = self
         trueModel.set_base_mReps_to_mr()
-        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        cv = self.base.likeRatioCV(alt.base, trueModel.base)
         trueModel.pop_base_mReps()
-        return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)*mu/sig)
+        return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)/cv)
 
     def rInfinity(self, alt, trueModel=None, C=0.95):
         if trueModel is None:
             trueModel = self
         trueModel.set_base_mReps_to_mr()
-        mu, sig = self.base.likeRatioMuSigma(alt.base, trueModel.base)
+        cv = self.base.likeRatioCV(alt.base, trueModel.base)
         trueModel.pop_base_mReps()
-        return (scipy.stats.norm.ppf(C)*sig/mu)**2
 
-    def repeated_models(self, alt, trueModel=None, rReps=1, mReps=1):
+
+
+        return (scipy.stats.norm.ppf(C)*cv)**2
+
+    def repeated_models(self, alt, trueModel=None, rReps=1, mReps=None, bReps=None):
         if trueModel is None:
             trueModel = self
+        if mReps is True:
+            mReps = trueModel.mReps
+        if bReps is True:
+            bReps = trueModel.bReps
         repeated_self = Repetitions(self.base, rReps)
         repeated_alt = Repetitions(alt.base, rReps)
         if trueModel is self:
@@ -173,7 +180,8 @@ class Repetitions(toy.FlatToy):
             repeated_true = repeated_alt
         else:
             repeated_true = Repetitions(trueModel.base, rReps)
-        repeated_true.sim(mReps)  # if reps is None then use available data in trueModel.base
+        repeated_true.sim(mReps)  # if mReps is None then use all available data in trueModel.base
+        repeated_true.bootstrap(bReps)  # if bReps is None, don't bootstrap
         return repeated_self, repeated_alt, repeated_true
 
     def desired_likelihood_ratio_coeff_variation(self, rMinus, pMinus):
@@ -198,27 +206,29 @@ class Repetitions(toy.FlatToy):
     def pos_integer(self, x):
         return max(1, int(x))
 
-    def compute_pMinus(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True):
+    def compute_pMinus(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True, bReps=True):
         if trueModel is None:
             trueModel = self
         if mReps is True:
             mReps = trueModel.mReps
+        if bReps is True:
+            bReps = trueModel.bReps
         assert mReps is not None
         if rMinus is None:
             rMinus = self.compute_initial_rMinus(alt, trueModel, C)
         repeated_self, repeated_alt, repeated_true = self.repeated_models(alt, trueModel,
-                                                                          self.pos_integer(rMinus), mReps)
+                                                                          self.pos_integer(rMinus), mReps, bReps)
         pMinus = repeated_self.PFalsify(repeated_alt, repeated_true, adjustExtreme=True)
         return pMinus
 
-    def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=True):
+    def rPlus(self, alt, trueModel=None, rMinus=None, pMinus=None, C=0.95, mReps=True, bReps=True):
         if rMinus is None:
             rMinus = self.compute_initial_rMinus(alt, trueModel, C)
         if pMinus is None:
-            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps)
+            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps, bReps)
         return self.inversePrCurve(rMinus, pMinus, C)
 
-    def rMinus2Plus_plot(self, alt, trueModel, rMinus, pMinus, rPlus, C):
+    def rMinus2Plus_plot(self, alt, trueModel, rMinus, pMinus, rPlus, C=0.95):
         if trueModel is None:
             trueModel = self
         r1 = max(2, int(rMinus))
@@ -226,7 +236,7 @@ class Repetitions(toy.FlatToy):
         rMin = min(r1-1, r2-1)
         rMax = max(r1+1, r2+1)
         rList = range(rMin, rMax)
-        PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rList, trueModel.mReps)
+        PFalsifyList = self.PFalsify_function_of_rReps(alt, trueModel, rRepsList=rList, mReps=True, bReps=True)
         rListFine = numpy.arange(rMin, rMax, .1)
         cv = self.desired_likelihood_ratio_coeff_variation(rMinus, pMinus)
         Probs = [self.PrCurve(r=r, cv=cv) for r in rListFine]
@@ -237,17 +247,17 @@ class Repetitions(toy.FlatToy):
         (left, right, down, up) = plt.axis()
         plt.plot([rMinus,rMinus],[down,up],'r')
         plt.plot([rPlus,rPlus],[down,up],'g')
-        reject = matplotlib.patches.Rectangle((left, down), right-left, 0.95-down, color='red', alpha=.3)
-        accept = matplotlib.patches.Rectangle((left, 0.95), right-left, up-0.95, color='green', alpha=.3)
+        reject = matplotlib.patches.Rectangle((left, down), right-left, C-down, color='red', alpha=.3)
+        accept = matplotlib.patches.Rectangle((left, C), right-left, up-C, color='green', alpha=.3)
         ax.add_patch(reject)
         ax.add_patch(accept)
         plt.axis([left, right, down, up])
 
-    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True, iter=10, plot=False):
+    def rStar(self, alt, trueModel=None, rMinus=None, C=0.95, mReps=True, bReps=True, iter=10, plot=False):
         for i in range(iter):
             rMinus = rPlus if i > 0 else rMinus
-            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps)
-            rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, mReps)
+            pMinus = self.compute_pMinus(alt, trueModel, rMinus, C, mReps, bReps)
+            rPlus = self.rPlus(alt, trueModel, rMinus, pMinus, C, mReps, bReps)
             # print "rMinus, pMinus, rPlus = ", rMinus, pMinus, rPlus
             print "Iteration: ", i, "| Value of R:", rMinus
         if plot:
