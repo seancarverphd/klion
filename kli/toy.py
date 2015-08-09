@@ -238,14 +238,19 @@ class FlatToy(object):
         return sum(L)
 
     def pdf(self, datum):
-        try:
-            density = copy.copy(datum)
-            for i, d in enumerate(datum):
-                density[i] = numpy.exp(self.likeOnce(d))
-            return density
-        except TypeError:
-            pass
         return numpy.exp(self.likeOnce(datum))
+
+    def pdf_of_iterable(self, x_iterable):
+        density_curve = copy.copy(x_iterable)
+        for i, datum in enumerate(x_iterable):
+            density_curve[i] = self.pdf(datum)
+        return density_curve
+
+    def pdf_plot(self,x_iterable):
+        density_curve = self.pdf_of_iterable(x_iterable)
+        plt.figure()
+        # ax = plt.gca()
+        plt.plot(x_iterable, density_curve)
 
     # def mle(self):
     #     assert self.toy2  # Not yet implemented for toy 3
