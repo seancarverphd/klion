@@ -33,9 +33,9 @@ class FlatTruncatedGaussian(toy.FlatToy):
 
     def likeOnce(self, datum):
         if datum < 0:
-            return 0
+            return -numpy.infty
         else:
-            return self.Norm.pdf(datum)/(1.-self.Norm.cdf(0))
+            return self.Norm.logpdf(datum)/(1.-self.Norm.cdf(0))
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
@@ -65,9 +65,9 @@ class FlatInverseGaussian(toy.FlatToy):
 
     def likeOnce(self, datum):
         if datum < 0:
-            return 0
+            return -numpy.infty
         else:
-            return self.IG.pdf(datum)
+            return self.IG.logpdf(datum)
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
