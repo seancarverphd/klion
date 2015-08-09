@@ -1,12 +1,9 @@
 import numpy
-import random
-import time
-import parameter
+import copy
 import matplotlib.pylab as plt
 import matplotlib
-import scipy.stats
-import ad
 import repository
+import parameter
 
 class SaveStateRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
@@ -241,6 +238,13 @@ class FlatToy(object):
         return sum(L)
 
     def pdf(self, datum):
+        try:
+            density = copy.copy(datum)
+            for i, d in enumerate(datum):
+                density[i] = numpy.exp(self.likeOnce(d))
+            return density
+        except TypeError:
+            pass
         return numpy.exp(self.likeOnce(datum))
 
     # def mle(self):
