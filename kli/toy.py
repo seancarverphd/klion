@@ -375,12 +375,13 @@ class likefun(object):
             self.set(x)
         return self.F.like()
 
-q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
-q1 = parameter.Parameter("q1", 0.25, "kHz", log=True)
-q = parameter.Parameter("q", 1. / 6., "kHz", log=True)
-T3 = Toy([q0, q1])
-T2 = Toy([q])
-FT3 = T3.flatten(seed=3)
-FT2 = T2.flatten(seed=3)
-XRange = numpy.arange(0.1, 30.1, 1)
-YRange = numpy.arange(0.11, 30.11, 1)  # Different values so rate constants remain unequal
+if __name__ == '__main__':
+    q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
+    q1 = parameter.Parameter("q1", 0.25, "kHz", log=True)
+    q = parameter.Parameter("q", 1. / 6., "kHz", log=True)
+    T3 = Toy([q0, q1])
+    T2 = Toy([q])
+    FT3 = T3.flatten(seed=3)
+    FT2 = T2.flatten(seed=3)
+    XRange = numpy.arange(0.1, 30.1, 1)
+    YRange = numpy.arange(0.11, 30.11, 1)  # Different values so rate constants remain unequal
