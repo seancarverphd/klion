@@ -293,6 +293,10 @@ class FlatToy(object):
         sig = numpy.std(lrs)
         return mu, sig
 
+    def likeRatioCV(self, alt, trueModel=None):
+        mu, sig = self.likeRatioMuSigma(alt, trueModel)
+        return sig/mu
+
     # Deprecated and will be removed in future.  Need to update sfn14.
     def lrN(self, alt, N, M, trueModel=None):  # add N of them, return M
         self.sim(mReps=N * M)
