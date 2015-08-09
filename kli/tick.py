@@ -1,5 +1,6 @@
 import numpy
 import scipy
+import scipy.stats
 import toy
 
 class TruncatedGaussian(object):
