@@ -64,10 +64,7 @@ class FlatInverseGaussian(toy.FlatToy):
         return x
 
     def likeOnce(self, datum):
-        if datum < 0:
-            return -numpy.infty
-        else:
-            return self.IG.logpdf(datum)
+        return self.IG.logpdf(datum)
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
