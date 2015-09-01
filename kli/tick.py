@@ -26,9 +26,10 @@ class FlatTruncatedGaussian(toy.FlatToy):
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
-        x = -1.0
-        while x < 0:
+        x = -1.
+        while x < 0.:
             x = RNG.normal(self.mu, self.sig)
+            # not too inefficient because for most parameter values we care about, x will usually be positive
         return x
 
     def likeOnce(self, datum):
