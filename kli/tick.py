@@ -15,6 +15,14 @@ class TruncatedGaussian(object):
     def getExperiment(self):
         return (self.cv, self.mu)
 
+def TruncateGaussianMomentsError(mu_sig_notrunc, mu_sig_guess):
+    mu_notrunc, sig_notrunc = mu_sig_notrunc # no truncation
+    Norm = scipy.stats.norm(loc=mu_notrunc, scale=sig_notrunc)
+    mu_guess, sig_guess = mu_sig_guess
+    mu = mu_notrunc + Norm.pdf(0)*sig_notrunc/(1-Norm.cdf(0))
+    var = sig_notrunc**2*(1 - (mu_notrunc/sig_notrunc)*Norm.pdf(0)/(1-Norm.cdf(0))
+                            - (Norm.pdf(0)/(1-Norm.cdf(0)))**2)
+    return (mu - mu_guess, var - sig_guess**2)
 
 class FlatTruncatedGaussian(toy.FlatToy):
     def setUpExperiment(self, parent):
