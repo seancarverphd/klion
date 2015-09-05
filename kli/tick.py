@@ -1,12 +1,13 @@
 import numpy
+import math
 import scipy
 import scipy.stats
 import toy
 
 class TruncatedGaussian(object):
     def __init__(self, cv=.5, mu=1):
-        self.cv = .5
-        self.mu = 1
+        self.cv = cv
+        self.mu = mu
 
     def flatten(self, seed=None, name=None):
         parent = self  # for readability
@@ -15,6 +16,21 @@ class TruncatedGaussian(object):
     def getExperiment(self):
         return (self.cv, self.mu)
 
+def TruncNormAlpha(mu_n,sig_n):
+    return -mu_n/sig_n
+
+def TruncNormLambda(mu_n,sig_n):   # use math module instead of numpy for automatic differentiation
+    return math.exp(-mu_n**2./(2.*sig_n**2.))\
+        / (math.sqrt(2.*math.pi)*sig_n*(1.-0.5*math.erfc(mu_n/(math.sqrt(2)*sig_n))))
+
+def TruncNormDelta(mu_n,sig_n):
+    return TruncNormLambda(mu_n,sig_n)*(TruncNormLambda(mu_n,sig_n)-TruncNormAlpha(mu_n,sig_n))
+
+def TruncNormMean(mu_n,sig_n):
+    return mu_n + sig_n*TruncNormLambda(mu_n,sig_n)
+
+def TruncNormVariance(mu_n,sig_n):
+    return sig_n**2*(1-TruncNormDelta(mu_n,sig_n))
 
 # Both TruncNormMomentsErrorWikipediaFormula and TruncNormMomentsError seem to give same results (add unit tests)
 def TruncNormMomentsErrorWikipediaFormula(mu_sig_notrunc, mu_sig_desired):
@@ -26,12 +42,11 @@ def TruncNormMomentsErrorWikipediaFormula(mu_sig_notrunc, mu_sig_desired):
                             - (Norm.pdf(0)/(1-Norm.cdf(0)))**2)
     return (mu - mu_desired, var - sig_desired**2)
 
-def TruncNormMomentsError(mu_sig_notrunc, mu_sig_desired):
+def TruncNormMomentsError(mu_sig_notrunc, mu_desired, sig_desired):
     mu_notrunc, sig_notrunc = mu_sig_notrunc # no truncation
     a = -mu_notrunc/sig_notrunc
     b = mu_notrunc + 1000.*sig_notrunc  # b=infty causes problems
     TruncNorm = scipy.stats.truncnorm(a, b, loc=mu_notrunc, scale=sig_notrunc)
-    mu_desired, sig_desired = mu_sig_desired
     return (TruncNorm.mean() - mu_desired, TruncNorm.var() - sig_desired**2)
 
 class FlatTruncatedGaussian(toy.FlatToy):
@@ -39,14 +54,20 @@ class FlatTruncatedGaussian(toy.FlatToy):
         self.experiment = parent.getExperiment()
         self.cv, self.mu = self.experiment
         self.sig = self.cv*self.mu
-        self.Norm = scipy.stats.norm(loc=self.mu,scale=self.sig)
+        self.mu_sig_norm = scipy.optimize.root(TruncNormMomentsError,
+                                                          (self.mu, self.sig), args=(self.mu, self.sig))
+        self.mu_norm, self.sig_norm = self.mu_sig_norm.x
+        self.Norm = scipy.stats.norm(loc=self.mu_norm,scale=self.sig_norm)
 
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
         x = -1.
+        i = 0
         while x < 0.:
-            x = RNG.normal(self.mu, self.sig)
+            assert i < 100
+            i += 1
+            x = RNG.normal(self.mu_norm, self.sig_norm)
             # not too inefficient because for most parameter values we care about, x will usually be positive
         return x
 
