@@ -2,10 +2,11 @@ import numpy
 import math
 import scipy
 import scipy.stats
+import ad.admath
 import toy
 
 class TruncatedGaussian(object):
-    def __init__(self, cv=.5, mu=1):
+    def __init__(self, cv=.5, mu=1.):
         self.cv = cv
         self.mu = mu
 
@@ -20,8 +21,9 @@ def TruncNormAlpha(mu_n,sig_n):
     return -mu_n/sig_n
 
 def TruncNormLambda(mu_n,sig_n):   # use math module instead of numpy for automatic differentiation
-    return math.exp(-mu_n**2./(2.*sig_n**2.))\
-        / (math.sqrt(2.*math.pi)*sig_n*(1.-0.5*math.erfc(mu_n/(math.sqrt(2)*sig_n))))
+    return ad.admath.exp(-mu_n**2./(2.*sig_n**2.)) \
+        / (ad.admath.sqrt(2.*ad.admath.pi)*(1.-0.5*ad.admath.erfc(mu_n/(ad.admath.sqrt(2)*sig_n))))
+        # / (ad.admath.sqrt(2.*ad.admath.pi)*sig_n*(1.-0.5*ad.admath.erfc(mu_n/(ad.admath.sqrt(2)*sig_n))))
 
 def TruncNormDelta(mu_n,sig_n):
     return TruncNormLambda(mu_n,sig_n)*(TruncNormLambda(mu_n,sig_n)-TruncNormAlpha(mu_n,sig_n))
@@ -42,7 +44,19 @@ def TruncNormMomentsErrorWikipediaFormula(mu_sig_notrunc, mu_sig_desired):
                             - (Norm.pdf(0)/(1-Norm.cdf(0)))**2)
     return (mu - mu_desired, var - sig_desired**2)
 
-def TruncNormMomentsError(mu_sig_notrunc, mu_desired, sig_desired):
+def TruncNormMomentsError(musig_n,mu_desired,sig_desired):
+    mu_n, sig_n = musig_n # _n means no truncation
+    return [TruncNormMean(mu_n, sig_n) - mu_desired, TruncNormVariance(mu_n, sig_n) - sig_desired**2]
+
+def TruncNormMomentsErrorWithJacobian(musig_n, mu_desired, sig_desired):
+    mu_n, sig_n = musig_n
+    mu_nad = ad.adnumber(musig_n[0])
+    sig_nad = ad.adnumber(musig_n[1])
+    return (TruncNormMomentsError((mu_n, sig_n), mu_desired, sig_desired),
+            ad.jacobian(TruncNormMomentsError((mu_nad, sig_nad),
+                                              mu_desired, sig_desired), [mu_nad, sig_nad]))
+
+def TruncNormMomentsErrorSciPy(mu_sig_notrunc, mu_desired, sig_desired):
     mu_notrunc, sig_notrunc = mu_sig_notrunc # no truncation
     a = -mu_notrunc/sig_notrunc
     b = mu_notrunc + 1000.*sig_notrunc  # b=infty causes problems
@@ -54,8 +68,8 @@ class FlatTruncatedGaussian(toy.FlatToy):
         self.experiment = parent.getExperiment()
         self.cv, self.mu = self.experiment
         self.sig = self.cv*self.mu
-        self.mu_sig_norm = scipy.optimize.root(TruncNormMomentsError,
-                                                          (self.mu, self.sig), args=(self.mu, self.sig))
+        self.mu_sig_norm = scipy.optimize.root(TruncNormMomentsErrorWithJacobian,
+                                               (self.mu, self.sig), args=(self.mu, self.sig), jac=True)
         self.mu_norm, self.sig_norm = self.mu_sig_norm.x
         self.Norm = scipy.stats.norm(loc=self.mu_norm,scale=self.sig_norm)
 
