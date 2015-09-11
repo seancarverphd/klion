@@ -274,20 +274,9 @@ class FlatToy(object):
             ax = plt.gca()
             ax.add_patch(region)
             select_true = not select_true
-        # reject1 = matplotlib.patches.Rectangle((0., 0.), lo_tau, .18, color='red', alpha=.3)
-        # accept = matplotlib.patches.Rectangle((lo_tau, 0.), hi_tau - lo_tau, .18, color='green', alpha=.3)
-        # reject2 = matplotlib.patches.Rectangle((hi_tau, 0.), 20. - hi_tau, .18, color='red', alpha=.3)
-        # ax = plt.gca()
-        # ax.add_patch(reject1)
-        # ax.add_patch(accept)
-        # ax.add_patch(reject2)
-        # ax.add_patch
-        # plt.text(3., .14, "3-State Model Selected Correctly")
-        # plt.text(14., .14, "Incorrect Selection")
         # plt.xlabel("Channel Opening Time (ms)")
         plt.ylabel("Probability Density")
-        # plt.legend(('Probability Density Function (PDF), $f(\\tau)$, 3-State True Model',
-        #        'PDF, $g(\\tau)$, 2-State Alternative (no adjustable parameters)'), loc=2)
+        plt.legend((self.name, alt.name), loc=1)
         plt.show()
 
 
