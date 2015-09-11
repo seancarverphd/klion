@@ -246,6 +246,12 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
+    def compare_pdfs(self,alt,x_iterable):
+        density_curve_true = self.pdf_of_iterable(x_iterable)
+        density_curve_alt = alt.pdf_of_iterable(x_iterable)
+        boundaries = numpy.where(numpy.diff(density_curve_true > density_curve_alt))[0] + .5
+        plt.figure()
+        
     def pdf_plot(self,x_iterable):
         density_curve = self.pdf_of_iterable(x_iterable)
         plt.figure()
