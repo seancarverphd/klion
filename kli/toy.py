@@ -42,19 +42,40 @@ class Toy(object):
             q1 = parameter.mu(self.qs[1], '1/'+self.preferred.time)
         else:
             assert (False)  # Length of q should be 1 or 2
-        return (toy2, q, q0, q1)
+        return {'toy2':toy2, 'q':q, 'q0':q0, 'q1':q1}
 
 
 class FlatToy(object):
-    def __init__(self, parent, seed=None, name=None):
+    def __init__(self, parent, seed=None, name=None, kw=None):
         self.debugFlag = False  # To save hidden states, call self.debug() before generating data
         self.R = self.initRNG(seed)
-        self.setUpExperiment(parent)
+        self.setUpExperiment(parent, kw)
         self.defineRepetitions()
         self.startData()
         self.bootstrap(None)
         self.startLikes()
         self.rename(name)
+
+    def getExperiment(self):
+        return self.experiment
+
+    def setUpExperiment(self, parent, kw):
+        self.experiment = parent.getExperiment()
+        if kw is not None:
+            original_experiment_length = len(self.experiment)
+            self.experiment.update(kw)
+            assert original_experiment_length == len(self.experiment)  # can't add fields that aren't already there
+        self.unpackExperiment()
+
+    def unpackExperiment(self):
+        self.toy2 = self.experiment['toy2']
+        self.q = self.experiment['q']
+        self.q0 = self.experiment['q0']
+        self.q1 = self.experiment['q1']
+
+    def spawn(self, seed=None, name=None, **kw):
+        parent = self  # for readability
+        return FlatToy(parent, seed, name, kw)
 
     def rename(self, name=None):
         if name is None:
@@ -127,10 +148,6 @@ class FlatToy(object):
     def _reseed(self, seed=None):
         self.R.reseed(seed)
         self._restart()
-
-    def setUpExperiment(self, parent):
-        self.experiment = parent.getExperiment()
-        self.toy2, self.q, self.q0, self.q1 = self.experiment
 
     def _changeModel(self, parent):
         self.setUpExperiment(parent)
