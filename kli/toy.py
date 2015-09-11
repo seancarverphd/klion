@@ -19,8 +19,8 @@ class SaveStateRNG(numpy.random.RandomState):
 
 
 class Toy(object):
-    def __init__(self, q):
-        self.q = q
+    def __init__(self, qs):
+        self.qs = qs
         self.preferred = parameter.preferredUnits()
         self.preferred.time = 'milliseconds'
 
@@ -30,16 +30,16 @@ class Toy(object):
         return FT
 
     def getExperiment(self):  # For subclassing replace this code
-        if len(self.q) == 1:
+        if len(self.qs) == 1:
             toy2 = True
-            q = parameter.mu(self.q[0], '1./'+self.preferred.time)
+            q = parameter.mu(self.qs[0], '1./'+self.preferred.time)
             q0 = None
             q1 = None
-        elif len(self.q) == 2:
+        elif len(self.qs) == 2:
             toy2 = False
             q = None
-            q0 = parameter.mu(self.q[0], '1/'+self.preferred.time)
-            q1 = parameter.mu(self.q[1], '1/'+self.preferred.time)
+            q0 = parameter.mu(self.qs[0], '1/'+self.preferred.time)
+            q1 = parameter.mu(self.qs[1], '1/'+self.preferred.time)
         else:
             assert (False)  # Length of q should be 1 or 2
         return (toy2, q, q0, q1)
@@ -279,8 +279,7 @@ class FlatToy(object):
         plt.legend((self.name, alt.name), loc=1)
         plt.show()
 
-
-    def pdf_plot(self,x_iterable):
+    def pdf_plot(self, x_iterable):
         density_curve = self.pdf_of_iterable(x_iterable)
         plt.figure()
         # ax = plt.gca()
