@@ -246,12 +246,51 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
-    def compare_pdfs(self,alt,x_iterable):
+    def compare_pdfs(self, alt, a, b, n):
+        x_iterable = numpy.linspace(a, b, n)
         density_curve_true = self.pdf_of_iterable(x_iterable)
         density_curve_alt = alt.pdf_of_iterable(x_iterable)
-        boundaries = numpy.where(numpy.diff(density_curve_true > density_curve_alt))[0] + .5
+        index_boundaries = numpy.where(numpy.diff(density_curve_true > density_curve_alt))[0] + .5
+        select_true = density_curve_true[0] > density_curve_alt[0]
+        x_boundaries = a + index_boundaries*(b-a)/(n-1)
+        left_endpoints = numpy.concatenate((numpy.array([a]), x_boundaries))
+        right_endpoints = numpy.concatenate((x_boundaries, numpy.array([b])))
+        pdf_true = self.pdf_of_iterable(x_iterable)
+        pdf_alt = alt.pdf_of_iterable(x_iterable)
         plt.figure()
-        
+        plt.hold('off')
+        plt.plot(x_iterable, pdf_true, 'b-')
+        plt.hold('on')
+        plt.plot(x_iterable, pdf_alt, 'b--')
+        axes_left, axes_right, axes_lo, axes_hi = plt.axis()
+        for i in range(len(left_endpoints)):
+            if select_true:
+                col = 'green'
+            else:
+                col = 'red'
+            region = matplotlib.patches.Rectangle((left_endpoints[i],axes_lo),
+                                                  right_endpoints[i]-left_endpoints[i],
+                                                  axes_hi-axes_lo, color=col, alpha=.3)
+            ax = plt.gca()
+            ax.add_patch(region)
+            select_true = not select_true
+        # reject1 = matplotlib.patches.Rectangle((0., 0.), lo_tau, .18, color='red', alpha=.3)
+        # accept = matplotlib.patches.Rectangle((lo_tau, 0.), hi_tau - lo_tau, .18, color='green', alpha=.3)
+        # reject2 = matplotlib.patches.Rectangle((hi_tau, 0.), 20. - hi_tau, .18, color='red', alpha=.3)
+        # ax = plt.gca()
+        # ax.add_patch(reject1)
+        # ax.add_patch(accept)
+        # ax.add_patch(reject2)
+        # ax.add_patch
+        # plt.text(3., .14, "3-State Model Selected Correctly")
+        # plt.text(14., .14, "Incorrect Selection")
+        # plt.xlabel("Channel Opening Time (ms)")
+        plt.ylabel("Probability Density")
+        # plt.legend(('Probability Density Function (PDF), $f(\\tau)$, 3-State True Model',
+        #        'PDF, $g(\\tau)$, 2-State Alternative (no adjustable parameters)'), loc=2)
+        plt.show()
+
+
     def pdf_plot(self,x_iterable):
         density_curve = self.pdf_of_iterable(x_iterable)
         plt.figure()
