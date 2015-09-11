@@ -34,7 +34,7 @@ class Repetitions(toy.FlatToy):
         self.bootstrap_choice = self.base.bootstrap_choose(reps, seed, RNG)
         self.pop_base_mReps()
 
-    def setUpExperiment(self, base):
+    def setUpExperiment(self, base, kw):
         pass
 
     def _reseed(self, seed=None):

@@ -22,13 +22,13 @@ class Simple(object):
     def getExperiment(self):
         n = int(parameter.mu(self.n, 'dimensionless'))
         p = parameter.mu(self.p, 'dimensionless')
-        return n, p
+        return {'n': n, 'p': p}
 
 
 class FlatSimple(toy.FlatToy):
-    def setUpExperiment(self, parent):
-        self.experiment = parent.getExperiment()
-        self.n, self.p = self.experiment
+    def unpackExperiment(self):
+        self.n = self.experiment['n']
+        self.p = self.experiment['p']
         self.B = scipy.stats.binom(self.n, self.p)
 
     def simulateOnce(self, RNG=None):
@@ -80,7 +80,7 @@ class ExactSimple(object):
         #         prob += self.B.pmf(i)
         # return prob
 
-if __name__ == 'main':
+if __name__ == '__main__':
     S20 = Simple(n=20, p=.5)
     ES20 = S20.exact()
     FS20 = S20.flatten(name='FS20')

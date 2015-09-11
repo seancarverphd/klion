@@ -15,7 +15,7 @@ class TruncatedGaussian(object):
         return FlatTruncatedGaussian(parent, seed, name)
 
     def getExperiment(self):
-        return (self.cv, self.mu)
+        return {'cv': self.cv, 'mu': self.mu}
 
 def TruncNormAlpha(mu_n,sig_n):
     return -mu_n/sig_n
@@ -64,9 +64,9 @@ def TruncNormMomentsErrorSciPy(mu_sig_notrunc, mu_desired, sig_desired):
     return (TruncNorm.mean() - mu_desired, TruncNorm.var() - sig_desired**2)
 
 class FlatTruncatedGaussian(toy.FlatToy):
-    def setUpExperiment(self, parent):
-        self.experiment = parent.getExperiment()
-        self.cv, self.mu = self.experiment
+    def unpackExperiment(self):
+        self.cv = self.experiment['cv']
+        self.mu = self.experiment['mu']
         self.sig = self.cv*self.mu
         self.mu_sig_norm = scipy.optimize.root(TruncNormMomentsErrorWithJacobian,
                                                (self.mu, self.sig), args=(self.mu, self.sig), jac=True)
@@ -103,9 +103,9 @@ class InverseGaussian(TruncatedGaussian):
         return FlatInverseGaussian(parent, seed, name)
 
 class FlatInverseGaussian(toy.FlatToy):
-    def setUpExperiment(self, parent):
-        self.experiment = parent.getExperiment()
-        self.cv, self.mu = self.experiment
+    def unpackExperiment(self):
+        self.cv = self.experiment['cv']
+        self.mu = self.experiment['mu']
         self.scale = self.mu/(self.cv**2)
         self.IG = scipy.stats.invgauss(mu=self.mu, scale=self.scale)
 

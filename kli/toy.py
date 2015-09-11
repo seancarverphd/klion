@@ -75,7 +75,7 @@ class FlatToy(object):
 
     def spawn(self, seed=None, name=None, **kw):
         parent = self  # for readability
-        return FlatToy(parent, seed, name, kw)
+        return type(self)(parent, seed, name, kw)
 
     def rename(self, name=None):
         if name is None:
