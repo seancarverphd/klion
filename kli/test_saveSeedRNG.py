@@ -6,23 +6,17 @@ __author__ = 'sean'
 class TestSaveSeedRNG(TestCase):
     def setUp(self):
         self.R00 = kli.toy.SaveStateRNG()
-        self.R00.setSeedAndOffset(0,0)
+        self.R00.reseed(0)
         self.R10 = kli.toy.SaveStateRNG()
-        self.R10.setSeedAndOffset(1,0)
-        self.R01 = kli.toy.SaveStateRNG()
-        self.R01.setSeedAndOffset(0,1)
-        self.r00 = self.R00.normalvariate(0,1)
-        self.r01 = self.R01.normalvariate(0,1)
-        self.r10 = self.R10.normalvariate(0,1)
-
-    def test_setOffset(self):
-        self.assertEquals(self.r01,self.r10)
+        self.R10.reseed(1)
+        self.r00 = self.R00.normal(0,1)
+        self.r10 = self.R10.normal(0,1)
 
     def test_reset(self):
         R = kli.toy.SaveStateRNG()
-        a = R.normalvariate(0,1)
-        b = R.normalvariate(0,1)
+        a = R.normal(0,1)
+        b = R.normal(0,1)
         R.reset()
-        c = R.normalvariate(0,1)
+        c = R.normal(0,1)
         self.assertEquals(a,c)
         self.assertNotEquals(a,b)

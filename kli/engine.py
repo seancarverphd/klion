@@ -8,29 +8,27 @@ import pandas
 import toy
 from parameter import u
 
-
 class FlatStepProtocol(toy.FlatToy):
-    def setUpExperiment(self, parent):
-        assert not parent.thePatch.hasNoise  # Later will implement NOISE
-        self.preferredTime = parent.preferred.time  # preferred time unit
-        self.preferredVoltage = parent.preferred.voltage # preferred voltage unit
-        self.preferredConductance = parent.preferred.conductance # preferred conductance unit
-
-        self.dt = parameter.mu(parent.dt, self.preferredTime)  # self.dt a number
-        self.voltages = tuple([parameter.mu(v, self.preferredVoltage)
-                               for v in parent.voltages])
-        self.durations = tuple([parameter.mu(dur, self.preferredTime)
-                                for dur in parent.voltageStepDurations])
+    def unpackExperiment(self):
+        self.hasNoise = self.experiment['hasNoise']
+        self.preferredTime = self.experiment['preferredTime']
+        self.preferredVoltage = self.experiment['preferredVoltage']
+        self.preferredConductance = self.experiment['preferredConductance']
+        self.dt = self.experiment['dt']
+        self.voltages = self.experiment['voltages']
+        self.durations = self.experiment['durations']
+        self.thePatch = self.experiment['thePatch']
         self.nsamples = tuple([None if numpy.isinf(dur) else int(dur/self.dt)
                                 for dur in self.durations])
-        self.allInitializations = self.setUpInitializations(parent.thePatch.ch.timeZeroDistribution(),
-                parent.thePatch.equilibrium)  # equilibrium is a function
-        self.processNodes(parent.thePatch.ch.nodes)
-        self.A = tuple([parent.thePatch.makeA(v, self.dt,
+        self.allInitializations = self.setUpInitializations(self.thePatch.ch.timeZeroDistribution(),
+                self.thePatch.equilibrium)  # equilibrium is a function
+        self.processNodes(self.thePatch.ch.nodes)
+        self.A = tuple([self.thePatch.makeA(v, self.dt,
                                             self.preferredVoltage,
                                             self.preferredTime) for v in self.voltages])
         self.makeB()  # NO-NOISE only
         self.hasVoltTraj = False  # hasVoltTraj used in self.voltageTrajectory() for dataFrame
+        assert not self.hasNoise  # Will add noise later
 
     def _changeModel(self, parent, integrityCheck=True,
                     nodesChanged=True, QChanged=True):

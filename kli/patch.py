@@ -37,6 +37,17 @@ class StepProtocol(object):
         FS = engine.FlatStepProtocol(parent, seed)
         return FS
 
+    def getExperiment(self):
+        return {'hasNoise': self.thePatch.hasNoise,  # Later will implement NOISE
+                'preferredTime': self.preferred.time,  # preferred time unit
+                'preferredVoltage': self.preferred.voltage,  # preferred voltage unit
+                'preferredConductance' : self.preferred.conductance, # preferred conductance unit
+                'dt': parameter.mu(self.dt, self.preferred.time),  # self.dt a number
+                'voltages': tuple([parameter.mu(v, self.preferred.voltage)
+                                  for v in self.voltages]),
+                'durations': tuple([parameter.mu(dur, self.preferred.time)
+                           for dur in self.voltageStepDurations]),
+                'thePatch': self.thePatch}
 
 class singleChannelPatch(object):
     def __init__(self, ch, VOLTAGE):
