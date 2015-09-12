@@ -69,7 +69,7 @@ class TestFlatStepProtocol(TestCase):
         self.FS.sim(10)
 
     def test_patch_like(self):
-        self.assertEquals(kli.patch.FS.like(),-168.873183577661)
+        self.assertEquals(kli.patch.FS.like(), -112.83060748764734)  # -168.873183577661)
 
     # The following test passed when patch was setting VOLTAGE
     # according to channel.VOLTAGE not self.VOLTAGE
