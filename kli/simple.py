@@ -49,7 +49,8 @@ class FlatSimple(toy.FlatToy):
 class ExactSimple(object):
     def __init__(self, parent):
         self.experiment = parent.getExperiment()
-        self.n, self.p = self.experiment
+        self.n = self.experiment['n']
+        self.p = self.experiment['p']
         self.B = scipy.stats.binom(self.n, self.p)
 
     def Elogf(self, trueModel=None):
