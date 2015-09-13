@@ -71,7 +71,10 @@ class FlatTruncatedGaussian(toy.FlatToy):
         self.mu_sig_norm = scipy.optimize.root(TruncNormMomentsErrorWithJacobian,
                                                (self.mu, self.sig), args=(self.mu, self.sig), jac=True)
         self.mu_norm, self.sig_norm = self.mu_sig_norm.x
-        self.Norm = scipy.stats.norm(loc=self.mu_norm,scale=self.sig_norm)
+        self.Norm = scipy.stats.norm(loc=self.mu_norm, scale=self.sig_norm)
+        self.a = -self.mu_norm/self.sig_norm
+        self.b = self.mu_norm + 1000.*self.sig_norm  # b=infty causes problems
+        self.TruncNorm = scipy.stats.truncnorm(self.a, self.b, loc=self.mu_norm, scale=self.sig_norm)
 
     def simulateOnce(self, RNG=None):
         if RNG is None:
@@ -89,7 +92,7 @@ class FlatTruncatedGaussian(toy.FlatToy):
         if datum < 0:
             return -numpy.infty
         else:
-            return self.Norm.logpdf(datum)/(1.-self.Norm.cdf(0))
+            return numpy.log(self.Norm.pdf(datum)/(1.-self.Norm.cdf(0)))
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
@@ -106,19 +109,23 @@ class FlatInverseGaussian(toy.FlatToy):
     def unpackExperiment(self):
         self.cv = self.experiment['cv']
         self.mu = self.experiment['mu']
-        self.scale = self.mu/(self.cv**2)
-        self.IG = scipy.stats.invgauss(mu=self.mu, scale=self.scale)
+        self.shape = self.mu/(self.cv**2)
+        self.sig = self.mu*self.cv
+        # Removed following line because it's buggy (at least in Scipy Version 0.13.3)
+        # self.IG = scipy.stats.invgauss(mu=self.mu, scale=self.scale)
 
     def simulateOnce(self, RNG=None):
         if RNG is None:
             RNG = self.initRNG(None)
-        x = -1.0
-        while x < 0:
-            x = RNG.wald(self.mu, self.scale)
-        return x
+        return RNG.wald(self.mu, self.shape)
 
     def likeOnce(self, datum):
-        return self.IG.logpdf(datum)
+        # Using Wikipedia Formula because the function in Scipy Version 0.13.3 gives erroneous results!
+        if datum < 0:
+            return -numpy.infty
+        else:
+            return .5*(numpy.log(self.shape) - numpy.log(2.*numpy.pi) - 3.*numpy.log(datum)) \
+                    + (-self.shape*(datum - self.mu)**2/(2.*(self.mu**2)*datum))
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)

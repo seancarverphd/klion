@@ -263,7 +263,20 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
-    def compare_pdfs(self, alt, a, b, n):
+    def compare_pdfs(self, alt, dataModel=None, a=None, b=None, n=1000, bins=10):
+        assert not (dataModel is None and (a is None or b is None))
+        if dataModel is True:
+            dataModel = self
+        plt.figure()
+        plt.hold('off')
+        if dataModel is not None:
+            plt.hist(numpy.array(dataModel.data[0:self.mReps]), bins=bins, normed=True, color='black', alpha=0.4)
+            plt.hold('on')
+            ax_left, ax_right, ax_lo, ax_hi = plt.axis()
+            if a is None:
+                a = ax_left
+            if b is None:
+                b = ax_right
         x_iterable = numpy.linspace(a, b, n)
         density_curve_true = self.pdf_of_iterable(x_iterable)
         density_curve_alt = alt.pdf_of_iterable(x_iterable)
@@ -274,8 +287,6 @@ class FlatToy(object):
         right_endpoints = numpy.concatenate((x_boundaries, numpy.array([b])))
         pdf_true = self.pdf_of_iterable(x_iterable)
         pdf_alt = alt.pdf_of_iterable(x_iterable)
-        plt.figure()
-        plt.hold('off')
         plt.plot(x_iterable, pdf_true, 'b-')
         plt.hold('on')
         plt.plot(x_iterable, pdf_alt, 'b--')
@@ -313,6 +324,11 @@ class FlatToy(object):
         if trueModel is None:
             trueModel = self  # if true=None, want alt(hyp) not alt(alt), below
         return self.logf(trueModel) - alt.logf(trueModel)
+
+    def dataHistogram(self, bins=10):
+        plt.figure()
+        ax = plt.gca()
+        plt.hist(numpy.array(self.data[0:self.mReps]), bins=bins, normed=True, color='black')
 
     def likeRatioHistogram(self, alt, trueModel=None, bins=10):
         likelihood_ratios = self.likeRatios(alt, trueModel)
