@@ -25,7 +25,7 @@ class TestFlatToyProtocol(TestCase):
         self.assertEqual(self.F3.like(), -24.595563663018137)  # -27.500748311455272)
 
     def test_Toy_KL(self):
-        self.assertEqual(self.F3.KL(self.F2), 0.012275727108695733)
+        self.assertEqual(self.F3.KL(self.F2), 0.012275727108696066)
 
 if __name__ == '__main__':
     unittest.main()

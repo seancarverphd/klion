@@ -14,7 +14,7 @@ class Test_Ticking(TestCase):
     self.FIG.sim(1000)
 
   def test_Tick_KL(self):
-    self.assertEquals(self.FIG.KL(self.FTG), 0.12016815037368245)
+    self.assertEquals(self.FIG.KL(self.FTG), 0.12016815037368214)
 
   def test_TickTG_RootFindMu(self):
     self.assertEquals(self.FTG.mu_norm, 0.94863636968452314)

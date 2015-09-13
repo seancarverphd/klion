@@ -33,7 +33,7 @@ class TestFlatSimple(TestCase):
     self.assertEquals(self.FS21.like(), -2038.9092831205473)
 
   def test_Simple__OneRep_KL(self):
-    self.assertEquals(self.FS21.KL(self.FS20), 0.027827403071779777)
+    self.assertEquals(self.FS21.KL(self.FS20), 0.027827403071797166)
 
   def test_Simple_Repetitions_Simulate(self):
     self.assertEquals(self.R21.data[81][2], 15)
@@ -43,4 +43,4 @@ class TestFlatSimple(TestCase):
     self.assertEquals(self.R21.like(), -2038.9092831205546)
 
   def test_Simple__Repetitions_KL(self):
-    self.assertEquals(self.R21.KL(self.R20), .25044662764616987)
+    self.assertEquals(self.R21.KL(self.R20), 0.25044662764617148)
