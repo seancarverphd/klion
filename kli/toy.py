@@ -403,8 +403,8 @@ class FlatToy(object):
     def KL(self, other, trueModel=None):
         if trueModel is None:
             trueModel = self
-        return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
-
+        # ORIGINALLY (less stable?):  return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
+        return (self.logf(trueModel) - other.logf(trueModel)).mean()
 
 class likefun(object):
     def __init__(self, parent, paramTuple):
