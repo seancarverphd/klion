@@ -135,6 +135,16 @@ class FlatInverseGaussian(toy.FlatToy):
 
 if __name__ == '__main__':
     TG = TruncatedGaussian(cv=.5)
-    FTG = TG.flatten(name='FTG')
+    FTG = TG.flatten(name='Truncated Gaussian: CV=0.5')
     IG = InverseGaussian(cv=.5)
-    FIG = IG.flatten(name='FIG')
+    FIG = IG.flatten(name='Inverse Gaussian: CV=0.5')
+    TG10 = TruncatedGaussian(cv=.1)
+    FTG10 = TG10.flatten(name='Truncated Gaussian: CV=0.1')
+    IG10 = InverseGaussian(cv=.1)
+    FIG10 = IG10.flatten(name='Inverse Gaussian: CV=0.1')
+    FIG.sim(1000)
+    FTG.sim(1000)
+    FIG10.sim(1000)
+    FTG10.sim(1000)
+    FIG.compare_pdfs(FTG,a=0.001,b=6,xlab='Intertick Interval Normalized to Multiples of Period')
+    FIG10.compare_pdfs(FTG10,a=0.001,b=6,xlab='Intertick Interval Normalized to Multiples of Period')

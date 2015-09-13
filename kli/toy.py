@@ -263,7 +263,7 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
-    def compare_pdfs(self, alt, dataModel=None, a=None, b=None, n=1000, bins=10):
+    def compare_pdfs(self, alt, dataModel=None, a=None, b=None, n=1000, bins=10, xlab=None):
         assert not (dataModel is None and (a is None or b is None))
         if dataModel is True:
             dataModel = self
@@ -305,6 +305,8 @@ class FlatToy(object):
         # plt.xlabel("Channel Opening Time (ms)")
         plt.ylabel("Probability Density")
         plt.legend((self.name, alt.name), loc=1)
+        if xlab is not None:
+            plt.xlabel(xlab)
         plt.show()
 
     def pdf_plot(self, x_iterable):
