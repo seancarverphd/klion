@@ -153,7 +153,7 @@ class FlatToy(object):
         self.setUpExperiment(parent)
         self._restart()
 
-    def sim(self, mReps=None):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
+    def extend(self, mReps=None):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
         if mReps is None:
             mReps = len(self.data)
         numNewReps = mReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
@@ -161,6 +161,9 @@ class FlatToy(object):
             self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
             if self.debugFlag:
                 self.hiddenStates.append(self.hiddenStateTrajectory)
+
+    def sim(self, mReps=None):
+        self.extend(mReps)
         self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
 
     def resim(self, mReps=0):
