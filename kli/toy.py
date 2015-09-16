@@ -48,7 +48,7 @@ class Toy(object):
 class FlatToy(object):
     def __init__(self, parent, seed=None, name=None, kw=None):
         self.debugFlag = False  # To save hidden states, call self.debug() before generating data
-        self.R = self.initRNG(seed)
+        self.simRNG = self.initRNG(seed)
         self.setUpExperiment(parent, kw)
         self.defineRepetitions()
         self.startData()
@@ -140,34 +140,34 @@ class FlatToy(object):
         self.likeInfo = repository.TableOfModels()
 
     def _restart(self):  # Clears data and resets RNG with same seed
-        self.R.reset()
+        self.simRNG.reset()
         self.startData()
         self.startLikes()
         print 'WARNING: Method only intended for debugging.  Not Fully supported.'
 
     def _reseed(self, seed=None):
-        self.R.reseed(seed)
+        self.simRNG.reseed(seed)
         self._restart()
 
     def _changeModel(self, parent):
         self.setUpExperiment(parent)
         self._restart()
 
-    def extend(self, mReps=None):  # Only does new reps; keeps old; if (nReps < # Trajs) then does nothing
-        if mReps is None:
-            mReps = len(self.data)
-        numNewReps = mReps - len(self.data)  # Negative if decreasing nReps; if so, nReps updated data unchanged
+    def extend(self, mReps=0):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
+        numNewReps = mReps - len(self.data)  # Nothing changed if negative
         for n in range(numNewReps):
-            self.data.append(self.simulateOnce(self.R))  # Don't want to use self.R elsewhere
+            self.data.append(self.simulateOnce(self.simRNG))  # Don't want to use self.R elsewhere
             if self.debugFlag:
                 self.hiddenStates.append(self.hiddenStateTrajectory)
 
     def sim(self, mReps=None):
+        if mReps is None:
+            mReps = len(self.data)
         self.extend(mReps)
-        self.mReps = mReps  # Might be decreasing nReps, but code still saves the old results
+        self.mReps = mReps  # Might be decreasing mReps, but object still holds the old results
 
     def resim(self, mReps=0):
-        self.R.reset()
+        self.simRNG.reset()
         self.startData()
         self.sim(mReps)
 
