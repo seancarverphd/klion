@@ -441,8 +441,8 @@ class likefun(object):
         self.setLog(x)
         # if x[0] < 0. or x[1]<0:
         #    print "x is negative"
-        #print "x[0], q[0]", x[0], q0.value
-        #print "x[1], q[1]", x[1], q1.value
+        # print "x[0], q[0]", x[0], q0.value
+        # print "x[1], q[1]", x[1], q1.value
         return self.F.minuslike()
 
     def like(self, x, log=True):
