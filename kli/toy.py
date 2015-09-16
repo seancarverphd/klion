@@ -408,49 +408,6 @@ class FlatToy(object):
         # ORIGINALLY (less stable?):  return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
         return (self.logf(trueModel) - other.logf(trueModel)).mean()
 
-class likefun(object):
-    def __init__(self, parent, paramTuple):
-        self.parent = parent
-        self.paramTuple = paramTuple
-        self.F = self.parent.flatten()
-
-    def set(self, valueTuple):
-        for i, P in enumerate(self.paramTuple):
-            P.assign(valueTuple[i])
-        # Ex = self.parent.getExperiment()
-        self.F._changeModel(self.parent)
-        # self.F.changeModel(self.parent)
-
-    def setLog(self, valueTuple):
-        for i, P in enumerate(self.paramTuple):
-            P.assignLog(valueTuple[i])  # AssignLog so that assigned values can vary from -infty to infty
-        # Ex = self.parent.getExperiment()
-        self.F._changeModel(self.parent)
-        # self.F.changeModel(self.parent)
-
-    def sim(self, XTrue, nReps=100, seed=None, log=True):
-        self.XTrue = XTrue
-        if log == True:
-            self.setLog(XTrue)
-        else:
-            self.set(XTrue)
-        self.F._reseed(seed)
-        self.F.sim(nReps, clear=True)  # clear=True should now be redundant, but kept here for readability
-
-    def minuslike(self, x):
-        self.setLog(x)
-        # if x[0] < 0. or x[1]<0:
-        #    print "x is negative"
-        # print "x[0], q[0]", x[0], q0.value
-        # print "x[1], q[1]", x[1], q1.value
-        return self.F.minuslike()
-
-    def like(self, x, log=True):
-        if log == True:
-            self.setLog(x)
-        else:
-            self.set(x)
-        return self.F.like()
 
 if __name__ == '__main__':
     q0 = parameter.Parameter("q0", 0.5, "kHz", log=True)
