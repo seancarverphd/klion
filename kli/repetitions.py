@@ -160,9 +160,6 @@ class Repetitions(toy.FlatToy):
         trueModel.set_base_mReps_to_mr()
         cv = self.base.likeRatioCV(alt.base, trueModel.base)
         trueModel.pop_base_mReps()
-
-
-
         return (scipy.stats.norm.ppf(C)*cv)**2
 
     def repeated_models(self, alt, trueModel=None, rReps=1, mReps=None, bReps=None):
