@@ -52,7 +52,6 @@ class FlatToy(object):
         self.setUpExperiment(parent, kw)
         self.defineRepetitions()
         self.startData()
-        self.bootstrap(None)
         self.startLikes()
         self.rename(name)
 
@@ -114,18 +113,43 @@ class FlatToy(object):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
-    def bootstrap_choose(self, bReps, seed=None, RNG=None):
+    def same_bootstrap(self, bReps, mReps, seed, RNG):
+        if seed is None:
+            return False
+        if RNG is not None:
+            return False
+        return (mReps == self.bootstrap_previous_mReps
+                and bReps == self.bootstrap_previous_bReps
+                and seed == self.bootstrap_previous_seed)
+
+    def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=None):
         # Pass either seed (for new RNG) or RNG
+        if bReps is True:
+            bReps = self.bReps
+        if mReps is True: # or mReps is True:
+            mReps = self.mReps
+        if mReps is None:
+            mReps = len(self.data)
+        self.extend_data(mReps)
+        if self.same_bootstrap(bReps, mReps, seed, RNG):
+            return self.bootstrap_choice
+        if RNG is None:
+            RNG = self.initRNG(seed)   # Seed is used only if RNG is None
         if bReps is None:
             self.bootstrap_choice = []
-            return None
-        if RNG is None:
-            RNG = self.initRNG(seed)
-        return RNG.choice(range(self.mReps), bReps).tolist()
+        else:
+            self.bootstrap_choice = RNG.choice(range(mReps), bReps).tolist()
+        self.bootstrap_previous_mReps = mReps
+        self.bootstrap_previous_bReps = bReps
+        self.bootstrap_previous_seed = seed
+        return self.bootstrap_choice
 
-    def bootstrap(self, bReps, seed=None, RNG=None):
-        self.bReps = bReps
-        self.bootstrap_choice = self.bootstrap_choose(bReps, seed, RNG)
+    def bootstrap(self, bReps=True, mReps=True, seed=None):
+        if bReps is True:
+            bReps = self.bReps
+        else:
+            self.bReps = bReps
+        self.bootstrap_choose(bReps, mReps, seed)
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -133,7 +157,12 @@ class FlatToy(object):
     def startData(self):
         self.data = []  # Data used for fitting model. (Each datum may be a tuple)
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
+        self.bReps = None
         self.mReps = 0
+        self.bootstrap_previous_bReps = None
+        self.bootstrap_previous_mReps = None
+        self.bootstrap_previous_seed = None
+        self.bootstrap_choice = []
 
     def startLikes(self):
         self.likes = repository.TableOfModels()
@@ -153,7 +182,9 @@ class FlatToy(object):
         self.setUpExperiment(parent)
         self._restart()
 
-    def extend(self, mReps=0):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
+    def extend_data(self, mReps=None):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
+        if mReps is None:
+            return
         numNewReps = mReps - len(self.data)  # Nothing changed if negative
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.simRNG))  # Don't want to use self.R elsewhere
@@ -163,7 +194,7 @@ class FlatToy(object):
     def sim(self, mReps=None):
         if mReps is None:
             mReps = len(self.data)
-        self.extend(mReps)
+        self.extend_data(mReps)
         self.mReps = mReps  # Might be decreasing mReps, but object still holds the old results
 
     def resim(self, mReps=0):
@@ -196,12 +227,16 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods_monte_carlo_sample(self, trueModel=None):
+    def likelihoods_monte_carlo_sample(self, trueModel=None, mReps=None):
         if trueModel is None:  # Data not passed
             trueModel = self
+        trueModel.extend_data(mReps)
         likes = trueModel.likes.getOrMakeEntry(self)
         nFirst = len(likes)
-        nLast = trueModel.mReps  # Restricts return to self.mReps
+        if mReps is None:
+            nLast = trueModel.mReps  # Restricts return to self.mReps
+        else:
+            nLast = mReps
         if nLast == 0:  # No data in true model
             print "Warning: Must Have Data in True Model; No Likelihoods"
             return None
@@ -211,17 +246,24 @@ class FlatToy(object):
             #    likeInfo.append(self.recentLikeInfo)
         return likes[0:nLast]  # Restrict what you return to stopping point
 
-    def likelihoods_bootstrap_sample(self, trueModel=None):
-        likes = self.likelihoods_monte_carlo_sample(trueModel)
-        return [likes[i] for i in trueModel.bootstrap_choice]
+    def extend_likes(self, trueModel=None, mReps=None):
+        self.likelihoods_monte_carlo_sample(trueModel, mReps)
 
-    def likelihoods(self, trueModel=None):
+    def likelihoods_bootstrap_sample(self, trueModel=None, bReps=None, mReps=None):
+        likes = self.likelihoods_monte_carlo_sample(trueModel, mReps)
+        return [likes[i] for i in trueModel.bootstrap_choose(bReps, mReps)]
+
+    def likelihoods(self, trueModel=None, bReps=None, mReps=None):
         if trueModel is None:
             trueModel = self
-        if trueModel.bReps is None:
-            return self.likelihoods_monte_carlo_sample(trueModel)
+        if bReps is None:
+            bReps = trueModel.bReps
+        if mReps is None:
+            mReps = trueModel.mReps
+        if bReps is None:
+            return self.likelihoods_monte_carlo_sample(trueModel, mReps=mReps)
         else:
-            return self.likelihoods_bootstrap_sample(trueModel)
+            return self.likelihoods_bootstrap_sample(trueModel, bReps=bReps, mReps=mReps)
 
     def likeOnce(self, datum):  # Overload when subclassing
         #if self.debugFlag:
@@ -249,12 +291,12 @@ class FlatToy(object):
         else:
             return True
 
-    def minuslike(self, trueModel=None):
-        L = self.likelihoods(trueModel)
+    def minuslike(self, trueModel=None, bReps=None, mReps=None):
+        L = self.likelihoods(trueModel, bReps, mReps)
         return -sum(L)
 
-    def like(self, trueModel=None):
-        L = self.likelihoods(trueModel)
+    def like(self, trueModel=None, bReps=None, mReps=None):
+        L = self.likelihoods(trueModel, bReps, mReps)
         return sum(L)
 
     def pdf(self, datum):
@@ -322,13 +364,13 @@ class FlatToy(object):
     #     assert self.toy2  # Not yet implemented for toy 3
     #     return 1. / numpy.mean(self.data[0:self.mReps])
 
-    def logf(self, trueModel=None):
-        return numpy.matrix(self.likelihoods(trueModel))
+    def logf(self, trueModel=None, bReps=None, mReps=None):
+        return numpy.matrix(self.likelihoods(trueModel,bReps,mReps))
 
-    def likeRatios(self, alt, trueModel=None):  # likelihood ratio; self is true model
+    def likeRatios(self, alt, trueModel=None, bReps=None, mReps=None):  # likelihood ratio; self is true model
         if trueModel is None:
             trueModel = self  # if true=None, want alt(hyp) not alt(alt), below
-        return self.logf(trueModel) - alt.logf(trueModel)
+        return self.logf(trueModel,bReps,mReps) - alt.logf(trueModel,bReps,mReps)
 
     def dataHistogram(self, bins=10):
         plt.figure()
@@ -351,8 +393,8 @@ class FlatToy(object):
         plt.ylabel('Density of Likelihood Ratios')
         plt.title(self.str_hat(alt, trueModel))
 
-    def PFalsify(self, alt, trueModel=None, adjustExtreme=False):
-        ratios = self.likeRatios(alt, trueModel)
+    def PFalsify(self, alt, trueModel=None, bReps=None, mReps=None, adjustExtreme=False):
+        ratios = self.likeRatios(alt, trueModel, bReps, mReps)
         number_of_ratios = ratios.shape[1]
         if number_of_ratios == 0:
             print "Warning: No Likelihoods"
@@ -367,30 +409,30 @@ class FlatToy(object):
             number_of_positives -= 0.5
         return number_of_positives/float(number_of_ratios)
 
-    def likeRatioMuSigma(self, alt, trueModel=None):  # self is true model
-        lrs = self.likeRatios(alt, trueModel)
+    def likeRatioMuSigma(self, alt, trueModel=None, bReps=None, mReps=None):  # self is true model
+        lrs = self.likeRatios(alt, trueModel, bReps, mReps)
         mu = numpy.mean(lrs)
         sig = numpy.std(lrs)
         return mu, sig
 
-    def likeRatioCV(self, alt, trueModel=None):
-        mu, sig = self.likeRatioMuSigma(alt, trueModel)
+    def likeRatioCV(self, alt, trueModel=None, bReps=None, mReps=None):
+        mu, sig = self.likeRatioMuSigma(alt, trueModel, bReps, mReps)
         return sig/mu
 
     # Deprecated and will be removed in future.  Need to update sfn14.
-    def lrN(self, alt, N, M, trueModel=None):  # add N of them, return M
+    def lrN(self, alt, N, M, trueModel=None, bReps=None, mReps=None):  # add N of them, return M
         self.sim(mReps=N * M)
-        lrNM = self.likeRatios(alt, trueModel)
+        lrNM = self.likeRatios(alt, trueModel, bReps, mReps)
         L = numpy.reshape(lrNM, (M, N))
         return L.sum(axis=0)
 
-    def aic(self, alt, trueModel=None):  # self is true model
+    def aic(self, alt, trueModel=None, bReps=None, mReps=None):  # self is true model
         if trueModel is None:
             trueModel = self
-        return 2 * (self.logf(trueModel) - alt.logf(trueModel))
+        return 2 * (self.logf(trueModel, bReps, mReps) - alt.logf(trueModel, bReps, mReps))
 
-    def aicMuSigma(self, alt, trueModel=None):  # self is true model
-        aics = self.aic(alt, trueModel)
+    def aicMuSigma(self, alt, trueModel=None, bReps=None, mReps=None):  # self is true model
+        aics = self.aic(alt, trueModel, bReps, mReps)
         mu = numpy.mean(aics)
         sigma = numpy.std(aics)
         return (mu, sigma)
@@ -402,14 +444,14 @@ class FlatToy(object):
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
 
-    def Ehlogf(self, trueModel=None):
-        return (self.logf(trueModel).mean())
+    def Ehlogf(self, trueModel=None, bReps=None, mReps=None):
+        return (self.logf(trueModel,bReps,mReps).mean())
 
-    def KL(self, other, trueModel=None):
+    def KL(self, other, trueModel=None, bReps=None, mReps=None):
         if trueModel is None:
             trueModel = self
         # ORIGINALLY (less stable?):  return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
-        return (self.logf(trueModel) - other.logf(trueModel)).mean()
+        return (self.logf(trueModel,bReps,mReps) - other.logf(trueModel,bReps,mReps)).mean()
 
 
 if __name__ == '__main__':

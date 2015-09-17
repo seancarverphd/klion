@@ -30,9 +30,10 @@ class Repetitions(toy.FlatToy):
     def bootstrap(self, bReps, seed=None, RNG=None):
         self.bReps = bReps
         reps = bReps*self.rReps if bReps is not None else None
-        self.set_base_mReps_to_mr(self.mReps, self.rReps)
-        self.bootstrap_choice = self.base.bootstrap_choose(reps, seed, RNG)
-        self.pop_base_mReps()
+        base_mReps = self.mReps*self.rReps
+        # self.set_base_mReps_to_mr(self.mReps, self.rReps)
+        self.bootstrap_choice = self.base.bootstrap_choose(reps, seed=seed, mReps=base_mReps, RNG=RNG)
+        # self.pop_base_mReps()
 
     def setUpExperiment(self, base, kw):
         pass
@@ -58,16 +59,28 @@ class Repetitions(toy.FlatToy):
         mReps = self.stack.pop(-1)
         self.base.sim(mReps)
 
-    def extendBaseData(self, m=None, r=None):
-        self.set_base_mReps_to_mr(m, r)
-        self.pop_base_mReps()
+    def extendBaseData(self, trueModel = None, m=None, r=None):
+        if trueModel is None:
+            trueModel = self
+        if m is None:
+            m = trueModel.mReps
+        if r is None:
+            r = trueModel.rReps
+        trueModel.base.extend_data(mReps=m*r)
+        # self.set_base_mReps_to_mr(m, r)
+        # self.pop_base_mReps()
 
     def extendBaseLikes(self, trueModel=None, m=None, r=None):
         if trueModel is None:
             trueModel = self
-        trueModel.set_base_mReps_to_mr(m, r)
-        self.base.likelihoods_monte_carlo_sample(trueModel.base)
-        trueModel.pop_base_mReps()
+        if m is None:
+            m = trueModel.mReps
+        if r is None:
+            r = trueModel.rReps
+        self.base.extend_likes(trueModel=trueModel.base, mReps=m*r)
+        # trueModel.set_base_mReps_to_mr(m, r)
+        # self.base.likelihoods_monte_carlo_sample(trueModel.base)
+        # trueModel.pop_base_mReps()
         return trueModel.base.likes.getOrMakeEntry(self.base)
 
     def sim(self, mReps=None):
@@ -79,14 +92,18 @@ class Repetitions(toy.FlatToy):
             datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
             self.data.append(datum)
 
-    def likelihoods_construct_from_base(self, trueModel=None, bootstrap=False):
+    def likelihoods_construct_from_base(self, trueModel=None, bReps=None, mReps=None, bootstrap=False):
         if trueModel is None:
             trueModel = self
-        assert trueModel.rReps == self.rReps
+        if bReps is None:
+            bReps = trueModel.bReps
+        if mReps is None:
+            mReps = trueModel.mReps
+        # assert trueModel.rReps == self.rReps
         likes = []
         baseLikesNoBootstrap = self.extendBaseLikes(trueModel)  # returns trueModel.base.likes
         if bootstrap:
-            baseLikes = [baseLikesNoBootstrap[i] for i in trueModel.bootstrap_choice]
+            baseLikes = [baseLikesNoBootstrap[i] for i in trueModel.bootstrap_choose(bReps*trueModel.rReps, mReps)]
                          # for i in trueModel.bootstrap_choose(trueModel.bReps*trueModel.rReps)]
             # baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
             nLast = trueModel.bReps
@@ -100,10 +117,10 @@ class Repetitions(toy.FlatToy):
             print "likes = ", likes
         return likes
 
-    def likelihoods_monte_carlo_sample(self, trueModel=None):
+    def likelihoods_monte_carlo_sample(self, trueModel=None, mReps=None):
         return self.likelihoods_construct_from_base(trueModel, bootstrap=False)
 
-    def likelihoods_bootstrap_sample(self, trueModel=None):
+    def likelihoods_bootstrap_sample(self, trueModel=None, bReps=None, mReps=None):
         return self.likelihoods_construct_from_base(trueModel, bootstrap=True)
 
     def _debug(self, flag=None):
@@ -127,7 +144,7 @@ class Repetitions(toy.FlatToy):
         return mustBeTrue
 
     def PFalsify_function_of_rReps(self, alt, trueModel=None,
-                                   rRepsList=True, mReps=True, bReps=True, seed=None):
+                                   rRepsList=True, bReps=True, mReps=True, seed=None):
         if trueModel is None:
             trueModel = self
         if rRepsList is True:  # use trueModel (singleton list, default)
@@ -146,23 +163,35 @@ class Repetitions(toy.FlatToy):
             probabilities.append(Pr)
         return probabilities
 
-    def PFalsifyNormal(self, alt, trueModel=None):
+    def PFalsifyNormal(self, alt, trueModel=None, bReps=None, mReps=None):
         if trueModel is None:
             trueModel = self
-        trueModel.set_base_mReps_to_mr()
-        cv = self.base.likeRatioCV(alt.base, trueModel.base)
-        trueModel.pop_base_mReps()
+        if bReps is None:
+            bReps = trueModel.bReps
+        if mReps is None:
+            mReps = trueModel.mReps
+        # trueModel.set_base_mReps_to_mr()
+        # trueModel.extend_data(mReps=mReps*trueModel.rReps), next line does this automatically
+        cv = self.base.likeRatioCV(alt.base, trueModel.base,
+                                   bReps=bReps*trueModel.rReps, mReps=mReps*trueModel.rReps)
+        # trueModel.pop_base_mReps()
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)/cv)
 
-    def rInfinity(self, alt, trueModel=None, C=0.95):
+    def rInfinity(self, alt, trueModel=None, bReps=None, mReps=None, C=0.95):
         if trueModel is None:
             trueModel = self
-        trueModel.set_base_mReps_to_mr()
-        cv = self.base.likeRatioCV(alt.base, trueModel.base)
-        trueModel.pop_base_mReps()
+        if bReps is None:
+            bReps = trueModel.bReps
+        if mReps is None:
+            mReps = trueModel.mReps
+        # trueModel.set_base_mReps_to_mr()
+        # extend_data(), next line does this automatically
+        cv = self.base.likeRatioCV(alt.base, trueModel.base,
+                                   bReps=bReps*trueModel.rReps, mReps=mReps*trueModel.rReps)
+        # trueModel.pop_base_mReps()
         return (scipy.stats.norm.ppf(C)*cv)**2
 
-    def repeated_models(self, alt, trueModel=None, rReps=1, mReps=None, bReps=None):
+    def repeated_models(self, alt, trueModel=None, rReps=1, bReps=True, mReps=True):
         if trueModel is None:
             trueModel = self
         if mReps is True:
