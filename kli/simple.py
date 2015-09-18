@@ -42,7 +42,7 @@ class FlatSimple(toy.FlatToy):
     def datumWellFormed(self,datum):
         return isinstance(datum, int)
 
-    def datumIntegrity(self, datum):
+    def datumSupported(self, datum):
         return self.datumWellFormed(datum) and (datum <= self.n) and (datum >= 0)
 
 

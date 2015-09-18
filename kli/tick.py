@@ -97,7 +97,7 @@ class FlatTruncatedGaussian(toy.FlatToy):
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
 
-    def datumIntegrity(self, datum):
+    def datumSupported(self, datum):
         return self.datumWellFormed(datum) and (datum >= 0)
 
 class InverseGaussian(TruncatedGaussian):
@@ -130,7 +130,7 @@ class FlatInverseGaussian(toy.FlatToy):
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
 
-    def datumIntegrity(self, datum):
+    def datumSupported(self, datum):
         return self.datumWellFormed(datum) and (datum >= 0)
 
 if __name__ == '__main__':

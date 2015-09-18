@@ -281,7 +281,7 @@ class FlatToy(object):
     def likeOnce(self, datum):  # Overload when subclassing
         #if self.debugFlag:
         #    self.recentLikeInfo = None
-        if not self.datumIntegrity(datum):
+        if not self.datumSupported(datum):
             return -numpy.infty
         elif self.toy2:
             return numpy.log(self.q) - self.q * datum
@@ -294,7 +294,7 @@ class FlatToy(object):
     def datumWellFormed(self, datum):
         return isinstance(datum, float) or isinstance(datum, int)
 
-    def datumIntegrity(self, datum):
+    def datumSupported(self, datum):
         if not self.datumWellFormed(datum):
             return False
         elif datum < 0.:
