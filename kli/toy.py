@@ -122,14 +122,17 @@ class FlatToy(object):
                 and bReps == self.bootstrap_previous_bReps
                 and seed == self.bootstrap_previous_seed)
 
+    def mTotal(self):  # overloaded for Repetitions class
+        return len(self.data)
+
     def process_default_reps(self, bReps, mReps):
         if bReps is True:
             bReps = self.bReps
         if mReps is True:
             mReps = self.mReps
         if mReps is None:
-            mReps = len(self.data)
-        return (bReps, mReps)
+            mReps = self.mTotal()
+        return bReps, mReps
 
     def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=True):
         bReps, mReps = self.process_default_reps(bReps, mReps)
@@ -162,6 +165,7 @@ class FlatToy(object):
         bReps, mReps = self.process_default_reps(bReps, mReps)
         self.bootstrap_choose(bReps, mReps, seed)
         self.bReps = bReps
+        self.mReps = mReps
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -195,7 +199,7 @@ class FlatToy(object):
         self._restart()
 
     def extend_data(self, mReps=True):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
-        if mReps is True:
+        if mReps is True or mReps is None:
             return
         numNewReps = mReps - len(self.data)  # Nothing changed if negative
         for n in range(numNewReps):
@@ -204,10 +208,10 @@ class FlatToy(object):
                 self.hiddenStates.append(self.hiddenStateTrajectory)
 
     def sim(self, mReps=None):
-        if mReps is None:
-            mReps = len(self.data)
+        if mReps is True:
+            return
         self.extend_data(mReps)
-        self.mReps = mReps  # Might be decreasing mReps, but object still holds the old results
+        self.mReps = self.mTotal() if mReps is None else mReps
 
     def resim(self, mReps=0):
         self.simRNG.reset()
@@ -261,11 +265,21 @@ class FlatToy(object):
     def extend_likes(self, trueModel=None, mReps=True):
         self.likelihoods_monte_carlo_sample(trueModel, mReps)
 
+    def sim_data(self, mReps=True):
+        _bReps, mReps = self.process_default_reps(None, mReps)
+        self.extend_data(mReps)
+        return self.data[0:mReps]
+
+    def sim_likes(self, trueModel=None):
+        if trueModel is None:
+            trueModel = self
+        return trueModel.likes.getOrMakeEntry(self.base)
+
     def bootstrap_data(self):
         return [self.data[i] for i in self.bootstrap_choice]
 
     def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
-        likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.bootstrap_previous_mReps)
+        likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)
         # return [likes[i] for i in trueModel.bootstrap_choose(bReps, mReps)]
         return [likes[i] for i in trueModel.bootstrap_choice]
 
