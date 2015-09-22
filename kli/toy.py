@@ -11,11 +11,34 @@ class SaveStateRNG(numpy.random.RandomState):
         self.savedState = self.get_state()   # save initial state to use later
 
     def reseed(self, seed=None):
-        self.seed(seed)  # if seed=None, sets state by clock
+        if seed is False:
+            return
+        self.seed(seed)  # if seed=None, sets state by /dev/urandom
         self.savedState = self.get_state()   # save initial state to use later
 
     def reset(self):  # Resets RNG to same state as used first initialized or last time reseed() called.
         self.set_state(self.savedState)
+
+class Bootstrap(object):
+    def __init__(self, bReps, mReps, seed_or_state=None):
+        self.bReps = bReps
+        self.mReps = mReps
+        if bReps is None:
+            self.seed_or_state = None
+            self.RNG, self.initial_random_state = None, None
+            self.choice = range(mReps)
+        else:
+            self.seed_or_state = seed_or_state
+            self.RNG, self.initial_random_state = self.setup_random(seed_or_state)
+            self.choice = self.RNG.choice(range(mReps), bReps).tolist()
+
+    def setup_random(self, seed_or_state):
+        RNG = SaveStateRNG()
+        try:
+            RNG.set_state(seed_or_state)
+        except TypeError:
+            RNG.reseed(seed_or_state)
+        return RNG, RNG.get_state()
 
 
 class Toy(object):
@@ -134,28 +157,12 @@ class FlatToy(object):
             mReps = self.mTotal()
         return bReps, mReps
 
-    def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=True):
+    def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=None):
         bReps, mReps = self.process_default_reps(bReps, mReps)
-        use_default_RNG = (RNG is True)
-        if use_default_RNG:
-            RNG = self.bootRNG
-            self.bootRNG.reseed(seed)  # don't set seed if use_default_RNG is False
-        self.bootstrap_choice = self.bootstrap_do(bReps, mReps, RNG)
-        if bReps is None:
-            self.bootstrap_previous_bReps = None
-            self.bootstrap_previous_mReps = None
-            self.bootstrap_previous_seed = None
-        else:
-            self.bootstrap_previous_bReps = bReps
-            self.bootstrap_previous_mReps = mReps
-            self.bootstrap_previous_seed = seed if use_default_RNG else None
-        self.extend_data(mReps=mReps)
-        return self.bootstrap_choice
-
-    def bootstrap_do(self, bReps=True, mReps=True, RNG=None):
-        bReps, mReps = self.process_default_reps(bReps, mReps)
-        if RNG is None:  # used only if called from other than bootstrap_choice
+        if RNG is None:
             RNG = self.initRNG()
+        RNG.reseed(seed)  # if seed is False, does nothing.
+        self.extend_data(mReps=mReps)
         if bReps is None:
             return []
         else:
@@ -163,7 +170,7 @@ class FlatToy(object):
 
     def bootstrap(self, bReps=True, mReps=True, seed=None):
         bReps, mReps = self.process_default_reps(bReps, mReps)
-        self.bootstrap_choose(bReps, mReps, seed)
+        self.bootstrap.choice = self.bootstrap_choose(bReps, mReps, seed, self.bootRNG)
         self.bReps = bReps
         self.mReps = mReps
 
@@ -175,9 +182,9 @@ class FlatToy(object):
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
         self.bReps = None
         self.mReps = 0
-        self.bootstrap_previous_bReps = None
-        self.bootstrap_previous_mReps = None
-        self.bootstrap_previous_seed = None
+        # self.bootstrap_previous_bReps = None
+        # self.bootstrap_previous_mReps = None
+        # self.bootstrap_previous_seed = None
         self.bootstrap_choice = []
 
     def startLikes(self):
@@ -243,27 +250,34 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods_monte_carlo_sample(self, trueModel=None, mReps=True):
+    def likelihoods(self, trueModel=None, bReps=True, mReps=True, seed=None):
         if trueModel is None:  # Data not passed
             trueModel = self
-        trueModel.extend_data(mReps)
-        likes = trueModel.likes.getOrMakeEntry(self)
-        nFirst = len(likes)
-        if mReps is None:
-            nLast = trueModel.mReps  # Restricts return to self.mReps
+        bReps, mReps = trueModel.process_default_reps(bReps, mReps)
+        likes = self.extend_likes(trueModel, mReps)
+        if bReps is None:
+            bs_choice = None
+        elif bReps == self.bReps and mReps == self.mReps:
+            bs_choice = self.bootstrap_choice
         else:
-            nLast = mReps
-        if nLast == 0:  # No data in true model
-            print "Warning: Must Have Data in True Model; No Likelihoods"
-            return None
-        for datum in trueModel.data[nFirst:nLast]:
-            likes.append(self.likeOnce(datum))
-            # if self.debugFlag and self.recentLikeInfo is not None:
-            #    likeInfo.append(self.recentLikeInfo)
-        return likes[0:nLast]  # Restrict what you return to stopping point
+            bs_choice = self.bootstrap_choose(bReps, mReps, seed)
+        if bs_choice is not None:
+            return [likes[i] for i in bs_choice]
+        else:
+            return likes[0:mReps]  # Restrict what you return to stopping point
 
     def extend_likes(self, trueModel=None, mReps=True):
-        self.likelihoods_monte_carlo_sample(trueModel, mReps)
+        if trueModel is None:
+            trueModel = self
+        _bReps, mReps = self.process_default_reps(bReps=None, mReps=mReps)
+        trueModel.extend_data(mReps)
+        likes = trueModel.likes.getOrMakeEntry(self)
+        mFirst = len(likes)
+        mLast = mReps
+        assert(mReps > 0)  # Must have some data to run likelihoods
+        for datum in trueModel.data[mFirst:mLast]:
+            likes.append(self.likeOnce(datum))
+        return likes
 
     def sim_data(self, mReps=True):
         _bReps, mReps = self.process_default_reps(None, mReps)
@@ -278,23 +292,21 @@ class FlatToy(object):
     def bootstrap_data(self):
         return [self.data[i] for i in self.bootstrap_choice]
 
-    def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
-        likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)
-        # return [likes[i] for i in trueModel.bootstrap_choose(bReps, mReps)]
-        return [likes[i] for i in trueModel.bootstrap_choice]
+    # def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
+    #     likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)
+    #     # return [likes[i] for i in trueModel.bootstrap_choose(bReps, mReps)]
+    #     return [likes[i] for i in trueModel.bootstrap_choice]
 
-    def likelihoods(self, trueModel=None, bReps=True, mReps=True):
-        if trueModel is None:
-            trueModel = self
-        bReps, mReps = trueModel.process_default_reps(bReps, mReps)
-        if bReps is None:
-            return self.likelihoods_monte_carlo_sample(trueModel, mReps=mReps)
-        else:
-            return self.likelihoods_bootstrap_sample(trueModel, bReps=bReps, mReps=mReps)
+    # def likelihoods(self, trueModel=None, bReps=True, mReps=True):
+    #     if trueModel is None:
+    #         trueModel = self
+    #     bReps, mReps = trueModel.process_default_reps(bReps, mReps)
+    #     if bReps is None:
+    #         return self.likelihoods_monte_carlo_sample(trueModel, mReps=mReps)
+    #     else:
+    #         return self.likelihoods_bootstrap_sample(trueModel, bReps=bReps, mReps=mReps)
 
     def likeOnce(self, datum):  # Overload when subclassing
-        #if self.debugFlag:
-        #    self.recentLikeInfo = None
         if not self.datumSupported(datum):
             return -numpy.infty
         elif self.toy2:
@@ -392,7 +404,7 @@ class FlatToy(object):
     #     return 1. / numpy.mean(self.data[0:self.mReps])
 
     def logf(self, trueModel=None, bReps=True, mReps=True):
-        return numpy.matrix(self.likelihoods(trueModel,bReps,mReps))
+        return numpy.matrix(self.likelihoods(trueModel, bReps, mReps))
 
     def likeRatios(self, alt, trueModel=None, bReps=True, mReps=True):  # likelihood ratio; self is true model
         if trueModel is None:
@@ -478,7 +490,7 @@ class FlatToy(object):
         if trueModel is None:
             trueModel = self
         # ORIGINALLY (less stable?):  return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
-        return (self.logf(trueModel,bReps,mReps) - other.logf(trueModel,bReps,mReps)).mean()
+        return (self.logf(trueModel, bReps, mReps) - other.logf(trueModel, bReps, mReps)).mean()
 
 
 if __name__ == '__main__':

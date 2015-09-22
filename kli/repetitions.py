@@ -101,7 +101,7 @@ class Repetitions(toy.FlatToy):
     #         datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
     #         self.data.append(datum)
 
-    def likelihoods_construct_from_base(self, trueModel=None, bReps=True, mReps=True, bootstrap=False):
+    def likelihoods(self, trueModel=None, bReps=True, mReps=True, bootstrap=False):
         if trueModel is None:
             trueModel = self
         bReps, mReps = trueModel.process_default_reps(bReps, mReps)
@@ -109,14 +109,15 @@ class Repetitions(toy.FlatToy):
         assert trueModel.rReps == self.rReps
         likes = []
         baseLikesNoBootstrap = self.base.sim_likes(trueModel)  # returns trueModel.base.likes
-        if bootstrap:
-            baseLikes = [baseLikesNoBootstrap[i] for i in trueModel.bootstrap_choose(bReps*trueModel.rReps, mReps)]
+        if bReps is None:
+            baseLikes = baseLikesNoBootstrap
+            nLast = mReps
+        else:
+            baseLikes = [baseLikesNoBootstrap[i]
+                         for i in trueModel.bootstrap_choose(bReps*trueModel.rReps, mReps)]
                          # for i in trueModel.bootstrap_choose(trueModel.bReps*trueModel.rReps)]
             # baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
             nLast = trueModel.bReps
-        else:
-            baseLikes = baseLikesNoBootstrap
-            nLast = mReps
         for n in range(nLast):
             like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
             likes.append(sum(like))
