@@ -16,30 +16,42 @@ class SaveStateRNG(numpy.random.RandomState):
         self.seed(seed)  # if seed=None, sets state by /dev/urandom
         self.savedState = self.get_state()   # save initial state to use later
 
+    def restate(self, seed_or_state):
+        try:
+            self.set_state(seed_or_state)
+        except TypeError:
+            self.seed(seed_or_state)
+        self.savedState = self.get_state()
+
     def reset(self):  # Resets RNG to same state as used first initialized or last time reseed() called.
         self.set_state(self.savedState)
 
-class Bootstrap(object):
-    def __init__(self, bReps, mReps, seed_or_state=None):
-        self.bReps = bReps
-        self.mReps = mReps
+
+class Select(object):
+    def __init__(self, parent, bReps=True, mReps=True, seed_or_state=None):
+        self.bReps, self.mReps = self.process_reps(parent, bReps, mReps)
         if bReps is None:
             self.seed_or_state = None
-            self.RNG, self.initial_random_state = None, None
+            self.RNG = None
             self.choice = range(mReps)
         else:
             self.seed_or_state = seed_or_state
-            self.RNG, self.initial_random_state = self.setup_random(seed_or_state)
+            self.RNG = SaveStateRNG()
+            self.RNG.restate(seed_or_state)
             self.choice = self.RNG.choice(range(mReps), bReps).tolist()
 
-    def setup_random(self, seed_or_state):
-        RNG = SaveStateRNG()
-        try:
-            RNG.set_state(seed_or_state)
-        except TypeError:
-            RNG.reseed(seed_or_state)
-        return RNG, RNG.get_state()
+    def process_reps(self, parent, bReps, mReps):
+        if bReps is True:
+            bReps = parent.bReps
+        if mReps is True:
+            mReps = parent.mReps
+        if mReps is None:
+            mReps = parent.mTotal()
+        return bReps, mReps
 
+    # def unchanged(self, bReps, mReps, seed_or_state):
+    #     return (bReps == self.bReps and mReps == self.mReps and seed_or_state is not None and
+    #             seed_or_state == self.seed_or_state)
 
 class Toy(object):
     def __init__(self, qs):
@@ -53,18 +65,17 @@ class Toy(object):
         return FT
 
     def getExperiment(self):  # For subclassing replace this code
+        assert len(self.qs) == 1 or len(self.qs) == 2  # have not implemented other toy models
         if len(self.qs) == 1:
             toy2 = True
             q = parameter.mu(self.qs[0], '1./'+self.preferred.time)
             q0 = None
             q1 = None
-        elif len(self.qs) == 2:
+        else:  # len(self.qs) == 2:
             toy2 = False
             q = None
             q0 = parameter.mu(self.qs[0], '1/'+self.preferred.time)
             q1 = parameter.mu(self.qs[1], '1/'+self.preferred.time)
-        else:
-            assert (False)  # Length of q should be 1 or 2
         return {'toy2':toy2, 'q':q, 'q0':q0, 'q1':q1}
 
 
@@ -72,7 +83,7 @@ class FlatToy(object):
     def __init__(self, parent, seed=None, name=None, kw=None):
         self.debugFlag = False  # To save hidden states, call self.debug() before generating data
         self.simRNG = self.initRNG(seed)
-        self.bootRNG = self.initRNG()
+        self.selection = None
         self.setUpExperiment(parent, kw)
         self.defineRepetitions()
         self.startData()
@@ -137,42 +148,43 @@ class FlatToy(object):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
-    def same_bootstrap(self, bReps, mReps, seed):
-        if seed is None:
-            return False
-        else:
-            return (mReps == self.bootstrap_previous_mReps
-                and bReps == self.bootstrap_previous_bReps
-                and seed == self.bootstrap_previous_seed)
+    # def same_bootstrap(self, bReps, mReps, seed):
+    #     if seed is None:
+    #         return False
+    #     else:
+    #         return (mReps == self.bootstrap_previous_mReps
+    #             and bReps == self.bootstrap_previous_bReps
+    #             and seed == self.bootstrap_previous_seed)
 
     def mTotal(self):  # overloaded for Repetitions class
         return len(self.data)
 
-    def process_default_reps(self, bReps, mReps):
-        if bReps is True:
-            bReps = self.bReps
-        if mReps is True:
-            mReps = self.mReps
-        if mReps is None:
-            mReps = self.mTotal()
-        return bReps, mReps
+    # def select_from_reps(self, bReps, mReps, selector_seed_or_state=True):
+    #     if bReps is True:
+    #         bReps = self.bReps
+    #     if mReps is True:
+    #         mReps = self.mReps
+    #     elif mReps is None:
+    #         mReps = self.mTotal()
+    #     return self.selection if self.selection.unchanged(bReps, mReps, selector_seed_or_state) \
+    #                           else Selector(bReps, mReps, selector_seed_or_state)
 
-    def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=None):
-        bReps, mReps = self.process_default_reps(bReps, mReps)
-        if RNG is None:
-            RNG = self.initRNG()
-        RNG.reseed(seed)  # if seed is False, does nothing.
-        self.extend_data(mReps=mReps)
-        if bReps is None:
-            return []
-        else:
-            return RNG.choice(range(mReps), bReps).tolist()
+    # def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=None):
+    #     bReps, mReps = self.process_default_reps(bReps, mReps)
+    #     if RNG is None:
+    #         RNG = self.initRNG()
+    #     RNG.reseed(seed)  # if seed is False, does nothing.
+    #     self.extend_data(mReps=mReps)
+    #     if bReps is None:
+    #         return []
+    #     else:
+    #         return RNG.choice(range(mReps), bReps).tolist()
 
-    def bootstrap(self, bReps=True, mReps=True, seed=None):
-        bReps, mReps = self.process_default_reps(bReps, mReps)
-        self.bootstrap.choice = self.bootstrap_choose(bReps, mReps, seed, self.bootRNG)
-        self.bReps = bReps
-        self.mReps = mReps
+    def bootstrap(self, bReps=True, mReps=True, selector_seed_or_state=None):
+        self.selection = Select(self, bReps, mReps, selector_seed_or_state)
+        self.extend_data(self.selection.mReps)
+        self.bReps = self.selection.bReps
+        self.mReps = self.selection.mReps
 
     def initRNG(self, seed=None):  # Maybe overloaded if using a different RNG, eg rpy2
         return SaveStateRNG(seed)
@@ -201,8 +213,8 @@ class FlatToy(object):
         self.simRNG.reseed(seed)
         self._restart()
 
-    def _changeModel(self, parent):
-        self.setUpExperiment(parent)
+    def _changeModel(self, parent, kw):
+        self.setUpExperiment(parent, kw)
         self._restart()
 
     def extend_data(self, mReps=True):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
