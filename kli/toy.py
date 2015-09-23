@@ -227,10 +227,11 @@ class FlatToy(object):
                 self.hiddenStates.append(self.hiddenStateTrajectory)
 
     def sim(self, mReps=None):
-        if mReps is True:
-            return
-        self.extend_data(mReps)
-        self.mReps = self.mTotal() if mReps is None else mReps
+        self.bootstrap(None, mReps)
+        # if mReps is True:
+        #     return
+        # self.extend_data(mReps)
+        # self.mReps = self.mTotal() if mReps is None else mReps
 
     def resim(self, mReps=0):
         self.simRNG.reset()
@@ -262,26 +263,17 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods(self, trueModel=None, bReps=True, mReps=True, seed=None):
+    def likelihoods(self, trueModel=None, selection=None):
         if trueModel is None:  # Data not passed
             trueModel = self
-        bReps, mReps = trueModel.process_default_reps(bReps, mReps)
-        likes = self.extend_likes(trueModel, mReps)
-        if bReps is None:
-            bs_choice = None
-        elif bReps == self.bReps and mReps == self.mReps:
-            bs_choice = self.bootstrap_choice
-        else:
-            bs_choice = self.bootstrap_choose(bReps, mReps, seed)
-        if bs_choice is not None:
-            return [likes[i] for i in bs_choice]
-        else:
-            return likes[0:mReps]  # Restrict what you return to stopping point
+        if selection is None:
+            selection = trueModel.selection
+        likes = self.extend_likes(trueModel, selection.mReps)
+        return [likes[i] for i in selection.choice]
 
     def extend_likes(self, trueModel=None, mReps=True):
         if trueModel is None:
             trueModel = self
-        _bReps, mReps = self.process_default_reps(bReps=None, mReps=mReps)
         trueModel.extend_data(mReps)
         likes = trueModel.likes.getOrMakeEntry(self)
         mFirst = len(likes)
