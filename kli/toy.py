@@ -310,7 +310,7 @@ class FlatToy(object):
         if trueModel is None:
             trueModel = self
         mReps = trueModel.process_mReps(mReps)
-        return self.extend_likes(trueModel, mReps)
+        return self.extend_likes(trueModel, mReps)[0:mReps]
 
     def get_bootstrap_data(self, selection=None):
         if selection is None:
