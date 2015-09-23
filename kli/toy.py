@@ -263,17 +263,35 @@ class FlatToy(object):
             self.hiddenStateTrajectory = (RNG.exponential(1./self.q1), RNG.exponential(1./self.q0))
         return sum(self.hiddenStateTrajectory)
 
-    def likelihoods(self, trueModel=None, selection=None):
+    def likelihoods(self, trueModel=None, selection=True):
         if trueModel is None:  # Data not passed
             trueModel = self
-        if selection is None:
+        if selection is True:
             selection = trueModel.selection
+        elif selection is None:
+            print "Must have data in true model"
+            return []
         likes = self.extend_likes(trueModel, selection.mReps)
         return [likes[i] for i in selection.choice]
+
+    def process_mReps(self, mReps=True):
+        if mReps is True:
+            return self.mReps
+        elif mReps is None:
+            return self.mTotal()
+        else:
+            return mReps
+
+    # def process_trueModel(self, trueModel=None):
+    #     if trueModel is None:
+    #         return self
+    #     else:
+    #         return trueModel
 
     def extend_likes(self, trueModel=None, mReps=True):
         if trueModel is None:
             trueModel = self
+        mReps = trueModel.process_mReps(mReps)
         trueModel.extend_data(mReps)
         likes = trueModel.likes.getOrMakeEntry(self)
         mFirst = len(likes)
@@ -283,18 +301,29 @@ class FlatToy(object):
             likes.append(self.likeOnce(datum))
         return likes
 
-    def sim_data(self, mReps=True):
-        _bReps, mReps = self.process_default_reps(None, mReps)
+    def get_data(self, mReps=True):
+        mReps = self.process_mReps(mReps)
         self.extend_data(mReps)
         return self.data[0:mReps]
 
-    def sim_likes(self, trueModel=None):
+    def get_likes(self, trueModel=None, mReps=True):
         if trueModel is None:
             trueModel = self
-        return trueModel.likes.getOrMakeEntry(self.base)
+        mReps = trueModel.process_mReps(mReps)
+        return self.extend_likes(trueModel, mReps)
 
-    def bootstrap_data(self):
-        return [self.data[i] for i in self.bootstrap_choice]
+    def get_bootstrap_data(self, selection=None):
+        if selection is None:
+            selection = self.selection
+        return [self.data[i] for i in selection.choice]
+
+    def get_bootstrap_likes(self, trueModel=None, selection=None):
+        if trueModel is None:
+            trueModel = self
+        if selection is None:
+            selection = trueModel.selection
+        likes = self.get_likes(trueModel, selection.mReps)
+        return [likes[i] for i in selection.choice]
 
     # def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
     #     likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)
@@ -334,12 +363,12 @@ class FlatToy(object):
         else:
             return True
 
-    def minuslike(self, trueModel=None, bReps=True, mReps=True):
-        L = self.likelihoods(trueModel, bReps, mReps)
+    def minuslike(self, trueModel=None, selection=True):
+        L = self.likelihoods(trueModel, selection)
         return -sum(L)
 
-    def like(self, trueModel=None, bReps=True, mReps=True):
-        L = self.likelihoods(trueModel, bReps, mReps)
+    def like(self, trueModel=None, selection=True):
+        L = self.likelihoods(trueModel, selection)
         return sum(L)
 
     def pdf(self, datum):
@@ -407,17 +436,19 @@ class FlatToy(object):
     #     assert self.toy2  # Not yet implemented for toy 3
     #     return 1. / numpy.mean(self.data[0:self.mReps])
 
-    def logf(self, trueModel=None, bReps=True, mReps=True):
-        return numpy.matrix(self.likelihoods(trueModel, bReps, mReps))
+    def logf(self, trueModel=None, selection=True):
+        return numpy.matrix(self.likelihoods(trueModel, selection))
 
-    def likeRatios(self, alt, trueModel=None, bReps=True, mReps=True):  # likelihood ratio; self is true model
+    def likeRatios(self, alt, trueModel=None, selection=True):  # likelihood ratio; self is true model
         if trueModel is None:
             trueModel = self  # if true=None, want alt(hyp) not alt(alt), below
-        return self.logf(trueModel, bReps, mReps) - alt.logf(trueModel,bReps,mReps)
+        if selection is True:
+            selection = trueModel.selection
+        return self.logf(trueModel, selection) - alt.logf(trueModel, selection)
 
     def dataHistogram(self, bins=10):
         plt.figure()
-        ax = plt.gca()
+        plt.gca()
         plt.hist(numpy.array(self.data[0:self.mReps]), bins=bins, normed=True, color='black')
 
     def likeRatioHistogram(self, alt, trueModel=None, bins=10):
@@ -436,8 +467,8 @@ class FlatToy(object):
         plt.ylabel('Density of Likelihood Ratios')
         plt.title(self.str_hat(alt, trueModel))
 
-    def PFalsify(self, alt, trueModel=None, bReps=True, mReps=True, adjustExtreme=False):
-        ratios = self.likeRatios(alt, trueModel, bReps, mReps)
+    def PFalsify(self, alt, trueModel=None, selection=True, adjustExtreme=False):
+        ratios = self.likeRatios(alt, trueModel, selection)
         number_of_ratios = ratios.shape[1]
         if number_of_ratios == 0:
             print "Warning: No Likelihoods"
@@ -452,30 +483,32 @@ class FlatToy(object):
             number_of_positives -= 0.5
         return number_of_positives/float(number_of_ratios)
 
-    def likeRatioMuSigma(self, alt, trueModel=None, bReps=True, mReps=True):  # self is true model
-        lrs = self.likeRatios(alt, trueModel, bReps, mReps)
+    def likeRatioMuSigma(self, alt, trueModel=None, selection=True):  # self is true model
+        lrs = self.likeRatios(alt, trueModel, selection)
         mu = numpy.mean(lrs)
         sig = numpy.std(lrs)
         return mu, sig
 
-    def likeRatioCV(self, alt, trueModel=None, bReps=True, mReps=True):
-        mu, sig = self.likeRatioMuSigma(alt, trueModel, bReps, mReps)
+    def likeRatioCV(self, alt, trueModel=None, selection=True):
+        mu, sig = self.likeRatioMuSigma(alt, trueModel, selection)
         return sig/mu
 
     # Deprecated and will be removed in future.  Need to update sfn14.
-    def lrN(self, alt, N, M, trueModel=None, bReps=True, mReps=True):  # add N of them, return M
+    def lrN(self, alt, N, M, trueModel=None, selection=True):  # add N of them, return M
         self.sim(mReps=N * M)
-        lrNM = self.likeRatios(alt, trueModel, bReps, mReps)
+        lrNM = self.likeRatios(alt, trueModel, selection)
         L = numpy.reshape(lrNM, (M, N))
         return L.sum(axis=0)
 
-    def aic(self, alt, trueModel=None, bReps=True, mReps=True):  # self is true model
+    def aic(self, alt, trueModel=None, selection=True):  # self is true model
         if trueModel is None:
             trueModel = self
-        return 2 * (self.logf(trueModel, bReps, mReps) - alt.logf(trueModel, bReps, mReps))
+        if selection is True:
+            selection = trueModel.selection
+        return 2 * (self.logf(trueModel, selection) - alt.logf(trueModel, selection))
 
-    def aicMuSigma(self, alt, trueModel=None, bReps=True, mReps=True):  # self is true model
-        aics = self.aic(alt, trueModel, bReps, mReps)
+    def aicMuSigma(self, alt, trueModel=None, selection=True):  # self is true model
+        aics = self.aic(alt, trueModel, selection)
         mu = numpy.mean(aics)
         sigma = numpy.std(aics)
         return (mu, sigma)
@@ -487,14 +520,16 @@ class FlatToy(object):
         A = numpy.reshape(aicNM, (M, N))
         return A.sum(axis=0)
 
-    def Ehlogf(self, trueModel=None, bReps=True, mReps=True):
-        return (self.logf(trueModel,bReps,mReps).mean())
+    def Ehlogf(self, trueModel=None, selection=True):
+        return (self.logf(trueModel, selection).mean())
 
-    def KL(self, other, trueModel=None, bReps=True, mReps=True):
+    def KL(self, other, trueModel=None, selection=True):
         if trueModel is None:
             trueModel = self
+        if selection is True:
+            selection = trueModel.selection
         # ORIGINALLY (less stable?):  return self.Ehlogf(trueModel) - other.Ehlogf(trueModel)
-        return (self.logf(trueModel, bReps, mReps) - other.logf(trueModel, bReps, mReps)).mean()
+        return (self.logf(trueModel, selection) - other.logf(trueModel, selection)).mean()
 
 
 if __name__ == '__main__':
