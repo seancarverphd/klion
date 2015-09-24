@@ -52,13 +52,13 @@ class Repetitions(toy.FlatToy):
         return trueModel.base.likes.getOrMakeEntry(self.base)
 
     def mTotal(self):
-        return int(self.base.mTotal / self.rReps)
+        return int(self.base.mTotal())
 
     def get_data(self, mReps=True):
         mReps = self.process_mReps(mReps)
         self.extend_data(mReps)
         data = []
-        for r in range(mReps):
+        for r in range(int(mReps/self.rReps)):
             datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
             data.append(datum)
         return data

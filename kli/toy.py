@@ -34,16 +34,15 @@ class Select(object):
         if bReps is None:
             self.seed_or_state = None
             self.RNG = None
-            concatenated = range(self.mReps*self.rReps)
-            self.base_total = self.mReps*self.rReps
+            len_data = int(self.mReps/self.rReps)
+            concatenated = range(len_data*self.rReps)
             self.choice = concatenated if self.rReps == 1 else [
-                            concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(self.mReps)]
+                            concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(len_data)]
         else:
             self.seed_or_state = seed_or_state
             self.RNG = SaveStateRNG()
             self.RNG.restate(seed_or_state)
             concatenated = self.RNG.choice(range(self.mReps), self.bReps*self.rReps).tolist()
-            self.base_total = max(concatenated) + 1
             self.choice = concatenated if self.rReps == 1 else [
                             concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(self.bReps)]
 
@@ -283,7 +282,7 @@ class FlatToy(object):
 
     def process_mReps(self, mReps=True):
         try:   # if mReps is a Select object, return maximum needed mReps (in base) to generate all needed data
-            return mReps.base_total
+            return mReps.mReps
         except AttributeError:
             pass
         if mReps is True:
