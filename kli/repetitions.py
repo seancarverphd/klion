@@ -27,14 +27,14 @@ class Repetitions(toy.FlatToy):
     def defineRepetitions(self):
         pass
 
-    # Override bootstrap_choose, bootstrap_data NOT bootstrap
-    def bootstrap(self, bReps=True, mReps=True, seed=None):
-        reps = bReps*self.rReps if bReps is not None else None
-        base_mReps = self.mReps*self.rReps
-        # self.set_base_mReps_to_mr(self.mReps, self.rReps)
-        self.bootstrap_choice = self.base.bootstrap_choose(reps, seed=seed, mReps=base_mReps, RNG=RNG)
-        # self.pop_base_mReps()
-        self.bReps = bReps
+    # # Override bootstrap_choose, bootstrap_data NOT bootstrap
+    # def bootstrap(self, bReps=True, mReps=True, seed=None):
+    #     reps = bReps*self.rReps if bReps is not None else None
+    #     base_mReps = self.mReps*self.rReps
+    #     # self.set_base_mReps_to_mr(self.mReps, self.rReps)
+    #     self.bootstrap_choice = self.base.bootstrap_choose(reps, seed=seed, mReps=base_mReps, RNG=RNG)
+    #     # self.pop_base_mReps()
+    #     self.bReps = bReps
 
     def setUpExperiment(self, base, kw):
         pass
@@ -47,30 +47,30 @@ class Repetitions(toy.FlatToy):
         self.likes = []
         self.base._restart()
 
-    def set_base_mReps_to_mr(self, m=None, r=None):
-        if m is None:
-            m = self.mReps
-        if r is None:
-            r = self.rReps
-        self.stack.append(self.base.mReps)
-        self.base.sim(m*r)
-
-    def pop_base_mReps(self):
-        assert len(self.stack) > 0
-        mReps = self.stack.pop(-1)
-        self.base.sim(mReps)
+    # def set_base_mReps_to_mr(self, m=None, r=None):
+    #     if m is None:
+    #         m = self.mReps
+    #     if r is None:
+    #         r = self.rReps
+    #     self.stack.append(self.base.mReps)
+    #     self.base.sim(m*r)
+    #
+    # def pop_base_mReps(self):
+    #     assert len(self.stack) > 0
+    #     mReps = self.stack.pop(-1)
+    #     self.base.sim(mReps)
 
     def extend_data(self, mReps=True):
-        _bReps, mReps = self.process_default_reps(None, mReps)
-        self.base.extend_data(mReps=mReps*self.rReps)
+        mReps = self.process_mReps(mReps)
+        self.base.extend_data(mReps=mReps)
         # self.set_base_mReps_to_mr(m, r)
         # self.pop_base_mReps()
 
     def extend_likes(self, trueModel=None, mReps=True):
         if trueModel is None:
             trueModel = self
-        _bReps, mReps = trueModel.process_default_reps(None, mReps)
-        self.base.extend_likes(trueModel=trueModel.base, mReps=mReps*trueModel.rReps)
+        mReps = trueModel.process_mReps(mReps)
+        return self.base.extend_likes(trueModel=trueModel.base, mReps=mReps)
         # trueModel.set_base_mReps_to_mr(m, r)
         # self.base.likelihoods_monte_carlo_sample(trueModel.base)
         # trueModel.pop_base_mReps()
@@ -81,8 +81,8 @@ class Repetitions(toy.FlatToy):
     def mTotal(self):
         return int(self.base.mTotal / self.rReps)
 
-    def sim_data(self, mReps=True):
-        _bReps, mReps = self.process_default_reps(None, mReps)
+    def get_data(self, mReps=True):
+        mReps = self.process_mReps(mReps)
         self.extend_data(mReps)
         data = []
         for r in range(mReps):
@@ -101,35 +101,40 @@ class Repetitions(toy.FlatToy):
     #         datum = [self.base.data[r*self.rReps + d] for d in range(self.rReps)]
     #         self.data.append(datum)
 
-    def likelihoods(self, trueModel=None, bReps=True, mReps=True, bootstrap=False):
+    def likelihoods(self, trueModel=None, selection=True, bootstrap=False):
         if trueModel is None:
             trueModel = self
-        bReps, mReps = trueModel.process_default_reps(bReps, mReps)
-        self.extend_likes(trueModel, mReps)
+        if selection is True:
+            selection = trueModel.selection
+        baselikes = self.extend_likes(trueModel, selection)
         assert trueModel.rReps == self.rReps
         likes = []
-        baseLikesNoBootstrap = self.base.sim_likes(trueModel)  # returns trueModel.base.likes
-        if bReps is None:
-            baseLikes = baseLikesNoBootstrap
-            nLast = mReps
-        else:
-            baseLikes = [baseLikesNoBootstrap[i]
-                         for i in trueModel.bootstrap_choose(bReps*trueModel.rReps, mReps)]
-                         # for i in trueModel.bootstrap_choose(trueModel.bReps*trueModel.rReps)]
-            # baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
-            nLast = trueModel.bReps
-        for n in range(nLast):
-            like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
-            likes.append(sum(like))
-        if self.debugFlag:
-            print "likes = ", likes
+        for selectum in selection.choice:
+            likes.append(sum([baselikes[s] for s in selectum]))
         return likes
 
-    def likelihoods_monte_carlo_sample(self, trueModel=None, mReps=None):
-        return self.likelihoods_construct_from_base(trueModel, bootstrap=False)
+        # baseLikesNoBootstrap = self.base.sim_likes(trueModel)  # returns trueModel.base.likes
+        # if bReps is None:
+        #     baseLikes = baseLikesNoBootstrap
+        #     nLast = mReps
+        # else:
+        #     baseLikes = [baseLikesNoBootstrap[i]
+        #                  for i in trueModel.bootstrap_choose(bReps*trueModel.rReps, mReps)]
+        #                  # for i in trueModel.bootstrap_choose(trueModel.bReps*trueModel.rReps)]
+        #     # baseLikes = trueModel.resample(baseLikes, trueModel.bReps*trueModel.rReps)
+        #     nLast = trueModel.bReps
+        # for n in range(nLast):
+        #     like = [baseLikes[n*trueModel.rReps + d] for d in range(trueModel.rReps)]
+        #     likes.append(sum(like))
+        # if self.debugFlag:
+        #     print "likes = ", likes
+        # return likes
 
-    def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
-        return self.likelihoods_construct_from_base(trueModel, bootstrap=True)
+    # def likelihoods_monte_carlo_sample(self, trueModel=None, mReps=None):
+    #     return self.likelihoods_construct_from_base(trueModel, bootstrap=False)
+    #
+    # def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
+    #     return self.likelihoods_construct_from_base(trueModel, bootstrap=True)
 
     def _debug(self, flag=None):
         return self.base._debug(flag)

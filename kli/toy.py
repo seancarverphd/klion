@@ -17,11 +17,11 @@ class SaveStateRNG(numpy.random.RandomState):
         self.savedState = self.get_state()   # save initial state to use later
 
     def restate(self, seed_or_state):
-        try:
+        try: # works if seed_or_state is a state
             self.set_state(seed_or_state)
-        except TypeError:
-            self.seed(seed_or_state)
-        self.savedState = self.get_state()
+            self.savedState = seed_or_state
+        except TypeError:  # seed_or_state is a seed
+            self.reseed(seed_or_state)
 
     def reset(self):  # Resets RNG to same state as used first initialized or last time reseed() called.
         self.set_state(self.savedState)
@@ -30,15 +30,22 @@ class SaveStateRNG(numpy.random.RandomState):
 class Select(object):
     def __init__(self, parent, bReps=True, mReps=True, seed_or_state=None):
         self.bReps, self.mReps = self.process_reps(parent, bReps, mReps)
+        self.rReps = parent.rReps
         if bReps is None:
             self.seed_or_state = None
             self.RNG = None
-            self.choice = range(mReps)
+            concatenated = range(self.mReps*self.rReps)
+            self.base_total = self.mReps*self.rReps
+            self.choice = concatenated if self.rReps == 1 else [
+                            concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(self.mReps)]
         else:
             self.seed_or_state = seed_or_state
             self.RNG = SaveStateRNG()
             self.RNG.restate(seed_or_state)
-            self.choice = self.RNG.choice(range(mReps), bReps).tolist()
+            concatenated = self.RNG.choice(range(self.mReps), self.bReps*self.rReps).tolist()
+            self.base_total = max(concatenated) + 1
+            self.choice = concatenated if self.rReps == 1 else [
+                            concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(self.bReps)]
 
     def process_reps(self, parent, bReps, mReps):
         if bReps is True:
@@ -182,7 +189,7 @@ class FlatToy(object):
 
     def bootstrap(self, bReps=True, mReps=True, selector_seed_or_state=None):
         self.selection = Select(self, bReps, mReps, selector_seed_or_state)
-        self.extend_data(self.selection.mReps)
+        self.extend_data(self.selection)
         self.bReps = self.selection.bReps
         self.mReps = self.selection.mReps
 
@@ -194,10 +201,11 @@ class FlatToy(object):
         self.hiddenStates = []  # These are the Markov states, including hidden ones.  This model isn't Markovian, though
         self.bReps = None
         self.mReps = 0
+        self.selection = None
         # self.bootstrap_previous_bReps = None
         # self.bootstrap_previous_mReps = None
         # self.bootstrap_previous_seed = None
-        self.bootstrap_choice = []
+        # self.bootstrap_choice = []
 
     def startLikes(self):
         self.likes = repository.TableOfModels()
@@ -218,8 +226,7 @@ class FlatToy(object):
         self._restart()
 
     def extend_data(self, mReps=True):  # New reps added, keeps old; if (mReps <= len(self.data) then does nothing
-        if mReps is True or mReps is None:
-            return
+        mReps = self.process_mReps(mReps)
         numNewReps = mReps - len(self.data)  # Nothing changed if negative
         for n in range(numNewReps):
             self.data.append(self.simulateOnce(self.simRNG))  # Don't want to use self.R elsewhere
@@ -268,13 +275,17 @@ class FlatToy(object):
             trueModel = self
         if selection is True:
             selection = trueModel.selection
-        elif selection is None:
+        if selection is None:
             print "Must have data in true model"
             return []
         likes = self.extend_likes(trueModel, selection.mReps)
         return [likes[i] for i in selection.choice]
 
     def process_mReps(self, mReps=True):
+        try:   # if mReps is a Select object, return maximum needed mReps (in base) to generate all needed data
+            return mReps.base_total
+        except AttributeError:
+            pass
         if mReps is True:
             return self.mReps
         elif mReps is None:
@@ -312,18 +323,19 @@ class FlatToy(object):
         mReps = trueModel.process_mReps(mReps)
         return self.extend_likes(trueModel, mReps)[0:mReps]
 
-    def get_bootstrap_data(self, selection=None):
-        if selection is None:
+    def get_bootstrap_data(self, selection=True):
+        if selection is True:
             selection = self.selection
         return [self.data[i] for i in selection.choice]
 
-    def get_bootstrap_likes(self, trueModel=None, selection=None):
-        if trueModel is None:
-            trueModel = self
-        if selection is None:
-            selection = trueModel.selection
-        likes = self.get_likes(trueModel, selection.mReps)
-        return [likes[i] for i in selection.choice]
+    def get_bootstrap_likes(self, trueModel=None, selection=True):
+        return self.likelihoods(trueModel, selection)
+        # if trueModel is None:
+        #     trueModel = self
+        # if selection is True:
+        #     selection = trueModel.selection
+        # likes = self.get_likes(trueModel, selection.mReps)
+        # return [likes[i] for i in selection.choice]
 
     # def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
     #     likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)

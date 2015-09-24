@@ -36,8 +36,10 @@ class TestFlatSimple(TestCase):
     self.assertEquals(self.FS21.KL(self.FS20), 0.027827403071797166)
 
   def test_Simple_Repetitions_Simulate(self):
-    self.assertEquals(self.R21.data[81][2], 15)
-    self.assertEquals(self.R20.data[17][2], 9)
+    data21 = self.R21.get_data()
+    data20 = self.R20.get_data()
+    self.assertEquals(data21[81][2], 15)
+    self.assertEquals(data20[17][2], 9)
 
   def test_Simple_Repetitions_Likelihood(self):
     self.assertEquals(self.R21.like(), -2038.9092831205546)
