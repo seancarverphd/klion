@@ -55,9 +55,6 @@ class Select(object):
             mReps = parent.mTotal()
         return bReps, mReps
 
-    # def unchanged(self, bReps, mReps, seed_or_state):
-    #     return (bReps == self.bReps and mReps == self.mReps and seed_or_state is not None and
-    #             seed_or_state == self.seed_or_state)
 
 class Toy(object):
     def __init__(self, qs):
@@ -154,37 +151,8 @@ class FlatToy(object):
         self.base = self  # Used in functions below; Defined differently for Repetitions subclass
         self.rReps = 1  # Used in functions below; Defined differently by Repetitions subclass
 
-    # def same_bootstrap(self, bReps, mReps, seed):
-    #     if seed is None:
-    #         return False
-    #     else:
-    #         return (mReps == self.bootstrap_previous_mReps
-    #             and bReps == self.bootstrap_previous_bReps
-    #             and seed == self.bootstrap_previous_seed)
-
     def mTotal(self):  # overloaded for Repetitions class
         return len(self.data)
-
-    # def select_from_reps(self, bReps, mReps, selector_seed_or_state=True):
-    #     if bReps is True:
-    #         bReps = self.bReps
-    #     if mReps is True:
-    #         mReps = self.mReps
-    #     elif mReps is None:
-    #         mReps = self.mTotal()
-    #     return self.selection if self.selection.unchanged(bReps, mReps, selector_seed_or_state) \
-    #                           else Selector(bReps, mReps, selector_seed_or_state)
-
-    # def bootstrap_choose(self, bReps=True, mReps=True, seed=None, RNG=None):
-    #     bReps, mReps = self.process_default_reps(bReps, mReps)
-    #     if RNG is None:
-    #         RNG = self.initRNG()
-    #     RNG.reseed(seed)  # if seed is False, does nothing.
-    #     self.extend_data(mReps=mReps)
-    #     if bReps is None:
-    #         return []
-    #     else:
-    #         return RNG.choice(range(mReps), bReps).tolist()
 
     def bootstrap(self, bReps=True, mReps=True, selector_seed_or_state=None):
         self.selection = Select(self, bReps, mReps, selector_seed_or_state)
@@ -201,10 +169,6 @@ class FlatToy(object):
         self.bReps = None
         self.mReps = 0
         self.selection = None
-        # self.bootstrap_previous_bReps = None
-        # self.bootstrap_previous_mReps = None
-        # self.bootstrap_previous_seed = None
-        # self.bootstrap_choice = []
 
     def startLikes(self):
         self.likes = repository.TableOfModels()
@@ -237,10 +201,6 @@ class FlatToy(object):
             self.bootstrap(None, None)
         else:
             self.bootstrap(None, len_data*self.rReps)
-        # if mReps is True:
-        #     return
-        # self.extend_data(mReps)
-        # self.mReps = self.mTotal() if mReps is None else mReps
 
     def resim(self, mReps=0):
         self.simRNG.reset()
@@ -295,12 +255,6 @@ class FlatToy(object):
         else:
             return mReps
 
-    # def process_trueModel(self, trueModel=None):
-    #     if trueModel is None:
-    #         return self
-    #     else:
-    #         return trueModel
-
     def extend_likes(self, trueModel=None, mReps=True):
         if trueModel is None:
             trueModel = self
@@ -332,26 +286,6 @@ class FlatToy(object):
 
     def get_bootstrap_likes(self, trueModel=None, selection=True):
         return self.likelihoods(trueModel, selection)
-        # if trueModel is None:
-        #     trueModel = self
-        # if selection is True:
-        #     selection = trueModel.selection
-        # likes = self.get_likes(trueModel, selection.mReps)
-        # return [likes[i] for i in selection.choice]
-
-    # def likelihoods_bootstrap_sample(self, trueModel=None, bReps=True, mReps=True):
-    #     likes = self.likelihoods_monte_carlo_sample(trueModel, mReps=trueModel.mReps)
-    #     # return [likes[i] for i in trueModel.bootstrap_choose(bReps, mReps)]
-    #     return [likes[i] for i in trueModel.bootstrap_choice]
-
-    # def likelihoods(self, trueModel=None, bReps=True, mReps=True):
-    #     if trueModel is None:
-    #         trueModel = self
-    #     bReps, mReps = trueModel.process_default_reps(bReps, mReps)
-    #     if bReps is None:
-    #         return self.likelihoods_monte_carlo_sample(trueModel, mReps=mReps)
-    #     else:
-    #         return self.likelihoods_bootstrap_sample(trueModel, bReps=bReps, mReps=mReps)
 
     def likeOnce(self, datum):  # Overload when subclassing
         if not self.datumSupported(datum):
