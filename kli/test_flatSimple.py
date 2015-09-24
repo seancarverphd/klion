@@ -10,12 +10,12 @@ class TestFlatSimple(TestCase):
     self.S20 = kli.simple.Simple(n=20, p=.5)
     self.FS20 = self.S20.flatten(seed=17)
     self.R20 = kli.repetitions.Repetitions(self.FS20,9)
-    self.R20.sim(100*9)
+    self.R20.sim(100)
     self.FS20.sim()
     self.S21 = kli.simple.Simple(n=21, p=.5)
     self.FS21 = self.S21.flatten(seed=28)
     self.R21 = kli.repetitions.Repetitions(self.FS21,9)
-    self.R21.sim(100*9)
+    self.R21.sim(100)
     self.FS21.sim()
 
   def test_exact(self):

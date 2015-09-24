@@ -232,8 +232,11 @@ class FlatToy(object):
             if self.debugFlag:
                 self.hiddenStates.append(self.hiddenStateTrajectory)
 
-    def sim(self, mReps=None):
-        self.bootstrap(None, mReps)
+    def sim(self, len_data=None):
+        if len_data is None:
+            self.bootstrap(None, None)
+        else:
+            self.bootstrap(None, len_data*self.rReps)
         # if mReps is True:
         #     return
         # self.extend_data(mReps)
