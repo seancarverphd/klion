@@ -138,22 +138,6 @@ class Repetitions(toy.FlatToy):
         # trueModel.pop_base_mReps()
         return scipy.stats.norm.cdf(numpy.sqrt(self.rReps)/cv)
 
-    def rInfinity(self, alt, trueModel=None, bReps=True, mReps=True, C=0.95):
-        if trueModel is None:
-            trueModel = self
-        bReps, mReps = trueModel.process_default_reps(bReps, mReps)
-        new_bReps = None if bReps is None else bReps*trueModel.rReps
-        new_mReps = mReps*trueModel.rReps
-        # if bReps is True:
-        #     bReps = trueModel.bReps
-        # if mReps is True:
-        #     mReps = trueModel.mReps
-        # trueModel.set_base_mReps_to_mr()
-        # extend_data(), next line does this automatically
-        cv = self.base.likeRatioCV(alt.base, trueModel.base, new_bReps, new_mReps)
-        # trueModel.pop_base_mReps()
-        return (scipy.stats.norm.ppf(C)*cv)**2
-
     def repeated_models(self, alt, trueModel=None, rReps=1, bReps=True, mReps=True):
         if trueModel is None:
             trueModel = self

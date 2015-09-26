@@ -4,6 +4,8 @@ import matplotlib.pylab as plt
 import matplotlib
 import repository
 import parameter
+import scipy.stats
+
 
 class SaveStateRNG(numpy.random.RandomState):
     def __init__(self, seed=None):
@@ -28,7 +30,7 @@ class SaveStateRNG(numpy.random.RandomState):
 
 
 class Select(object):
-    def __init__(self, parent, bReps=True, mReps=True, seed_or_state=None):
+    def __init__(self, parent, bReps=True, mReps=True, seed_or_state=None, RNG=None):
         self.bReps, self.mReps = self.process_reps(parent, bReps, mReps)
         self.rReps = parent.rReps
         if bReps is None:
@@ -40,7 +42,7 @@ class Select(object):
                             concatenated[m*self.rReps:(m+1)*self.rReps] for m in range(len_data)]
         else:
             self.seed_or_state = seed_or_state
-            self.RNG = SaveStateRNG()
+            self.RNG = SaveStateRNG() if RNG is None else RNG
             self.RNG.restate(seed_or_state)
             concatenated = self.RNG.choice(range(self.mReps), self.bReps*self.rReps).tolist()
             self.choice = concatenated if self.rReps == 1 else [
@@ -386,6 +388,14 @@ class FlatToy(object):
 
     def logf(self, trueModel=None, selection=True):
         return numpy.matrix(self.likelihoods(trueModel, selection))
+
+    def rInfinity(self, alt, trueModel=None, selection=None, C=0.95):
+        if trueModel is None:
+            trueModel = self
+        if selection is None:
+            selection = trueModel.selection
+        cv = self.base.likeRatioCV(alt.base, trueModel.base, selection)
+        return (scipy.stats.norm.ppf(C)*cv)**2
 
     def likeRatios(self, alt, trueModel=None, selection=True):  # likelihood ratio; self is true model
         if trueModel is None:
