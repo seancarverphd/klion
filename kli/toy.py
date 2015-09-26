@@ -393,7 +393,7 @@ class FlatToy(object):
         if trueModel is None:
             trueModel = self
         if selection is None:
-            selection = trueModel.selection
+            selection = trueModel.base.selection
         cv = self.base.likeRatioCV(alt.base, trueModel.base, selection)
         return (scipy.stats.norm.ppf(C)*cv)**2
 
