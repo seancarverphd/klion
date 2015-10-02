@@ -92,7 +92,7 @@ class FlatTruncatedGaussian(toy.FlatToy):
         if datum < 0:
             return -numpy.infty
         else:
-            return numpy.log(self.Norm.pdf(datum)/(1.-self.Norm.cdf(0)))
+            return self.Norm.logpdf(datum) - numpy.log(1.-self.Norm.cdf(0))
 
     def datumWellFormed(self, datum):
         return isinstance(numpy.pi, float)
