@@ -70,3 +70,22 @@ class Star(object):
     def new_cumsum_table(self, LRs, old_sums=None):
         cumsums = np.cumsum(LRs, axis=1)
         return cumsums if old_sums is None else cumsums + old_sums
+
+    def proportions(self):
+        return self.numbers_1xr/float(self.sums_kx1.shape[0])
+
+    def report(self, C=.95):
+        P = self.proportions()
+        r_min = 0
+        while r_min < P.shape[1] and P[0, r_min] < C:
+            r_min += 1
+        r_max = P.shape[1] - 1
+        while r_max >= 0 and P[0, r_max] > C:
+            r_max -= 1
+        if r_min == P.shape[1] and r_max == P.shape[1]-1:
+            print "All repetitions to", P.shape[1], 'are below confidence threshold'
+        elif r_min == 0 and r_max == -1:
+            print "All repetitions to", P.shape[1], 'are above confidence threshold'
+        else:
+            print "(first_at_or_above, last_at_or_below) = (", r_min+1, ",", r_max+1, ") up to", P.shape[1],"repetitions"
+        print "Each repetition derived from a sample of", self.sums_kx1.shape[0], "likelihoods"
