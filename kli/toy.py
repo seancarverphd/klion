@@ -330,6 +330,16 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
+    def compare_bars(self, alt, xmax):
+        x_iterable = numpy.arange(float(xmax))
+        plt.figure()
+        plt.hold('off')
+        hyp_pmf = self.pdf_of_iterable(x_iterable)
+        alt_pmf = alt.pdf_of_iterable(x_iterable)
+        plt.bar(x_iterable-.25, hyp_pmf, width=.25, color='green')
+        plt.hold('on')
+        plt.bar(x_iterable, alt_pmf, width=0.25, color='red')
+
     def compare_pdfs(self, alt, dataModel=None, a=None, b=None, n=1000, bins=10, xlab=None):
         assert not (dataModel is None and (a is None or b is None))
         if dataModel is True:
