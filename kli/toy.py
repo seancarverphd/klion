@@ -330,7 +330,7 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
-    def compare_bars(self, alt, xmax):
+    def compare_bars(self, alt, xmax):  # Useful when range = {0,1,2,...xmax}
         x_iterable = numpy.arange(float(xmax))
         plt.figure()
         plt.hold('off')
