@@ -80,31 +80,49 @@ class Star(object):
     def proportions(self):
         return self.numbers_1xr/float(self.sums_kx1.shape[0])
 
-    def endpoints(self, C=0.95):
+    def endpoints_index(self, C=0.95):
         P = self.proportions()
-        r_min = 0
-        while r_min < P.shape[1] and P[0, r_min] < C:
-            r_min += 1
-        r_max = P.shape[1] - 1
-        while r_max >= 0 and P[0, r_max] > C:
-            r_max -= 1
-        return r_min, r_max
+        i_min = 0  # first at or above confidence level
+        while i_min < P.shape[1] and P[0, i_min] < C:
+            i_min += 1
+        i_max = P.shape[1] - 1  # last at or below confidence level
+        while i_max >= 0 and P[0, i_max] > C:
+            i_max -= 1
+        return i_min, i_max
+
+    def endpoints_repetitions(self, C=0.95):
+        i_min, i_max = self.endpoints_index(C)
+        return i_min+1, i_max+1  # repetitions start at 1; indexes start at 0
 
     def width(self, C=0.95):
-        r_min, r_max = self.endpoints(C)
-        return r_max - r_min
+        i_min, i_max = self.endpoints_index(C)
+        return i_max-i_min  # could be -1
+
+    def fitting_region(self, C=0.95):
+        i_min, i_max = self.endpoints_index(C)
+        w = i_max-i_min
+        if w > 0:
+            return range(i_min-w, i_max+w+1)
+        else:
+            assert w == -1 or w == 0
+            return range(i_max, i_min+1)
+
+    def fitting(self, C=0.95):
+        region = self.fitting_region(C)
+        P = self.proportions()
+        return np.matrix(region)+1, P[:,region]
 
     def report(self, C=.95):
         r_total = self.numbers_1xr.shape[1]
-        r_min, r_max = self.endpoints(C)
+        r_min, r_max = self.endpoints_repetitions(C)
         print "Confidence Level:", C
         if r_min == r_total and r_max == r_total-1:
             print "All repetitions to", r_total, 'are below confidence threshold'
         elif r_min == 0 and r_max == -1:
             print "All repetitions to", r_total, 'are above confidence threshold'
         else:
-        print "(first_at_or_above, last_at_or_below) = (", r_min+1, ",", r_max+1, ") up to",\
-                r_total,"repetitions"
+            print "(first_at_or_above, last_at_or_below) = (", r_min, ",", r_max, ") up to",\
+                  r_total,"repetitions"
         print "Each repetition derived from a sample of", self.sums_kx1.shape[0], "bootstrapped likelihoods"
         print "Total of", r_total*self.sums_kx1.shape[0], "Bootstrapped Likelihoods."
         print "Bootstrapping from a Monte Carlo sample size of:", self.mReps
