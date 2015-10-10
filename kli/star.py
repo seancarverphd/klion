@@ -121,6 +121,25 @@ class Star(object):
         m, b = self.regression_line(C)
         return float(C - b)/float(m)
 
+    def all_below(self, C=.95):
+        r_total = self.numbers_1xr.shape[1]
+        r_min, r_max = self.endpoints_repetitions(C)
+        return r_min == r_total+1 and r_max == r_total
+
+    def all_above(self, C=0.95):
+        r_min, r_max = self.endpoints_repetitions(C)
+        return r_min == 1 and r_max == 0
+
+    def last_below(self, C=.95):
+        return self.numbers_1xr[0,-1]/float(self.sums_kx1.shape[0]) < C
+
+    def need_r(self, C=0.95):
+        i_min, i_max = self.endpoints_index()
+        if self.last_below():
+            return True
+        else:
+            return i_max + 2*self.width() > self.numbers_1xr.shape[1]
+
     def report(self, C=.95):
         r_total = self.numbers_1xr.shape[1]
         r_min, r_max = self.endpoints_repetitions(C)
