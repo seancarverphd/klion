@@ -80,23 +80,33 @@ class Star(object):
     def proportions(self):
         return self.numbers_1xr/float(self.sums_kx1.shape[0])
 
-    def report(self, C=.95):
+    def endpoints(self, C=0.95):
         P = self.proportions()
-        print "Confidence Level:", C
         r_min = 0
         while r_min < P.shape[1] and P[0, r_min] < C:
             r_min += 1
         r_max = P.shape[1] - 1
         while r_max >= 0 and P[0, r_max] > C:
             r_max -= 1
-        if r_min == P.shape[1] and r_max == P.shape[1]-1:
-            print "All repetitions to", P.shape[1], 'are below confidence threshold'
+        return r_min, r_max
+
+    def width(self, C=0.95):
+        r_min, r_max = self.endpoints(C)
+        return r_max - r_min
+
+    def report(self, C=.95):
+        r_total = self.numbers_1xr.shape[1]
+        r_min, r_max = self.endpoints(C)
+        print "Confidence Level:", C
+        if r_min == r_total and r_max == r_total-1:
+            print "All repetitions to", r_total, 'are below confidence threshold'
         elif r_min == 0 and r_max == -1:
-            print "All repetitions to", P.shape[1], 'are above confidence threshold'
+            print "All repetitions to", r_total, 'are above confidence threshold'
         else:
-            print "(first_at_or_above, last_at_or_below) = (", r_min+1, ",", r_max+1, ") up to", P.shape[1],"repetitions"
+        print "(first_at_or_above, last_at_or_below) = (", r_min+1, ",", r_max+1, ") up to",\
+                r_total,"repetitions"
         print "Each repetition derived from a sample of", self.sums_kx1.shape[0], "bootstrapped likelihoods"
-        print "Total of", P.shape[1]*self.sums_kx1.shape[0], "Bootstrapped Likelihoods."
+        print "Total of", r_total*self.sums_kx1.shape[0], "Bootstrapped Likelihoods."
         print "Bootstrapping from a Monte Carlo sample size of:", self.mReps
         if self.mReps_has_increased:
             print "The Monte Carlo sample size has increased since the table was rooted."
