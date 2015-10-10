@@ -15,6 +15,7 @@ class Star(object):
         assert self.trueModel.rReps == 1
         assert mReps is not None
         self.mReps = mReps
+        self.mReps_has_increased = False
         self.trueModel.extend_data(self.mReps)
         self.history = [('m', self.mReps)]
 
@@ -22,6 +23,7 @@ class Star(object):
         self.mReps += m_delta
         self.trueModel.extend_data(self.mReps)
         self.history.append(('m+', m_delta))
+        self.mReps_has_increased = True
 
     def extend_k(self, k_delta):
         # X new likelihood ratios of size k_delta x r
@@ -51,9 +53,13 @@ class Star(object):
         assert self.numbers_1xr.shape == (1, r_new)
         self.history.append(('r+', r_delta))
 
-    def root_table(self, k=1, r=1):
+    def root_table(self, k=1, r=1, mReps=None):
+        if mReps is not None:
+            self.mReps = mReps
+            self.trueModel.extend_data(self.mReps)
         self.sums_kx1, self.numbers_1xr = self.new_margins(k, r)
-        self.history.append(('k, r', (k, r)))
+        self.mReps_has_increased = False
+        self.history.append(('k, r, m', (k, r, self.mReps)))
 
     def new_margins(self, k, r, old_sums=None):
         lr = self.new_likelihood_ratios(k, r)
@@ -76,6 +82,7 @@ class Star(object):
 
     def report(self, C=.95):
         P = self.proportions()
+        print "Confidence Level:", C
         r_min = 0
         while r_min < P.shape[1] and P[0, r_min] < C:
             r_min += 1
@@ -88,4 +95,8 @@ class Star(object):
             print "All repetitions to", P.shape[1], 'are above confidence threshold'
         else:
             print "(first_at_or_above, last_at_or_below) = (", r_min+1, ",", r_max+1, ") up to", P.shape[1],"repetitions"
-        print "Each repetition derived from a sample of", self.sums_kx1.shape[0], "likelihoods"
+        print "Each repetition derived from a sample of", self.sums_kx1.shape[0], "bootstrapped likelihoods"
+        print "Total of", P.shape[1]*self.sums_kx1.shape[0], "Bootstrapped Likelihoods."
+        print "Bootstrapping from a Monte Carlo sample size of:", self.mReps
+        if self.mReps_has_increased:
+            print "The Monte Carlo sample size has increased since the table was rooted."
