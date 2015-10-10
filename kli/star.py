@@ -107,18 +107,27 @@ class Star(object):
             assert w == -1 or w == 0
             return range(i_max, i_min+1)
 
-    def fitting(self, C=0.95):
+    def fitting_xy(self, C=.95):
         region = self.fitting_region(C)
         P = self.proportions()
         return np.matrix(region)+1, P[:,region]
+
+    def regression_line(self, C=.95):
+        x, y = self.fitting_xy(C)
+        mb = np.polyfit(np.array(x).ravel(), np.array(y).ravel(), 1)
+        return mb
+
+    def r_star(self, C=.95):
+        m, b = self.regression_line(C)
+        return float(C - b)/float(m)
 
     def report(self, C=.95):
         r_total = self.numbers_1xr.shape[1]
         r_min, r_max = self.endpoints_repetitions(C)
         print "Confidence Level:", C
-        if r_min == r_total and r_max == r_total-1:
+        if r_min == r_total+1 and r_max == r_total:
             print "All repetitions to", r_total, 'are below confidence threshold'
-        elif r_min == 0 and r_max == -1:
+        elif r_min == 1 and r_max == 0:
             print "All repetitions to", r_total, 'are above confidence threshold'
         else:
             print "(first_at_or_above, last_at_or_below) = (", r_min, ",", r_max, ") up to",\
