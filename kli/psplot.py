@@ -45,6 +45,18 @@ def rDelta():
 def confidence_level():
     return 0.95
 
+def OutFileName():
+    return 'run_out_temp'
+
+def XOutFileName():
+    return 'x_run_out_temp'
+
+def InFileName():
+    return 'in_run.pkl'
+
+def XInFileName():
+    return 'in_run_x.pkl'
+
 def compute_alt(B, Balt):
     S = star.Star(B,Balt,mReps=mRepetitions())
     print "Rooting Table"
@@ -100,7 +112,15 @@ def compute(ps,ns,ns_alt_plus,ns_alt_minus,reps,fname):
     return P, N, NPlus, NMinus, rStarPlus, rStarMinus
 
 def run():
-    return compute(pspace(),nspace(),nspace()+1,nspace()-1,nreps(),'out_run.pkl')
+    return compute(pspace(),nspace(),nspace()+1,nspace()-1,nreps(),OutFileName())
 
 def runx():
-    return compute(pspace(),nxspace(),nxspace()+nxspace()/10,nxspace()-nxspace()/10,nreps(),'out_run_x.pkl')
+    return compute(pspace(),nxspace(),nxspace()+nxspace()/10,nxspace()-nxspace()/10,nreps(),XOutFileName())
+
+def loadI():
+    infile = open(InFileName(),'rb')
+    return pickle.load(infile)
+
+def loadX():
+    infile = open(XInFileName(),'rb')
+    return pickle.load(infile)
