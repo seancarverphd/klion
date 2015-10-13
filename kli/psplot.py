@@ -125,3 +125,11 @@ def loadI():
 def loadX():
     infile = open(XInFileName(),'rb')
     return pickle.load(infile)
+
+def parse_means(A):
+    return A[0].mean(axis=0), A[1].mean(axis=0), A[2].mean(axis=0), \
+           A[3].mean(axis=0), A[4].mean(axis=0), A[5].mean(axis=0)
+
+def parse_stds(A):
+    return  A[4].std(axis=0), A[5].std(axis=0)
+
