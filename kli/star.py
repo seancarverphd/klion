@@ -118,8 +118,11 @@ class Star(object):
         return mb
 
     def r_star(self, C=.95):
-        m, b = self.regression_line(C)
-        return float(C - b)/float(m)
+        if self.all_above(C):
+            return 1.
+        else:
+            m, b = self.regression_line(C)
+            return float(C - b)/float(m)
 
     def all_below(self, C=.95):
         r_total = self.numbers_1xr.shape[1]

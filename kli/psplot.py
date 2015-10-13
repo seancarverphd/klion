@@ -46,10 +46,10 @@ def confidence_level():
     return 0.95
 
 def OutFileName():
-    return 'run_out_temp'
+    return 'out2_run.pkl'
 
 def XOutFileName():
-    return 'x_run_out_temp'
+    return 'out2_run.pkl'
 
 def InFileName():
     return 'in_run.pkl'
@@ -64,6 +64,8 @@ def compute_alt(B, Balt):
     while S.need_r(confidence_level()):
         print "Extending r to", S.numbers_1xr.shape[1] + rDelta()
         S.extend_r(rDelta())
+        if S.numbers_1xr.shape[1] > 210000:
+            return np.inf
     return S.r_star(confidence_level())
 
 def compute_one(p, n, n_alt_plus, n_alt_minus,):
@@ -108,7 +110,6 @@ def compute(ps,ns,ns_alt_plus,ns_alt_minus,reps,fname):
                 print end-start, 'seconds OR', (end-start)/60, 'minutes OR', (end-start)/(60*60), 'hours'
                 print 'Total elapased Time:'
                 print end-initial, 'seconds OR', (end-initial)/60, 'minutes OR', (end-initial)/(60*60), 'hours'
-
     return P, N, NPlus, NMinus, rStarPlus, rStarMinus
 
 def run():
