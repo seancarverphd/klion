@@ -50,13 +50,16 @@ def OutFileName():
     return 'out2_run.pkl'
 
 def XOutFileName():
-    return 'out2_run.pkl'
+    return 'out2_run_x.pkl'
 
 def InFileName():
-    return 'in_run.pkl'
+    return 'in2_run.pkl'
 
 def XInFileName():
-    return 'in_run_x.pkl'
+    return 'in2_run_x.pkl'
+
+def OldInFileName():
+    return 'in_run.pkl'
 
 def compute_alt(B, Balt):
     S = star.Star(B,Balt,mReps=mRepetitions())
@@ -135,7 +138,7 @@ def parse_stds(A):
     return  A[4].std(axis=0), A[5].std(axis=0)
 
 def se_regions(pi):
-    A = fixE14()
+    A = loadI()
     P, N, Nplus, Nminus, rStarPlus, rStarMinus = parse_means(A)
     SDplus, SDminus = parse_stds(A)
     plt.fill_between(N[pi,:], rStarPlus[pi,:] - SDplus[pi,:]/np.sqrt(A[0].shape[0]),
@@ -147,7 +150,8 @@ def se_regions(pi):
     plt.show()
 
 def fixE14():
-    P, N, Nplus, Nminus, rStarPlus, rStarMinus = loadI();
+    infile = open(OldInFileName(),'rb')
+    P, N, Nplus, Nminus, rStarPlus, rStarMinus = pickle.load(infile)
     X = rStarPlus
     X[np.where(X>1e14)] = 1.
     return P, N, Nplus, Nminus, X, rStarMinus
