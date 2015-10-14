@@ -1,6 +1,7 @@
 __author__ = 'sean'
 
 import numpy as np
+import matplotlib.pylab as plt
 import star
 import simple
 import pickle
@@ -133,3 +134,20 @@ def parse_means(A):
 def parse_stds(A):
     return  A[4].std(axis=0), A[5].std(axis=0)
 
+def se_regions(pi):
+    A = fixE14()
+    P, N, Nplus, Nminus, rStarPlus, rStarMinus = parse_means(A)
+    SDplus, SDminus = parse_stds(A)
+    plt.fill_between(N[pi,:], rStarPlus[pi,:] - SDplus[pi,:]/np.sqrt(A[0].shape[0]),
+                              rStarPlus[pi,:] + SDplus[pi,:]/np.sqrt(A[0].shape[0]),
+                     color='red', alpha=.3)
+    plt.fill_between(N[pi,:], rStarMinus[pi,:] - SDminus[pi,:]/np.sqrt(A[0].shape[0]),
+                              rStarMinus[pi,:] + SDminus[pi,:]/np.sqrt(A[0].shape[0]),
+                     color='blue', alpha=.3)
+    plt.show()
+
+def fixE14():
+    P, N, Nplus, Nminus, rStarPlus, rStarMinus = loadI();
+    X = rStarPlus
+    X[np.where(X>1e14)] = 1.
+    return P, N, Nplus, Nminus, X, rStarMinus
