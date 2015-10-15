@@ -137,8 +137,13 @@ def parse_means(A):
 def parse_stds(A):
     return  A[4].std(axis=0), A[5].std(axis=0)
 
-def se_regions(pi):
-    A = loadI()
+def se_regions(pi, rel=False, new=False):
+    if new:
+        plt.subplots()
+    if rel:
+        A = loadX()
+    else:
+        A = loadI()
     P, N, Nplus, Nminus, rStarPlus, rStarMinus = parse_means(A)
     SDplus, SDminus = parse_stds(A)
     plt.fill_between(N[pi,:], rStarPlus[pi,:] - SDplus[pi,:]/np.sqrt(A[0].shape[0]),
