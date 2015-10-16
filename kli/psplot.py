@@ -144,7 +144,7 @@ def se_regions(pi, rel=False, figax=None):
     if rel:
         A = loadX()
         plus_color = 'green'
-        plus_alpha = .2
+        plus_alpha = .3
         minus_color = 'yellow'
         minus_alpha = .8
     else:
@@ -189,6 +189,28 @@ def venn(center, radius, distance, figax=None):
     figax[1].add_artist(circle2)
     figax[0].show()
     return figax
+
+def venn2(center, radius, distance, figax=None):
+    if figax is None:
+        figax = plt.subplots()
+    plt.figure(figax[0].number)
+    v = figax[1].axis()
+    width = radius*(v[1]-v[0])
+    height = radius*(v[3]-v[2])
+    xdistance = np.sqrt(3.)/2.*distance*(v[1]-v[0])
+    ydistance = 2*distance*(v[3]-v[2])
+    circle0 = matplotlib.patches.Ellipse(center,width,height,facecolor='red',alpha=.3,edgecolor='black')
+    circle1 = matplotlib.patches.Ellipse((center[0]+xdistance,center[1]),width,height,
+                                         facecolor='grey',alpha=.3,edgecolor='black')
+    circle2 = matplotlib.patches.Ellipse((center[0],center[1]-ydistance),width,height,
+                                         facecolor='yellow',alpha=.8,edgecolor='black')
+    circle3 = matplotlib.patches.Ellipse((center[0]+xdistance,center[1]-ydistance),width,height,
+                                        facecolor='green',alpha=.3,edgecolor='black')
+    figax[1].add_artist(circle0)
+    figax[1].add_artist(circle1)
+    figax[1].add_artist(circle2)
+    figax[1].add_artist(circle3)
+    figax[0].show()
 
 def my_subplots_for_sfn():
     fig = plt.figure()
@@ -238,13 +260,18 @@ def SfNplot():
     ax[1][0].text(5,.13,'Probability of opening: p=0.05')
     ax[2][0].text(20,.13,'Probability of opening: p=0.1')
     ax[0][1].text(5,130,'Probability of opening: p=0.9')
-    ax[0][1].text(5,120,'Number of Channels in Alternative')
-    ax[0][1].text(10,110,'Falsified with 95% Confidence')
+    ax[0][1].text(5,120,'Number of Channels in Alternative:')
+    ax[0][1].text(10,110,'(Falsified with 95% Confidence)')
     ax[1][1].text(5,1300,'Probability of opening: p=0.05')
     ax[2][1].text(5,13000,'Probability of opening: p=0.1')
     ax[0][1].set_ylabel('Needed Sample Size')
     ax[1][1].set_ylabel('Needed Sample Size')
     ax[2][1].set_ylabel('Needed Sample Size')
     ax[2][1].set_xlabel('Number of Channels in True Model (n)')
+    ax[0][1].text(5,90,'n-1')
+    ax[0][1].text(5,72.5,'n-10%')
+    ax[0][1].text(43,90,'n+1')
+    ax[0][1].text(43,72.5,'n+10%')
+    venn2((29,90),.1,.06,(fig,ax[0][1]))
     fig.show()
     return fig, ax
