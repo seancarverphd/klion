@@ -2,6 +2,7 @@ __author__ = 'sean'
 
 import numpy as np
 import matplotlib.pylab as plt
+import matplotlib
 import star
 import simple
 import pickle
@@ -137,22 +138,30 @@ def parse_means(A):
 def parse_stds(A):
     return  A[4].std(axis=0), A[5].std(axis=0)
 
-def se_regions(pi, rel=False, new=False):
-    if new:
-        plt.subplots()
+def se_regions(pi, rel=False, figax=None):
+    if figax is None:
+        figax = plt.subplots()
     if rel:
         A = loadX()
+        plus_color = 'green'
+        plus_alpha = .2
+        minus_color = 'yellow'
+        minus_alpha = .8
     else:
         A = loadI()
+        plus_color = 'grey'
+        plus_alpha = .3
+        minus_color = 'red'
+        minus_alpha = .3
     P, N, Nplus, Nminus, rStarPlus, rStarMinus = parse_means(A)
     SDplus, SDminus = parse_stds(A)
-    plt.fill_between(N[pi,:], rStarPlus[pi,:] - SDplus[pi,:]/np.sqrt(A[0].shape[0]),
+    figax[1].fill_between(N[pi,:], rStarPlus[pi,:] - SDplus[pi,:]/np.sqrt(A[0].shape[0]),
                               rStarPlus[pi,:] + SDplus[pi,:]/np.sqrt(A[0].shape[0]),
-                     color='red', alpha=.3)
-    plt.fill_between(N[pi,:], rStarMinus[pi,:] - SDminus[pi,:]/np.sqrt(A[0].shape[0]),
+                     color=plus_color, alpha=plus_alpha)
+    figax[1].fill_between(N[pi,:], rStarMinus[pi,:] - SDminus[pi,:]/np.sqrt(A[0].shape[0]),
                               rStarMinus[pi,:] + SDminus[pi,:]/np.sqrt(A[0].shape[0]),
-                     color='blue', alpha=.3)
-    plt.show()
+                     color=minus_color, alpha=minus_alpha)
+    figax[0].show()
 
 def fixE14():
     infile = open(OldInFileName(),'rb')
@@ -160,3 +169,82 @@ def fixE14():
     X = rStarPlus
     X[np.where(X>1e14)] = 1.
     return P, N, Nplus, Nminus, X, rStarMinus
+
+def venn(center, radius, distance, figax=None):
+    if figax is None:
+        figax = plt.subplots()
+    plt.figure(figax[0].number)
+    v = figax[1].axis()
+    width = radius*(v[1]-v[0])
+    height = radius*(v[3]-v[2])
+    xdistance = np.sqrt(3.)/4.*distance*(v[1]-v[0])
+    ydistance = distance*(v[3]-v[2])
+    circle0 = matplotlib.patches.Ellipse(center,width,height,facecolor='yellow',alpha=.6,edgecolor='black')
+    circle1 = matplotlib.patches.Ellipse((center[0]-xdistance,center[1]+ydistance),width,height,
+                                         facecolor='red',alpha=.4,edgecolor='black')
+    circle2 = matplotlib.patches.Ellipse((center[0]+xdistance,center[1]+ydistance),width,height,
+                                         facecolor='blue',alpha=.4,edgecolor='black')
+    figax[1].add_artist(circle0)
+    figax[1].add_artist(circle1)
+    figax[1].add_artist(circle2)
+    figax[0].show()
+    return figax
+
+def my_subplots_for_sfn():
+    fig = plt.figure()
+    ax11 = plt.subplot(321)
+    ax12 = plt.subplot(322)
+    ax21 = plt.subplot(323,sharex=ax11,sharey=ax11)
+    ax22 = plt.subplot(324,sharex=ax12)
+    ax31 = plt.subplot(325,sharex=ax11,sharey=ax11)
+    ax32 = plt.subplot(326,sharex=ax12)
+    ax11.set_xlim(0,100)
+    ax12.set_xlim(0,120)
+    ax11.set_ylim(0,.14)
+    ax12.set_ylim(0,140)
+    ax22.set_ylim(0,1400)
+    ax32.set_ylim(0,14000)
+    return (fig,[[ax11,ax12], [ax21, ax22], [ax31,ax32]])
+
+def SfNplot():
+    ntrue = 100
+    nalt0 = 99
+    nalt1 = 90
+    S100_1 = simple.Simple(n=ntrue,p=.1).flatten()
+    S99_1 = simple.Simple(n=nalt0,p=.1).flatten()
+    S90_1 = simple.Simple(n=nalt1,p=.1).flatten()
+    S100_5 = simple.Simple(n=ntrue,p=.5).flatten()
+    S99_5 = simple.Simple(n=nalt0,p=.5).flatten()
+    S90_5 = simple.Simple(n=nalt1,p=.5).flatten()
+    S100_9 = simple.Simple(n=ntrue,p=.9).flatten()
+    S99_9 = simple.Simple(n=nalt0,p=.9).flatten()
+    S90_9 = simple.Simple(n=nalt1,p=.9).flatten()
+    fig, ax = my_subplots_for_sfn()
+    S100_1.compare_3bars(S99_1,S90_1,ntrue,(fig,ax[2][0]),xlab='Number of open channels (k)')
+    S100_5.compare_3bars(S99_5,S90_5,ntrue,(fig,ax[1][0]))
+    S100_9.compare_3bars(S99_9,S90_9,ntrue,(fig,ax[0][0]))
+    se_regions(2,False,(fig,ax[0][1]))
+    se_regions(1,False,(fig,ax[1][1]))
+    se_regions(0,False,(fig,ax[2][1]))
+    se_regions(2,True,(fig,ax[0][1]))
+    se_regions(1,True,(fig,ax[1][1]))
+    se_regions(0,True,(fig,ax[2][1]))
+    venn((30,.1),.1,.05,(fig,ax[0][0]))
+    ax[0][0].text(18,.085,'n-10%=90')
+    ax[0][0].text(41,.105,'n=100')
+    ax[0][0].text(4.5,.105,'n-1=99')
+    ax[0][0].text(5,.12,'Number of Channels:')
+    ax[0][0].text(5,.13,'Probability of opening: p=0.9')
+    ax[1][0].text(5,.13,'Probability of opening: p=0.05')
+    ax[2][0].text(20,.13,'Probability of opening: p=0.1')
+    ax[0][1].text(5,130,'Probability of opening: p=0.9')
+    ax[0][1].text(5,120,'Number of Channels in Alternative')
+    ax[0][1].text(10,110,'Falsified with 95% Confidence')
+    ax[1][1].text(5,1300,'Probability of opening: p=0.05')
+    ax[2][1].text(5,13000,'Probability of opening: p=0.1')
+    ax[0][1].set_ylabel('Needed Sample Size')
+    ax[1][1].set_ylabel('Needed Sample Size')
+    ax[2][1].set_ylabel('Needed Sample Size')
+    ax[2][1].set_xlabel('Number of Channels in True Model (n)')
+    fig.show()
+    return fig, ax

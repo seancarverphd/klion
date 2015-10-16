@@ -330,15 +330,37 @@ class FlatToy(object):
             density_curve[i] = self.pdf(datum)
         return density_curve
 
-    def compare_bars(self, alt, xmax):  # Useful when range = {0,1,2,...xmax}
+    def compare_bars(self, alt, xmax, figax=None):  # Useful when range = {0,1,2,...xmax}
+        if figax is None:
+            figax = plt.subplots()
         x_iterable = numpy.arange(float(xmax))
-        plt.figure()
         plt.hold('off')
         hyp_pmf = self.pdf_of_iterable(x_iterable)
         alt_pmf = alt.pdf_of_iterable(x_iterable)
-        plt.bar(x_iterable-.25, hyp_pmf, width=.25, color='green')
+        plt.bar(x_iterable-.5, hyp_pmf, width=1, color='blue', alpha=.3)
         plt.hold('on')
-        plt.bar(x_iterable, alt_pmf, width=0.25, color='red')
+        plt.bar(x_iterable-.5, alt_pmf, width=1, color='red', alpha=.3)
+        return figax
+
+    def compare_3bars(self, alt0, alt1, xmax, figax=None, xlab=None):
+        if figax is None:
+            figax = plt.subplots()
+        x_iterable = numpy.arange(float(xmax))
+        plt.hold('off')
+        hyp_pmf = self.pdf_of_iterable(x_iterable)
+        alt0_pmf = alt0.pdf_of_iterable(x_iterable)
+        alt1_pmf = alt1.pdf_of_iterable(x_iterable)
+        plt.figure(figax[0].number)
+        figax[1].bar(x_iterable-.5, alt1_pmf, width=1, color='yellow', alpha=.6)
+        figax[1].hold('on')
+        figax[1].bar(x_iterable-.5, alt0_pmf, width=1, color='red', alpha=.4)
+        figax[1].bar(x_iterable-.5, hyp_pmf, width=1, color='blue', alpha=.4)
+        figax[1].set_xlim(0,xmax)
+        if xlab is not None:
+            figax[1].set_xlabel(xlab)
+        figax[1].set_ylabel('Probability')
+        figax[0].show()
+        return figax
 
     def compare_pdfs(self, alt, dataModel=None, a=None, b=None, n=1000, bins=10, xlab=None):
         assert not (dataModel is None and (a is None or b is None))
