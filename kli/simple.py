@@ -75,11 +75,31 @@ class ExactSimple(object):
         probabilities_of_correct_selection = [true_model.B.pmf(i) if test_statistic[i] > 0 else 0
                                               for i in range(n_true + 1)]  # range of binomial extends to n_true
         return sum(probabilities_of_correct_selection)
-        # prob = 0
-        # for i, t in enumerate(testStatistic):
-        #     if t > 0:
-        #         prob += self.B.pmf(i)
-        # return prob
+
+class ExactSimpleRepetitions(object):
+    def __init__(self, parent, r):
+        self.parent = parent
+        self.n = parent.n
+        self.p = parent.p
+        self.r = r
+        self.index, self.x, self.pmf = self.construct()
+
+    def construct(self):
+        # data are n-vectors where ith element is number of times out of r i channels seen open
+        x0 = [self.r]+[0]*self.n
+        ME = self.multi_enumerate([])
+        index = {}
+        for i, x in enumerate(ME):
+            index[x] = i
+        return index, ME, None
+    
+    def multi_enumerate(self, prefix):
+        ME = []
+        if len(prefix) == self.n:
+            return [tuple(prefix + [self.r-sum(prefix)])]
+        for k in range(self.r-sum(prefix)+1):
+            ME += self.multi_enumerate(prefix+[k])
+        return ME
 
 if __name__ == '__main__':
     RootS20 = Simple(n=20, p=.5)
