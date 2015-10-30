@@ -87,19 +87,19 @@ class ExactSimpleRepetitions(object):
     def construct(self):
         # data are n-vectors where ith element is number of times out of r i channels seen open
         x0 = [self.r]+[0]*self.n
-        ME = self.multi_enumerate([])
+        x_enumerated = self.multi_enumerate([])
         index = {}
-        for i, x in enumerate(ME):
+        for i, x in enumerate(x_enumerated):
             index[x] = i
-        return index, ME, None
-    
+        return index, x_enumerated, None
+
     def multi_enumerate(self, prefix):
-        ME = []
+        x_enumerated = []
         if len(prefix) == self.n:
             return [tuple(prefix + [self.r-sum(prefix)])]
         for k in range(self.r-sum(prefix)+1):
-            ME += self.multi_enumerate(prefix+[k])
-        return ME
+            x_enumerated += self.multi_enumerate(prefix+[k])
+        return x_enumerated
 
 if __name__ == '__main__':
     RootS20 = Simple(n=20, p=.5)
