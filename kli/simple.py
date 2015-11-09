@@ -91,7 +91,8 @@ class ExactSimpleRepetitions(object):
         index = {}
         for i, x in enumerate(x_enumerated):
             index[x] = i
-        return index, x_enumerated, None
+        logpmf_enumerated = self.get_logpmf(x_enumerated)
+        return index, x_enumerated, logpmf_enumerated
 
     def multi_enumerate(self, prefix):
         x_enumerated = []
@@ -101,6 +102,9 @@ class ExactSimpleRepetitions(object):
             x_enumerated += self.multi_enumerate(prefix+[k])
         return x_enumerated
 
+    def get_logpmf(self, x_enumerated):
+        for x in x_enumerated:
+            for i, xi in enumerate(x):sym
 if __name__ == '__main__':
     RootS20 = Simple(n=20, p=.5)
     ES20 = RootS20.exact()
